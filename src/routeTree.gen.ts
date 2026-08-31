@@ -10,33 +10,130 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as AppClientesRouteImport } from './routes/_app/clientes'
+import { Route as AppFunilRouteImport } from './routes/_app/funil'
+import { Route as AppImoveisRouteImport } from './routes/_app/imoveis'
+import { Route as AppInicioRouteImport } from './routes/_app/inicio'
+import { Route as AppOrcamentosRouteImport } from './routes/_app/orcamentos'
+import { Route as AppServicosRouteImport } from './routes/_app/servicos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRouteRoute = AppRouteRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppClientesRoute = AppClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppFunilRoute = AppFunilRouteImport.update({
+  id: '/funil',
+  path: '/funil',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppImoveisRoute = AppImoveisRouteImport.update({
+  id: '/imoveis',
+  path: '/imoveis',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppInicioRoute = AppInicioRouteImport.update({
+  id: '/inicio',
+  path: '/inicio',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppOrcamentosRoute = AppOrcamentosRouteImport.update({
+  id: '/orcamentos',
+  path: '/orcamentos',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppServicosRoute = AppServicosRouteImport.update({
+  id: '/servicos',
+  path: '/servicos',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/entrar': typeof EntrarRoute
+  '/clientes': typeof AppClientesRoute
+  '/funil': typeof AppFunilRoute
+  '/imoveis': typeof AppImoveisRoute
+  '/inicio': typeof AppInicioRoute
+  '/orcamentos': typeof AppOrcamentosRoute
+  '/servicos': typeof AppServicosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/entrar': typeof EntrarRoute
+  '/clientes': typeof AppClientesRoute
+  '/funil': typeof AppFunilRoute
+  '/imoveis': typeof AppImoveisRoute
+  '/inicio': typeof AppInicioRoute
+  '/orcamentos': typeof AppOrcamentosRoute
+  '/servicos': typeof AppServicosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteRouteWithChildren
+  '/entrar': typeof EntrarRoute
+  '/_app/clientes': typeof AppClientesRoute
+  '/_app/funil': typeof AppFunilRoute
+  '/_app/imoveis': typeof AppImoveisRoute
+  '/_app/inicio': typeof AppInicioRoute
+  '/_app/orcamentos': typeof AppOrcamentosRoute
+  '/_app/servicos': typeof AppServicosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/entrar'
+    | '/clientes'
+    | '/funil'
+    | '/imoveis'
+    | '/inicio'
+    | '/orcamentos'
+    | '/servicos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/entrar'
+    | '/clientes'
+    | '/funil'
+    | '/imoveis'
+    | '/inicio'
+    | '/orcamentos'
+    | '/servicos'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/entrar'
+    | '/_app/clientes'
+    | '/_app/funil'
+    | '/_app/imoveis'
+    | '/_app/inicio'
+    | '/_app/orcamentos'
+    | '/_app/servicos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRouteRoute: typeof AppRouteRouteWithChildren
+  EntrarRoute: typeof EntrarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +145,91 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/clientes': {
+      id: '/_app/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof AppClientesRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/funil': {
+      id: '/_app/funil'
+      path: '/funil'
+      fullPath: '/funil'
+      preLoaderRoute: typeof AppFunilRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/imoveis': {
+      id: '/_app/imoveis'
+      path: '/imoveis'
+      fullPath: '/imoveis'
+      preLoaderRoute: typeof AppImoveisRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/inicio': {
+      id: '/_app/inicio'
+      path: '/inicio'
+      fullPath: '/inicio'
+      preLoaderRoute: typeof AppInicioRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/orcamentos': {
+      id: '/_app/orcamentos'
+      path: '/orcamentos'
+      fullPath: '/orcamentos'
+      preLoaderRoute: typeof AppOrcamentosRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/servicos': {
+      id: '/_app/servicos'
+      path: '/servicos'
+      fullPath: '/servicos'
+      preLoaderRoute: typeof AppServicosRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
+interface AppRouteRouteChildren {
+  AppClientesRoute: typeof AppClientesRoute
+  AppFunilRoute: typeof AppFunilRoute
+  AppImoveisRoute: typeof AppImoveisRoute
+  AppInicioRoute: typeof AppInicioRoute
+  AppOrcamentosRoute: typeof AppOrcamentosRoute
+  AppServicosRoute: typeof AppServicosRoute
+}
+
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppClientesRoute: AppClientesRoute,
+  AppFunilRoute: AppFunilRoute,
+  AppImoveisRoute: AppImoveisRoute,
+  AppInicioRoute: AppInicioRoute,
+  AppOrcamentosRoute: AppOrcamentosRoute,
+  AppServicosRoute: AppServicosRoute,
+}
+
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRouteRoute: AppRouteRouteWithChildren,
+  EntrarRoute: EntrarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
