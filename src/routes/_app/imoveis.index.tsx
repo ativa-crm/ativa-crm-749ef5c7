@@ -8,7 +8,7 @@ import { areaHa, rotulo, soDigitos } from "@/lib/formato";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/_app/imoveis")({
+export const Route = createFileRoute("/_app/imoveis/")({
   head: () => ({
     meta: [
       { title: "Imóveis | CRM de Topografia" },

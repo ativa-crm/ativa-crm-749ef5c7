@@ -18,6 +18,7 @@ import { Route as AppImoveisRouteImport } from './routes/_app/imoveis'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
 import { Route as AppOrcamentosRouteImport } from './routes/_app/orcamentos'
 import { Route as AppServicosRouteImport } from './routes/_app/servicos'
+import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,26 +64,32 @@ const AppServicosRoute = AppServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppImoveisIndexRoute = AppImoveisIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppImoveisRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/clientes': typeof AppClientesRoute
   '/funil': typeof AppFunilRoute
-  '/imoveis': typeof AppImoveisRoute
+  '/imoveis': typeof AppImoveisRouteWithChildren
   '/inicio': typeof AppInicioRoute
   '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
+  '/imoveis/': typeof AppImoveisIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/clientes': typeof AppClientesRoute
   '/funil': typeof AppFunilRoute
-  '/imoveis': typeof AppImoveisRoute
   '/inicio': typeof AppInicioRoute
   '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
+  '/imoveis': typeof AppImoveisIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -91,10 +98,11 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/_app/clientes': typeof AppClientesRoute
   '/_app/funil': typeof AppFunilRoute
-  '/_app/imoveis': typeof AppImoveisRoute
+  '/_app/imoveis': typeof AppImoveisRouteWithChildren
   '/_app/inicio': typeof AppInicioRoute
   '/_app/orcamentos': typeof AppOrcamentosRoute
   '/_app/servicos': typeof AppServicosRoute
+  '/_app/imoveis/': typeof AppImoveisIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,16 +115,17 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/orcamentos'
     | '/servicos'
+    | '/imoveis/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/entrar'
     | '/clientes'
     | '/funil'
-    | '/imoveis'
     | '/inicio'
     | '/orcamentos'
     | '/servicos'
+    | '/imoveis'
   id:
     | '__root__'
     | '/'
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/_app/inicio'
     | '/_app/orcamentos'
     | '/_app/servicos'
+    | '/_app/imoveis/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -201,13 +211,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicosRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/imoveis/': {
+      id: '/_app/imoveis/'
+      path: '/'
+      fullPath: '/imoveis/'
+      preLoaderRoute: typeof AppImoveisIndexRouteImport
+      parentRoute: typeof AppImoveisRoute
+    }
   }
 }
+
+interface AppImoveisRouteChildren {
+  AppImoveisIndexRoute: typeof AppImoveisIndexRoute
+}
+
+const AppImoveisRouteChildren: AppImoveisRouteChildren = {
+  AppImoveisIndexRoute: AppImoveisIndexRoute,
+}
+
+const AppImoveisRouteWithChildren = AppImoveisRoute._addFileChildren(
+  AppImoveisRouteChildren,
+)
 
 interface AppRouteRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
   AppFunilRoute: typeof AppFunilRoute
-  AppImoveisRoute: typeof AppImoveisRoute
+  AppImoveisRoute: typeof AppImoveisRouteWithChildren
   AppInicioRoute: typeof AppInicioRoute
   AppOrcamentosRoute: typeof AppOrcamentosRoute
   AppServicosRoute: typeof AppServicosRoute
@@ -216,7 +245,7 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppClientesRoute: AppClientesRoute,
   AppFunilRoute: AppFunilRoute,
-  AppImoveisRoute: AppImoveisRoute,
+  AppImoveisRoute: AppImoveisRouteWithChildren,
   AppInicioRoute: AppInicioRoute,
   AppOrcamentosRoute: AppOrcamentosRoute,
   AppServicosRoute: AppServicosRoute,
