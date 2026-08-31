@@ -16,6 +16,7 @@ import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
 import { Route as AppOrcamentosRouteImport } from './routes/_app/orcamentos'
 import { Route as AppServicosRouteImport } from './routes/_app/servicos'
+import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.index'
 import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 import { Route as AppImoveisIdRouteImport } from './routes/_app/imoveis.$id'
 
@@ -53,6 +54,11 @@ const AppServicosRoute = AppServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppClientesIndexRoute = AppClientesIndexRouteImport.update({
+  id: '/clientes/',
+  path: '/clientes/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppImoveisIndexRoute = AppImoveisIndexRouteImport.update({
   id: '/imoveis/',
   path: '/imoveis/',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/clientes/': typeof AppClientesIndexRoute
   '/imoveis/': typeof AppImoveisIndexRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/clientes': typeof AppClientesIndexRoute
   '/imoveis': typeof AppImoveisIndexRoute
 }
 export interface FileRoutesById {
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_app/orcamentos': typeof AppOrcamentosRoute
   '/_app/servicos': typeof AppServicosRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
+  '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/imoveis/': typeof AppImoveisIndexRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/servicos'
     | '/imoveis/$id'
+    | '/clientes/'
     | '/imoveis/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/servicos'
     | '/imoveis/$id'
+    | '/clientes'
     | '/imoveis'
   id:
     | '__root__'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_app/orcamentos'
     | '/_app/servicos'
     | '/_app/imoveis/$id'
+    | '/_app/clientes/'
     | '/_app/imoveis/'
   fileRoutesById: FileRoutesById
 }
@@ -187,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicosRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/clientes/': {
+      id: '/_app/clientes/'
+      path: '/clientes'
+      fullPath: '/clientes/'
+      preLoaderRoute: typeof AppClientesIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/imoveis/': {
       id: '/_app/imoveis/'
       path: '/imoveis'
@@ -210,6 +229,7 @@ interface AppRouteRouteChildren {
   AppOrcamentosRoute: typeof AppOrcamentosRoute
   AppServicosRoute: typeof AppServicosRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
+  AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppImoveisIndexRoute: typeof AppImoveisIndexRoute
 }
 
@@ -219,6 +239,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppOrcamentosRoute: AppOrcamentosRoute,
   AppServicosRoute: AppServicosRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
+  AppClientesIndexRoute: AppClientesIndexRoute,
   AppImoveisIndexRoute: AppImoveisIndexRoute,
 }
 
