@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_app/funil")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Pagina;
+  component: Pagina,
 });
 
 type Oportunidade = {
