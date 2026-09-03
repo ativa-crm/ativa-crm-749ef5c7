@@ -20,6 +20,7 @@ import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.ind
 import { Route as AppClientesIdRouteImport } from './routes/_app/clientes.$id'
 import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 import { Route as AppImoveisIdRouteImport } from './routes/_app/imoveis.$id'
+import { Route as AppOportunidadesIdRouteImport } from './routes/_app/oportunidades.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -75,6 +76,11 @@ const AppImoveisIdRoute = AppImoveisIdRouteImport.update({
   path: '/imoveis/$id',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppOportunidadesIdRoute = AppOportunidadesIdRouteImport.update({
+  id: '/oportunidades/$id',
+  path: '/oportunidades/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/servicos': typeof AppServicosRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/clientes/': typeof AppClientesIndexRoute
   '/imoveis/': typeof AppImoveisIndexRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/servicos': typeof AppServicosRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/clientes': typeof AppClientesIndexRoute
   '/imoveis': typeof AppImoveisIndexRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_app/servicos': typeof AppServicosRoute
   '/_app/clientes/$id': typeof AppClientesIdRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
+  '/_app/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/imoveis/': typeof AppImoveisIndexRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/servicos'
     | '/clientes/$id'
     | '/imoveis/$id'
+    | '/oportunidades/$id'
     | '/clientes/'
     | '/imoveis/'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/servicos'
     | '/clientes/$id'
     | '/imoveis/$id'
+    | '/oportunidades/$id'
     | '/clientes'
     | '/imoveis'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_app/servicos'
     | '/_app/clientes/$id'
     | '/_app/imoveis/$id'
+    | '/_app/oportunidades/$id'
     | '/_app/clientes/'
     | '/_app/imoveis/'
   fileRoutesById: FileRoutesById
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppImoveisIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/oportunidades/$id': {
+      id: '/_app/oportunidades/$id'
+      path: '/oportunidades/$id'
+      fullPath: '/oportunidades/$id'
+      preLoaderRoute: typeof AppOportunidadesIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -249,6 +268,7 @@ interface AppRouteRouteChildren {
   AppServicosRoute: typeof AppServicosRoute
   AppClientesIdRoute: typeof AppClientesIdRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
+  AppOportunidadesIdRoute: typeof AppOportunidadesIdRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppImoveisIndexRoute: typeof AppImoveisIndexRoute
 }
@@ -260,6 +280,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppServicosRoute: AppServicosRoute,
   AppClientesIdRoute: AppClientesIdRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
+  AppOportunidadesIdRoute: AppOportunidadesIdRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
   AppImoveisIndexRoute: AppImoveisIndexRoute,
 }
