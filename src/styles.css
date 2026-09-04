@@ -69,19 +69,20 @@
   --card-foreground: oklch(0.18 0.02 150);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 150);
-  --primary: oklch(0.79 0.21 133);
-  --primary-foreground: oklch(0.2 0.05 140);
-  --secondary: oklch(0.96 0.03 135);
-  --secondary-foreground: oklch(0.28 0.06 140);
-  --muted: oklch(0.97 0.008 140);
+  /* Marca Ativa Consultoria: verde #3D8A3D + verde claro de apoio #DCFCDC */
+  --primary: oklch(0.566 0.136 143.5);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.054 145.1);
+  --secondary-foreground: oklch(0.34 0.09 143.5);
+  --muted: oklch(0.975 0.02 145.1);
   --muted-foreground: oklch(0.44 0.02 150);
-  --accent: oklch(0.94 0.05 135);
-  --accent-foreground: oklch(0.26 0.06 140);
+  --accent: oklch(0.96 0.054 145.1);
+  --accent-foreground: oklch(0.34 0.09 143.5);
   --destructive: oklch(0.52 0.21 27.325);
   --destructive-foreground: oklch(0.99 0.003 247.858);
-  --border: oklch(0.88 0.015 145);
-  --input: oklch(0.88 0.015 145);
-  --ring: oklch(0.79 0.21 133);
+  --border: oklch(0.88 0.03 145.1);
+  --input: oklch(0.88 0.03 145.1);
+  --ring: oklch(0.566 0.136 143.5);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -89,12 +90,12 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.984 0.003 247.858);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar-primary: oklch(0.566 0.136 143.5);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0.054 145.1);
+  --sidebar-accent-foreground: oklch(0.34 0.09 143.5);
+  --sidebar-border: oklch(0.88 0.03 145.1);
+  --sidebar-ring: oklch(0.566 0.136 143.5);
 }
 
 .dark {
@@ -104,8 +105,8 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
+  --primary: oklch(0.62 0.14 143.5);
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
   --muted: oklch(0.279 0.041 260.031);
