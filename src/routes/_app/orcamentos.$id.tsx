@@ -193,10 +193,10 @@ function Pagina() {
           p_tipo: "orcamento",
         });
         if (erroRpc) throw erroRpc;
-        mudanca.numero = numeroNovo;
+        mudanca['numero'] = numeroNovo;
       }
       if (novo === "enviado" && !orcamento.enviado_em) {
-        mudanca.enviado_em = new Date().toISOString();
+        mudanca['enviado_em'] = new Date().toISOString();
       }
 
       const { error } = await supabase.from("orcamentos").update(mudanca).eq("id", id);

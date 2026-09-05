@@ -551,4 +551,3 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
   );
 }
 
-export { numero as formatarNumero };
