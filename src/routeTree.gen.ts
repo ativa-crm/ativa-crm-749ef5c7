@@ -14,13 +14,14 @@ import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
-import { Route as AppOrcamentosRouteImport } from './routes/_app/orcamentos'
 import { Route as AppServicosRouteImport } from './routes/_app/servicos'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.index'
 import { Route as AppClientesIdRouteImport } from './routes/_app/clientes.$id'
 import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 import { Route as AppImoveisIdRouteImport } from './routes/_app/imoveis.$id'
 import { Route as AppOportunidadesIdRouteImport } from './routes/_app/oportunidades.$id'
+import { Route as AppOrcamentosIndexRouteImport } from './routes/_app/orcamentos.index'
+import { Route as AppOrcamentosIdRouteImport } from './routes/_app/orcamentos.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -44,11 +45,6 @@ const AppFunilRoute = AppFunilRouteImport.update({
 const AppInicioRoute = AppInicioRouteImport.update({
   id: '/inicio',
   path: '/inicio',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppOrcamentosRoute = AppOrcamentosRouteImport.update({
-  id: '/orcamentos',
-  path: '/orcamentos',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppServicosRoute = AppServicosRouteImport.update({
@@ -81,32 +77,44 @@ const AppOportunidadesIdRoute = AppOportunidadesIdRouteImport.update({
   path: '/oportunidades/$id',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppOrcamentosIndexRoute = AppOrcamentosIndexRouteImport.update({
+  id: '/orcamentos/',
+  path: '/orcamentos/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppOrcamentosIdRoute = AppOrcamentosIdRouteImport.update({
+  id: '/orcamentos/$id',
+  path: '/orcamentos/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
-  '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
+  '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/clientes/': typeof AppClientesIndexRoute
   '/imoveis/': typeof AppImoveisIndexRoute
+  '/orcamentos/': typeof AppOrcamentosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
-  '/orcamentos': typeof AppOrcamentosRoute
   '/servicos': typeof AppServicosRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
+  '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/clientes': typeof AppClientesIndexRoute
   '/imoveis': typeof AppImoveisIndexRoute
+  '/orcamentos': typeof AppOrcamentosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,13 +123,14 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/_app/funil': typeof AppFunilRoute
   '/_app/inicio': typeof AppInicioRoute
-  '/_app/orcamentos': typeof AppOrcamentosRoute
   '/_app/servicos': typeof AppServicosRoute
   '/_app/clientes/$id': typeof AppClientesIdRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
   '/_app/oportunidades/$id': typeof AppOportunidadesIdRoute
+  '/_app/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/imoveis/': typeof AppImoveisIndexRoute
+  '/_app/orcamentos/': typeof AppOrcamentosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,26 +139,28 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/funil'
     | '/inicio'
-    | '/orcamentos'
     | '/servicos'
     | '/clientes/$id'
     | '/imoveis/$id'
     | '/oportunidades/$id'
+    | '/orcamentos/$id'
     | '/clientes/'
     | '/imoveis/'
+    | '/orcamentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/entrar'
     | '/funil'
     | '/inicio'
-    | '/orcamentos'
     | '/servicos'
     | '/clientes/$id'
     | '/imoveis/$id'
     | '/oportunidades/$id'
+    | '/orcamentos/$id'
     | '/clientes'
     | '/imoveis'
+    | '/orcamentos'
   id:
     | '__root__'
     | '/'
@@ -157,13 +168,14 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/_app/funil'
     | '/_app/inicio'
-    | '/_app/orcamentos'
     | '/_app/servicos'
     | '/_app/clientes/$id'
     | '/_app/imoveis/$id'
     | '/_app/oportunidades/$id'
+    | '/_app/orcamentos/$id'
     | '/_app/clientes/'
     | '/_app/imoveis/'
+    | '/_app/orcamentos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,13 +221,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInicioRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_app/orcamentos': {
-      id: '/_app/orcamentos'
-      path: '/orcamentos'
-      fullPath: '/orcamentos'
-      preLoaderRoute: typeof AppOrcamentosRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/_app/servicos': {
       id: '/_app/servicos'
       path: '/servicos'
@@ -258,31 +263,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOportunidadesIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/orcamentos/': {
+      id: '/_app/orcamentos/'
+      path: '/orcamentos'
+      fullPath: '/orcamentos/'
+      preLoaderRoute: typeof AppOrcamentosIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/orcamentos/$id': {
+      id: '/_app/orcamentos/$id'
+      path: '/orcamentos/$id'
+      fullPath: '/orcamentos/$id'
+      preLoaderRoute: typeof AppOrcamentosIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
 interface AppRouteRouteChildren {
   AppFunilRoute: typeof AppFunilRoute
   AppInicioRoute: typeof AppInicioRoute
-  AppOrcamentosRoute: typeof AppOrcamentosRoute
   AppServicosRoute: typeof AppServicosRoute
   AppClientesIdRoute: typeof AppClientesIdRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
   AppOportunidadesIdRoute: typeof AppOportunidadesIdRoute
+  AppOrcamentosIdRoute: typeof AppOrcamentosIdRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppImoveisIndexRoute: typeof AppImoveisIndexRoute
+  AppOrcamentosIndexRoute: typeof AppOrcamentosIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppFunilRoute: AppFunilRoute,
   AppInicioRoute: AppInicioRoute,
-  AppOrcamentosRoute: AppOrcamentosRoute,
   AppServicosRoute: AppServicosRoute,
   AppClientesIdRoute: AppClientesIdRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
   AppOportunidadesIdRoute: AppOportunidadesIdRoute,
+  AppOrcamentosIdRoute: AppOrcamentosIdRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
   AppImoveisIndexRoute: AppImoveisIndexRoute,
+  AppOrcamentosIndexRoute: AppOrcamentosIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
