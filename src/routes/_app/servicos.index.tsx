@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_app/servicos")({
+export const Route = createFileRoute("/_app/servicos/")({
   head: () => ({
     meta: [
       { title: "Serviços | CRM de Topografia" },
