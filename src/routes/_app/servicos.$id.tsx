@@ -392,7 +392,7 @@ function Pagina() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-lg font-bold text-foreground">
-                    {d.nome ?? rotulo(d.categoria) || "documento"}
+                    {d.nome ?? (rotulo(d.categoria) || "documento")}
                   </p>
                   <p className="text-sm font-semibold text-muted-foreground">
                     {rotulo(d.categoria)} · {dataBR(d.criado_em)}
