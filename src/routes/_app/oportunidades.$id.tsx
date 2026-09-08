@@ -219,7 +219,7 @@ function Pagina() {
       if (error) throw error;
 
       const { error: erroEvento } = await supabase.from("eventos").insert({
-        empresa_id: oportunidade?.empresa_id ?? perfil?.empresa_id ?? null,
+        empresa_id: perfil?.empresa_id ?? null,
         usuario_id: perfil?.id ?? null,
         tipo: "arquivamento",
         entidade: "oportunidades",
