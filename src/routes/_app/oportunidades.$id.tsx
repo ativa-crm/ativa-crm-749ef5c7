@@ -174,6 +174,7 @@ function Pagina() {
   const criarImovel = useMutation({
     mutationFn: async () => {
       if (!oportunidade) throw new Error("sem oportunidade");
+      if (!perfil?.empresa_id) throw new Error("perfil sem empresa");
       const nome =
         (clienteQuery.data?.nome ? `Imóvel de ${clienteQuery.data.nome}` : null) ??
         (oportunidade.cidade ? `Imóvel em ${oportunidade.cidade}` : "Novo imóvel");
@@ -181,7 +182,8 @@ function Pagina() {
       const { data, error } = await supabase
         .from("imoveis")
         .insert({
-          empresa_id: oportunidade.empresa_id ?? perfil?.empresa_id ?? null,
+          // empresa_id vem sempre do perfil carregado no login.
+          empresa_id: perfil.empresa_id,
           cliente_id: oportunidade.cliente_id,
           nome,
           tipo: "rural",
@@ -217,7 +219,7 @@ function Pagina() {
       if (error) throw error;
 
       const { error: erroEvento } = await supabase.from("eventos").insert({
-        empresa_id: oportunidade?.empresa_id ?? perfil?.empresa_id ?? null,
+        empresa_id: perfil?.empresa_id ?? null,
         usuario_id: perfil?.id ?? null,
         tipo: "arquivamento",
         entidade: "oportunidades",

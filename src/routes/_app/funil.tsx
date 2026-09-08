@@ -120,12 +120,15 @@ function Pagina() {
       para: string;
       cliente: string;
     }) => {
+      if (!perfil?.empresa_id) throw new Error("perfil sem empresa");
+
       const { error } = await supabase.from("oportunidades").update({ estagio: para }).eq("id", id);
       if (error) throw error;
 
+      // empresa_id vem sempre do perfil carregado no login, nunca da tela.
       const { error: erroEvento } = await supabase.from("eventos").insert({
-        empresa_id: perfil?.empresa_id ?? null,
-        usuario_id: perfil?.id ?? null,
+        empresa_id: perfil.empresa_id,
+        usuario_id: perfil.id,
         tipo: "mudanca_estagio",
         entidade: "oportunidades",
         entidade_id: id,
