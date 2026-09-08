@@ -236,7 +236,6 @@ function Pagina() {
             <Link
               key={s.valor}
               to="/servicos"
-              search={{ status: s.valor }}
               className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
             >
               <span className="text-3xl font-extrabold text-primary">{s.total}</span>
@@ -259,7 +258,6 @@ function Pagina() {
           </Link>
           <Link
             to="/orcamentos"
-            search={{ status: "enviado" }}
             className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
           >
             <span className="text-3xl font-extrabold text-primary">
@@ -269,7 +267,6 @@ function Pagina() {
           </Link>
           <Link
             to="/orcamentos"
-            search={{ status: "aprovado" }}
             className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
           >
             <span className="text-3xl font-extrabold text-primary">
