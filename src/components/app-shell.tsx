@@ -15,6 +15,7 @@ import {
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import logoPadraoAsset from "@/assets/ativa-consultoria-logo.png.asset.json";
 
 const ITENS = [
   { to: "/inicio", rotulo: "Início", Icone: Home },
@@ -136,15 +137,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function Marca({ nome, logo }: { nome: string; logo: string | null }) {
+  const logoExibido = logo?.trim() || logoPadraoAsset.url;
+
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {logo ? (
-        <img src={logo} alt={nome} className="size-11 rounded-xl object-contain" />
-      ) : (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-extrabold text-primary-foreground">
-          {nome.trim().charAt(0).toUpperCase() || "?"}
-        </span>
-      )}
+      <span className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background p-1 ring-1 ring-border">
+        <img
+          src={logoExibido}
+          alt={`Logo ${nome || "Ativa Consultoria"}`}
+          className="h-full w-full object-contain"
+        />
+      </span>
       <span className="truncate text-lg font-extrabold text-foreground">{nome}</span>
     </div>
   );
