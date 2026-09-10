@@ -46,7 +46,10 @@ type Ordem = {
   prazo: string | null;
   criado_em: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
-  imoveis: { nome: string | null; municipio: string | null } | { nome: string | null; municipio: string | null }[] | null;
+  imoveis:
+    | { nome: string | null; municipio: string | null }
+    | { nome: string | null; municipio: string | null }[]
+    | null;
 };
 
 function um<T>(v: T | T[] | null): T | null {
@@ -176,7 +179,9 @@ function Cartao({ ordem }: { ordem: Ordem }) {
           <p className="mt-1 text-base font-bold text-primary">{rotulo(ordem.servico)}</p>
         </div>
         <div className="shrink-0 text-right">
-          <span className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-extrabold ${sem.cor}`}>
+          <span
+            className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-extrabold ${sem.cor}`}
+          >
             <span className="size-2.5 rounded-full bg-current" />
             {sem.texto || "—"}
           </span>
@@ -277,8 +282,7 @@ function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void })
       toast.success("Ordem de serviço criada.");
       void navigate({ to: "/servicos/$id", params: { id: osId } });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível criar a OS."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível criar a OS."),
   });
 
   return (

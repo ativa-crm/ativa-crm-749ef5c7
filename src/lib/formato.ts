@@ -29,15 +29,16 @@ export function mascaraDocumento(v: string, tipo: string): string {
 export function mascaraTelefone(v: string): string {
   const d = soDigitos(v).slice(0, 11);
   if (d.length <= 10) {
-    return d
-      .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/^\((\d{2})\) (\d{4})(\d)/, "($1) $2-$3");
+    return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/^\((\d{2})\) (\d{4})(\d)/, "($1) $2-$3");
   }
   return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/^\((\d{2})\) (\d{5})(\d)/, "($1) $2-$3");
 }
 
 export function mascaraUF(v: string): string {
-  return (v ?? "").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase();
+  return (v ?? "")
+    .replace(/[^a-zA-Z]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 /** Converte texto digitado com vírgula decimal em número. */

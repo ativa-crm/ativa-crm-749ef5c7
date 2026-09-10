@@ -167,8 +167,8 @@ function Pagina() {
       <header className="mb-4">
         <h1 className="text-2xl font-extrabold uppercase text-foreground md:text-3xl">Funil</h1>
         <p className="text-base font-semibold text-muted-foreground">
-          {lista.length} {lista.length === 1 ? "oportunidade ativa" : "oportunidades ativas"} · arraste
-          ou use “mover para”
+          {lista.length} {lista.length === 1 ? "oportunidade ativa" : "oportunidades ativas"} ·
+          arraste ou use “mover para”
         </p>
       </header>
 

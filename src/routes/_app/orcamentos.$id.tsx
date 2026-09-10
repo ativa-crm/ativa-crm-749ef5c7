@@ -24,7 +24,8 @@ export const Route = createFileRoute("/_app/orcamentos/$id")({
       { title: "Orçamento | CRM de Topografia" },
       {
         name: "description",
-        content: "Itens, desconto, validade e status do orçamento, com criação da ordem de serviço.",
+        content:
+          "Itens, desconto, validade e status do orçamento, com criação da ordem de serviço.",
       },
       { property: "og:title", content: "Orçamento | CRM de Topografia" },
       {
@@ -148,7 +149,13 @@ function Pagina() {
   });
 
   const salvarItem = useMutation({
-    mutationFn: async ({ itemId, mudanca }: { itemId: string; mudanca: Record<string, unknown> }) => {
+    mutationFn: async ({
+      itemId,
+      mudanca,
+    }: {
+      itemId: string;
+      mudanca: Record<string, unknown>;
+    }) => {
       const { error } = await supabase.from("orcamento_itens").update(mudanca).eq("id", itemId);
       if (error) throw error;
     },
@@ -193,10 +200,10 @@ function Pagina() {
           p_tipo: "orcamento",
         });
         if (erroRpc) throw erroRpc;
-        mudanca['numero'] = numeroNovo;
+        mudanca["numero"] = numeroNovo;
       }
       if (novo === "enviado" && !orcamento.enviado_em) {
-        mudanca['enviado_em'] = new Date().toISOString();
+        mudanca["enviado_em"] = new Date().toISOString();
       }
 
       const { error } = await supabase.from("orcamentos").update(mudanca).eq("id", id);
@@ -261,9 +268,7 @@ function Pagina() {
         <Link to="/orcamentos" className="text-lg font-extrabold text-primary">
           Voltar para orçamentos
         </Link>
-        <p className="mt-4 text-lg font-semibold text-destructive">
-          Orçamento não encontrado.
-        </p>
+        <p className="mt-4 text-lg font-semibold text-destructive">Orçamento não encontrado.</p>
       </section>
     );
   }
