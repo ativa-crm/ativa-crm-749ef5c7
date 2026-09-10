@@ -12,12 +12,14 @@ import {
   Trash2,
   User,
   ExternalLink,
+  Satellite,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Bloco, Campo, CampoLongo, CampoOpcoes, Grade } from "@/components/campos";
 import { areaHa, data, mascaraUF, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
+import { ImportarKml } from "@/components/importar-kml";
 
 export const Route = createFileRoute("/_app/imoveis/$id")({
   head: () => ({
@@ -143,6 +145,30 @@ function Pagina() {
     },
   });
 
+  const pontosQuery = useQuery({
+    queryKey: ["imovel_pontos", id],
+    queryFn: async () => {
+      const { data: linhas, error } = await supabase
+        .from("imovel_pontos")
+        .select("id, codigo, lat, lon, lat_gms, lon_gms, utm_e, utm_n, utm_zona, origem")
+        .eq("imovel_id", id)
+        .order("codigo", { ascending: true });
+      if (error) throw error;
+      return (linhas ?? []) as {
+        id: string;
+        codigo: string | null;
+        lat: number;
+        lon: number;
+        lat_gms: string | null;
+        lon_gms: string | null;
+        utm_e: number | null;
+        utm_n: number | null;
+        utm_zona: string | null;
+        origem: string | null;
+      }[];
+    },
+  });
+
   const salvar = useMutation({
     mutationFn: async (campos: Record<string, unknown>) => {
       const { error } = await supabase.from("imoveis").update(campos).eq("id", id);
@@ -193,8 +219,7 @@ function Pagina() {
     );
   }
 
-  const troca = (campo: string) => (v: string) =>
-    salvar.mutate({ [campo]: v === "" ? null : v });
+  const troca = (campo: string) => (v: string) => salvar.mutate({ [campo]: v === "" ? null : v });
 
   return (
     <section className="space-y-4 pb-6">
@@ -242,12 +267,7 @@ function Pagina() {
             onSalvar={(v) => salvar.mutate({ area_ha: paraNumero(v) })}
           />
           <Campo rotulo="Município" valor={imovel.municipio ?? ""} onSalvar={troca("municipio")} />
-          <Campo
-            rotulo="UF"
-            valor={imovel.uf ?? ""}
-            mascara={mascaraUF}
-            onSalvar={troca("uf")}
-          />
+          <Campo rotulo="UF" valor={imovel.uf ?? ""} mascara={mascaraUF} onSalvar={troca("uf")} />
         </Grade>
 
         <div className="mt-4">
@@ -354,6 +374,43 @@ function Pagina() {
             }))}
           />
         </div>
+      </Bloco>
+
+      <Bloco titulo="Pontos GPS" Icone={Satellite} acao={<ImportarKml imovelId={id} />}>
+        {(pontosQuery.data ?? []).length === 0 ? (
+          <p className="text-lg font-medium text-muted-foreground">
+            Nenhum ponto importado. Use o botão acima para carregar o KML ou KMZ do imóvel.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse text-left">
+              <thead>
+                <tr className="text-sm font-extrabold uppercase text-muted-foreground">
+                  <th className="p-2">Código</th>
+                  <th className="p-2">Latitude</th>
+                  <th className="p-2">Longitude</th>
+                  <th className="p-2">UTM</th>
+                  <th className="p-2">Origem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(pontosQuery.data ?? []).map((p) => (
+                  <tr key={p.id} className="border-t-2 border-border text-base font-semibold">
+                    <td className="p-2 font-extrabold text-primary">{p.codigo ?? "—"}</td>
+                    <td className="p-2">{p.lat_gms || numero(p.lat, 6)}</td>
+                    <td className="p-2">{p.lon_gms || numero(p.lon, 6)}</td>
+                    <td className="p-2">
+                      {p.utm_e !== null && p.utm_n !== null
+                        ? `${numero(p.utm_e, 2)} E · ${numero(p.utm_n, 2)} N · ${p.utm_zona ?? ""}`
+                        : "—"}
+                    </td>
+                    <td className="p-2">{p.origem === "manual" ? "Manual" : "KML"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Bloco>
 
       <Bloco titulo="Documentos" Icone={ClipboardList}>

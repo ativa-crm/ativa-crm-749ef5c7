@@ -8,6 +8,7 @@ import {
   Filter,
   Wrench,
   FileText,
+  Route as RotaIcone,
   LogOut,
   Loader2,
   ShieldAlert,
@@ -24,6 +25,7 @@ const ITENS = [
   { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/servicos", rotulo: "Serviços", Icone: Wrench },
   { to: "/orcamentos", rotulo: "Orçamentos", Icone: FileText },
+  { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
 ] as const;
 
 function useSair() {
@@ -118,11 +120,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="md:pl-64">
-        <div className="app-content mx-auto w-full max-w-5xl px-4 pb-28 pt-6 md:px-6 md:pb-10 md:pt-8">{children}</div>
+        <div className="app-content mx-auto w-full max-w-5xl px-4 pb-28 pt-6 md:px-6 md:pb-10 md:pt-8">
+          {children}
+        </div>
       </div>
 
       {/* Barra inferior (celular) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-7 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
         {ITENS.map(({ to, rotulo, Icone }) => (
           <Link
             key={to}
@@ -151,7 +155,9 @@ function Marca({ nome, logo }: { nome: string; logo: string | null }) {
           className="h-full w-full object-contain"
         />
       </span>
-      <span className="truncate text-base font-extrabold uppercase text-sidebar-foreground">{nome}</span>
+      <span className="truncate text-base font-extrabold uppercase text-sidebar-foreground">
+        {nome}
+      </span>
     </div>
   );
 }

@@ -222,7 +222,9 @@ function Pagina() {
             className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-base font-extrabold ${sem.cor}`}
           >
             <CalendarClock className="size-5" strokeWidth={2.5} />
-            {ordem.prazo ? `${dataBR(ordem.prazo)} · ${sem.texto || rotulo(ordem.status)}` : "sem prazo"}
+            {ordem.prazo
+              ? `${dataBR(ordem.prazo)} · ${sem.texto || rotulo(ordem.status)}`
+              : "sem prazo"}
           </span>
         </div>
 
@@ -231,11 +233,7 @@ function Pagina() {
             <span className="text-base font-bold text-foreground">Cliente</span>
             <p className="text-lg font-semibold">
               {ordem.cliente_id ? (
-                <Link
-                  to="/clientes/$id"
-                  params={{ id: ordem.cliente_id }}
-                  className="text-primary"
-                >
+                <Link to="/clientes/$id" params={{ id: ordem.cliente_id }} className="text-primary">
                   {ordem.clientes?.nome ?? "ver cliente"}
                 </Link>
               ) : (
@@ -247,11 +245,7 @@ function Pagina() {
             <span className="text-base font-bold text-foreground">Imóvel</span>
             <p className="text-lg font-semibold">
               {ordem.imovel_id ? (
-                <Link
-                  to="/imoveis/$id"
-                  params={{ id: ordem.imovel_id }}
-                  className="text-primary"
-                >
+                <Link to="/imoveis/$id" params={{ id: ordem.imovel_id }} className="text-primary">
                   {ordem.imoveis?.nome ?? "ver imóvel"}
                   {ordem.imoveis?.municipio ? ` · ${ordem.imoveis.municipio}` : ""}
                 </Link>
@@ -312,9 +306,7 @@ function Pagina() {
 
           <div>
             <span className="text-base font-bold text-foreground">Aberta em</span>
-            <p className="text-lg font-semibold text-muted-foreground">
-              {dataBR(ordem.criado_em)}
-            </p>
+            <p className="text-lg font-semibold text-muted-foreground">{dataBR(ordem.criado_em)}</p>
           </div>
         </div>
       </header>
@@ -347,9 +339,7 @@ function Pagina() {
                   >
                     <Checkbox
                       checked={feita}
-                      onCheckedChange={(v) =>
-                        marcarEtapa.mutate({ etapa, marcar: v === true })
-                      }
+                      onCheckedChange={(v) => marcarEtapa.mutate({ etapa, marcar: v === true })}
                       className="mt-1 size-7 rounded-md border-2"
                       aria-label={etapa.nome ?? "etapa"}
                     />

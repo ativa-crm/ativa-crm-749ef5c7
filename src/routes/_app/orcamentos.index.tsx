@@ -79,7 +79,11 @@ function Pagina() {
   const [filtro, setFiltro] = useState<string>("");
   const [novoAberto, setNovoAberto] = useState(false);
 
-  const { data: orcamentos, isPending, error } = useQuery({
+  const {
+    data: orcamentos,
+    isPending,
+    error,
+  } = useQuery({
     queryKey: ["orcamentos"],
     queryFn: async (): Promise<Linha[]> => {
       const { data: linhas, error: erro } = await supabase
@@ -238,7 +242,12 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
         .eq("cliente_id", clienteId as string)
         .order("nome");
       if (error) throw error;
-      return (linhas ?? []) as { id: string; nome: string; municipio: string | null; uf: string | null }[];
+      return (linhas ?? []) as {
+        id: string;
+        nome: string;
+        municipio: string | null;
+        uf: string | null;
+      }[];
     },
     enabled: aberto && !!clienteId,
   });
@@ -373,8 +382,8 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
               </div>
             ) : (imoveisQuery.data ?? []).length === 0 ? (
               <p className="mt-3 text-base font-semibold text-muted-foreground">
-                Este cliente ainda não tem imóveis cadastrados. Cadastre o imóvel na tela de
-                Imóveis antes de fazer o orçamento.
+                Este cliente ainda não tem imóveis cadastrados. Cadastre o imóvel na tela de Imóveis
+                antes de fazer o orçamento.
               </p>
             ) : (
               <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
@@ -450,7 +459,9 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
                 </div>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-lg font-extrabold text-foreground">
-                    {reais((paraNumero(item.quantidade) ?? 0) * (paraNumero(item.valor_unitario) ?? 0))}
+                    {reais(
+                      (paraNumero(item.quantidade) ?? 0) * (paraNumero(item.valor_unitario) ?? 0),
+                    )}
                   </span>
                   {itens.length > 1 ? (
                     <button
@@ -468,7 +479,10 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
               type="button"
               variant="outline"
               onClick={() =>
-                setItens((atual) => [...atual, { descricao: "", quantidade: "1", valor_unitario: "" }])
+                setItens((atual) => [
+                  ...atual,
+                  { descricao: "", quantidade: "1", valor_unitario: "" },
+                ])
               }
               className="h-14 w-full rounded-xl border-2 text-lg font-extrabold"
             >
@@ -550,4 +564,3 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
     </Dialog>
   );
 }
-

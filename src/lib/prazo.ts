@@ -33,10 +33,7 @@ export type Semaforo = {
 };
 
 /** Cor e texto do prazo: >7 dias verde, 7 a 3 âmbar, <3 ou vencido vermelho. */
-export function semaforoPrazo(
-  prazo: string | null | undefined,
-  status?: string | null,
-): Semaforo {
+export function semaforoPrazo(prazo: string | null | undefined, status?: string | null): Semaforo {
   const dias = diasAtePrazo(prazo);
   if (dias === null || (status && STATUS_ENCERRADOS.includes(status))) {
     return {

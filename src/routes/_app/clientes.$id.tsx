@@ -1,15 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  ArrowLeft,
-  Loader2,
-  MapPinned,
-  Phone,
-  ScrollText,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeft, Loader2, MapPinned, Phone, ScrollText, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Bloco, Campo, CampoLongo, CampoOpcoes, Grade } from "@/components/campos";
@@ -183,8 +175,7 @@ function Pagina() {
   }
 
   const pj = (cliente.tipo ?? "pf") === "pj";
-  const troca = (campo: string) => (v: string) =>
-    salvar.mutate({ [campo]: v === "" ? null : v });
+  const troca = (campo: string) => (v: string) => salvar.mutate({ [campo]: v === "" ? null : v });
 
   return (
     <section className="space-y-4 pb-6">
@@ -261,12 +252,7 @@ function Pagina() {
             onSalvar={troca("email")}
           />
           <Campo rotulo="Cidade" valor={cliente.cidade ?? ""} onSalvar={troca("cidade")} />
-          <Campo
-            rotulo="UF"
-            valor={cliente.uf ?? ""}
-            mascara={mascaraUF}
-            onSalvar={troca("uf")}
-          />
+          <Campo rotulo="UF" valor={cliente.uf ?? ""} mascara={mascaraUF} onSalvar={troca("uf")} />
           <Campo
             rotulo="Endereço"
             valor={cliente.endereco ?? ""}
@@ -318,7 +304,9 @@ function Pagina() {
                     </span>
                   </span>
                   <span className="shrink-0 text-base font-extrabold text-foreground">
-                    {i.area_ha !== null && i.area_ha !== undefined ? areaHa(i.area_ha as number) : ""}
+                    {i.area_ha !== null && i.area_ha !== undefined
+                      ? areaHa(i.area_ha as number)
+                      : ""}
                   </span>
                 </Link>
               </li>

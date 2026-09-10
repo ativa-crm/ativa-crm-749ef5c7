@@ -45,7 +45,10 @@ type OS = {
   status: string | null;
   prazo: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
-  imoveis: { nome: string | null; municipio: string | null } | { nome: string | null; municipio: string | null }[] | null;
+  imoveis:
+    | { nome: string | null; municipio: string | null }
+    | { nome: string | null; municipio: string | null }[]
+    | null;
 };
 
 function um<T>(v: T | T[] | null | undefined): T | null {
@@ -81,7 +84,8 @@ function Pagina() {
 
       const ultima: Record<string, string> = {};
       for (const m of (msgs ?? []) as { oportunidade_id: string | null; criado_em: string }[]) {
-        if (m.oportunidade_id && !ultima[m.oportunidade_id]) ultima[m.oportunidade_id] = m.criado_em;
+        if (m.oportunidade_id && !ultima[m.oportunidade_id])
+          ultima[m.oportunidade_id] = m.criado_em;
       }
       return { leads, ultima };
     },
@@ -188,7 +192,9 @@ function Pagina() {
                         {um(l.clientes)?.nome?.trim() || "Sem cliente"}
                       </span>
                       <span className="block truncate text-base font-semibold text-muted-foreground">
-                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)].filter(Boolean).join(" · ")}
+                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       <span className="block text-base font-bold text-destructive">
                         sem contato {desdeAgora(ultima)}
@@ -239,7 +245,9 @@ function Pagina() {
               className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
             >
               <span className="text-3xl font-extrabold text-primary">{s.total}</span>
-              <span className="text-sm font-bold uppercase leading-tight text-foreground">{s.rotulo}</span>
+              <span className="text-sm font-bold uppercase leading-tight text-foreground">
+                {s.rotulo}
+              </span>
             </Link>
           ))}
         </div>
@@ -253,7 +261,9 @@ function Pagina() {
             to="/funil"
             className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
-            <span className="text-3xl font-extrabold text-primary">{mesQuery.data?.leads ?? 0}</span>
+            <span className="text-3xl font-extrabold text-primary">
+              {mesQuery.data?.leads ?? 0}
+            </span>
             <span className="text-sm font-bold uppercase text-foreground">Leads recebidos</span>
           </Link>
           <Link
@@ -272,7 +282,9 @@ function Pagina() {
             <span className="text-3xl font-extrabold text-primary">
               {mesQuery.data?.aprovados ?? 0}
             </span>
-            <span className="text-sm font-bold uppercase text-foreground">Orçamentos aprovados</span>
+            <span className="text-sm font-bold uppercase text-foreground">
+              Orçamentos aprovados
+            </span>
           </Link>
         </div>
       </section>

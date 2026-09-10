@@ -261,7 +261,9 @@ function Pagina() {
 
   const cliente = clienteQuery.data ?? null;
   const telefone = soDigitos(cliente?.telefone ?? "");
-  const whatsapp = telefone ? `https://wa.me/${telefone.length <= 11 ? `55${telefone}` : telefone}` : null;
+  const whatsapp = telefone
+    ? `https://wa.me/${telefone.length <= 11 ? `55${telefone}` : telefone}`
+    : null;
   const imovel = (imoveisQuery.data ?? []).find((i) => i.id === oportunidade.imovel_id) ?? null;
   const mensagens = mensagensQuery.data ?? [];
 
@@ -291,10 +293,7 @@ function Pagina() {
 
       <div className="flex flex-wrap gap-2">
         {whatsapp ? (
-          <Button
-            asChild
-            className="h-14 flex-1 rounded-xl text-lg font-extrabold"
-          >
+          <Button asChild className="h-14 flex-1 rounded-xl text-lg font-extrabold">
             <a href={whatsapp} target="_blank" rel="noreferrer">
               <MessageCircle className="size-5" strokeWidth={2.5} />
               Abrir no WhatsApp

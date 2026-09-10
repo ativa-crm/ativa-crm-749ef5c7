@@ -18,6 +18,8 @@ import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.ind
 import { Route as AppClientesIdRouteImport } from './routes/_app/clientes.$id'
 import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 import { Route as AppImoveisIdRouteImport } from './routes/_app/imoveis.$id'
+import { Route as AppMedicaoIndexRouteImport } from './routes/_app/medicao.index'
+import { Route as AppMedicaoIdRouteImport } from './routes/_app/medicao.$id'
 import { Route as AppOportunidadesIdRouteImport } from './routes/_app/oportunidades.$id'
 import { Route as AppOrcamentosIndexRouteImport } from './routes/_app/orcamentos.index'
 import { Route as AppOrcamentosIdRouteImport } from './routes/_app/orcamentos.$id'
@@ -68,6 +70,16 @@ const AppImoveisIdRoute = AppImoveisIdRouteImport.update({
   path: '/imoveis/$id',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppMedicaoIndexRoute = AppMedicaoIndexRouteImport.update({
+  id: '/medicao/',
+  path: '/medicao/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppMedicaoIdRoute = AppMedicaoIdRouteImport.update({
+  id: '/medicao/$id',
+  path: '/medicao/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppOportunidadesIdRoute = AppOportunidadesIdRouteImport.update({
   id: '/oportunidades/$id',
   path: '/oportunidades/$id',
@@ -101,11 +113,13 @@ export interface FileRoutesByFullPath {
   '/inicio': typeof AppInicioRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/medicao/$id': typeof AppMedicaoIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/servicos/$id': typeof AppServicosIdRoute
   '/clientes/': typeof AppClientesIndexRoute
   '/imoveis/': typeof AppImoveisIndexRoute
+  '/medicao/': typeof AppMedicaoIndexRoute
   '/orcamentos/': typeof AppOrcamentosIndexRoute
   '/servicos/': typeof AppServicosIndexRoute
 }
@@ -116,11 +130,13 @@ export interface FileRoutesByTo {
   '/inicio': typeof AppInicioRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
+  '/medicao/$id': typeof AppMedicaoIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/servicos/$id': typeof AppServicosIdRoute
   '/clientes': typeof AppClientesIndexRoute
   '/imoveis': typeof AppImoveisIndexRoute
+  '/medicao': typeof AppMedicaoIndexRoute
   '/orcamentos': typeof AppOrcamentosIndexRoute
   '/servicos': typeof AppServicosIndexRoute
 }
@@ -133,11 +149,13 @@ export interface FileRoutesById {
   '/_app/inicio': typeof AppInicioRoute
   '/_app/clientes/$id': typeof AppClientesIdRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
+  '/_app/medicao/$id': typeof AppMedicaoIdRoute
   '/_app/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/_app/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/_app/servicos/$id': typeof AppServicosIdRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/imoveis/': typeof AppImoveisIndexRoute
+  '/_app/medicao/': typeof AppMedicaoIndexRoute
   '/_app/orcamentos/': typeof AppOrcamentosIndexRoute
   '/_app/servicos/': typeof AppServicosIndexRoute
 }
@@ -150,11 +168,13 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/clientes/$id'
     | '/imoveis/$id'
+    | '/medicao/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
     | '/servicos/$id'
     | '/clientes/'
     | '/imoveis/'
+    | '/medicao/'
     | '/orcamentos/'
     | '/servicos/'
   fileRoutesByTo: FileRoutesByTo
@@ -165,11 +185,13 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/clientes/$id'
     | '/imoveis/$id'
+    | '/medicao/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
     | '/servicos/$id'
     | '/clientes'
     | '/imoveis'
+    | '/medicao'
     | '/orcamentos'
     | '/servicos'
   id:
@@ -181,11 +203,13 @@ export interface FileRouteTypes {
     | '/_app/inicio'
     | '/_app/clientes/$id'
     | '/_app/imoveis/$id'
+    | '/_app/medicao/$id'
     | '/_app/oportunidades/$id'
     | '/_app/orcamentos/$id'
     | '/_app/servicos/$id'
     | '/_app/clientes/'
     | '/_app/imoveis/'
+    | '/_app/medicao/'
     | '/_app/orcamentos/'
     | '/_app/servicos/'
   fileRoutesById: FileRoutesById
@@ -261,6 +285,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppImoveisIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/medicao/': {
+      id: '/_app/medicao/'
+      path: '/medicao'
+      fullPath: '/medicao/'
+      preLoaderRoute: typeof AppMedicaoIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/medicao/$id': {
+      id: '/_app/medicao/$id'
+      path: '/medicao/$id'
+      fullPath: '/medicao/$id'
+      preLoaderRoute: typeof AppMedicaoIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/oportunidades/$id': {
       id: '/_app/oportunidades/$id'
       path: '/oportunidades/$id'
@@ -304,11 +342,13 @@ interface AppRouteRouteChildren {
   AppInicioRoute: typeof AppInicioRoute
   AppClientesIdRoute: typeof AppClientesIdRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
+  AppMedicaoIdRoute: typeof AppMedicaoIdRoute
   AppOportunidadesIdRoute: typeof AppOportunidadesIdRoute
   AppOrcamentosIdRoute: typeof AppOrcamentosIdRoute
   AppServicosIdRoute: typeof AppServicosIdRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppImoveisIndexRoute: typeof AppImoveisIndexRoute
+  AppMedicaoIndexRoute: typeof AppMedicaoIndexRoute
   AppOrcamentosIndexRoute: typeof AppOrcamentosIndexRoute
   AppServicosIndexRoute: typeof AppServicosIndexRoute
 }
@@ -318,11 +358,13 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppInicioRoute: AppInicioRoute,
   AppClientesIdRoute: AppClientesIdRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
+  AppMedicaoIdRoute: AppMedicaoIdRoute,
   AppOportunidadesIdRoute: AppOportunidadesIdRoute,
   AppOrcamentosIdRoute: AppOrcamentosIdRoute,
   AppServicosIdRoute: AppServicosIdRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
   AppImoveisIndexRoute: AppImoveisIndexRoute,
+  AppMedicaoIndexRoute: AppMedicaoIndexRoute,
   AppOrcamentosIndexRoute: AppOrcamentosIndexRoute,
   AppServicosIndexRoute: AppServicosIndexRoute,
 }

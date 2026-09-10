@@ -44,7 +44,11 @@ function Pagina() {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState("");
 
-  const { data: clientes, isPending, error } = useQuery({
+  const {
+    data: clientes,
+    isPending,
+    error,
+  } = useQuery({
     queryKey: ["clientes"],
     queryFn: async (): Promise<Linha[]> => {
       const { data, error: erro } = await supabase
