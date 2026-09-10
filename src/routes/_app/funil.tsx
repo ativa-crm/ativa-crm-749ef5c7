@@ -165,7 +165,7 @@ function Pagina() {
   return (
     <section className="pb-4">
       <header className="mb-4">
-        <h1 className="text-2xl font-extrabold text-foreground md:text-3xl">Funil</h1>
+        <h1 className="text-2xl font-extrabold uppercase text-foreground md:text-3xl">Funil</h1>
         <p className="text-base font-semibold text-muted-foreground">
           {lista.length} {lista.length === 1 ? "oportunidade ativa" : "oportunidades ativas"} · arraste
           ou use “mover para”
@@ -198,13 +198,13 @@ function Pagina() {
                   cliente: nomeCliente(cartao),
                 });
               }}
-              className={`w-[85vw] shrink-0 snap-start rounded-3xl border-2 p-3 transition-colors sm:w-72 ${
-                alvo ? "border-primary bg-primary/10" : "border-border bg-muted/40"
+              className={`w-[85vw] shrink-0 snap-start rounded-xl border p-3 transition-colors duration-200 sm:w-72 ${
+                alvo ? "border-primary bg-primary/10" : "border-border bg-background-light"
               }`}
             >
               <header className="mb-3 flex items-center justify-between gap-2 px-1">
-                <h2 className="text-lg font-extrabold text-foreground">{estagio.rotulo}</h2>
-                <span className="rounded-full bg-card px-2.5 py-1 text-base font-extrabold text-foreground">
+                <h2 className="text-lg font-bold uppercase text-foreground">{estagio.rotulo}</h2>
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
                   {cartoes.length}
                 </span>
               </header>
@@ -219,7 +219,7 @@ function Pagina() {
                       e.dataTransfer.setData("text/plain", o.id);
                     }}
                     onDragEnd={() => setArrastando(null)}
-                    className={`rounded-2xl border-2 border-border bg-card p-3 shadow-sm ${
+                    className={`rounded-xl border border-border bg-card p-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 ${
                       arrastando === o.id ? "opacity-50" : ""
                     }`}
                   >
