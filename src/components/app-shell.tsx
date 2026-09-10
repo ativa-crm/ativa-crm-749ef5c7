@@ -70,62 +70,65 @@ export function AppShell({ children }: { children: ReactNode }) {
   const logo = perfil?.empresa?.logo_url ?? null;
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-background-light">
       {/* Barra lateral (desktop) */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r-2 border-border bg-card p-4 md:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar p-4 text-sidebar-foreground md:flex">
         <Marca nome={nomeEmpresa} logo={logo} />
         <nav className="mt-6 flex flex-1 flex-col gap-1">
           {ITENS.map(({ to, rotulo, Icone }) => (
             <Link
               key={to}
               to={to}
-              activeProps={{ className: "bg-primary text-primary-foreground" }}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-lg font-bold text-foreground transition-colors hover:bg-accent"
+              activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
+              className="flex items-center gap-3 rounded-[10px] px-4 py-3 text-base font-bold uppercase text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               <Icone className="size-6" strokeWidth={2.5} />
               {rotulo}
             </Link>
           ))}
         </nav>
-        <div className="border-t-2 border-border pt-3">
-          <p className="px-2 pb-2 text-sm font-semibold text-muted-foreground">
+        <div className="border-t border-sidebar-border pt-3">
+          <p className="px-2 pb-2 text-sm font-semibold text-muted">
             {perfil?.nome ?? ""}
             {perfil?.papel ? ` · ${perfil.papel}` : ""}
           </p>
-          <button
+          <Button
+            variant="ghost"
             onClick={sair}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-bold text-foreground hover:bg-accent"
+            className="flex h-auto w-full justify-start gap-3 rounded-[10px] px-4 py-3 text-base font-bold text-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <LogOut className="size-5" strokeWidth={2.5} />
             Sair
-          </button>
+          </Button>
         </div>
       </aside>
 
       {/* Cabeçalho (celular) */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b-2 border-border bg-card px-4 py-3 md:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 py-3 text-sidebar-foreground md:hidden">
         <Marca nome={nomeEmpresa} logo={logo} />
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={sair}
           aria-label="Sair"
-          className="flex size-12 items-center justify-center rounded-xl border-2 border-border text-foreground"
+          className="size-12 rounded-full border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
         >
           <LogOut className="size-6" strokeWidth={2.5} />
-        </button>
+        </Button>
       </header>
 
       <div className="md:pl-64">
-        <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 md:pb-10">{children}</div>
+        <div className="app-content mx-auto w-full max-w-5xl px-4 pb-28 pt-6 md:px-6 md:pb-10 md:pt-8">{children}</div>
       </div>
 
       {/* Barra inferior (celular) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t-2 border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
         {ITENS.map(({ to, rotulo, Icone }) => (
           <Link
             key={to}
             to={to}
             activeProps={{ className: "text-primary" }}
-            className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-muted-foreground"
+            className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-muted transition-colors duration-200 hover:bg-sidebar-accent"
           >
             <Icone className="size-6" strokeWidth={2.5} />
             <span className="text-[11px] font-bold leading-none">{rotulo}</span>
@@ -141,14 +144,14 @@ function Marca({ nome, logo }: { nome: string; logo: string | null }) {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-background p-1 ring-1 ring-border">
+      <span className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-card p-1 ring-1 ring-sidebar-border">
         <img
           src={logoExibido}
           alt={`Logo ${nome || "Ativa Consultoria"}`}
           className="h-full w-full object-contain"
         />
       </span>
-      <span className="truncate text-lg font-extrabold text-foreground">{nome}</span>
+      <span className="truncate text-base font-extrabold uppercase text-sidebar-foreground">{nome}</span>
     </div>
   );
 }
