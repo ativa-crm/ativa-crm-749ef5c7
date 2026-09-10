@@ -158,7 +158,7 @@ function Pagina() {
 
       {/* 1. Precisam de você agora */}
       <section>
-        <h2 className="mb-3 flex items-center gap-2 text-xl font-extrabold text-foreground">
+        <h2 className="mb-3 flex items-center gap-2 text-xl font-bold uppercase text-foreground">
           <AlertTriangle className="size-6 text-destructive" strokeWidth={2.5} />
           Precisam de você agora
         </h2>
@@ -168,7 +168,7 @@ function Pagina() {
             <Loader2 className="size-8 animate-spin text-primary" />
           </div>
         ) : semContato.length === 0 && osUrgentes.length === 0 ? (
-          <p className="rounded-2xl border-2 border-border bg-card px-4 py-5 text-lg font-semibold text-muted-foreground">
+          <p className="rounded-[14px] border border-border border-l-4 border-l-primary bg-card px-4 py-5 text-lg font-semibold text-foreground shadow-card">
             Nada urgente por aqui. Bom trabalho.
           </p>
         ) : (
@@ -230,16 +230,16 @@ function Pagina() {
 
       {/* 2. Em andamento */}
       <section>
-        <h2 className="mb-3 text-xl font-extrabold text-foreground">Em andamento</h2>
+        <h2 className="mb-3 text-xl font-bold uppercase text-foreground">Em andamento</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {porStatus.map((s) => (
             <Link
               key={s.valor}
               to="/servicos"
-              className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
+              className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
             >
               <span className="text-3xl font-extrabold text-primary">{s.total}</span>
-              <span className="text-base font-bold leading-tight text-foreground">{s.rotulo}</span>
+              <span className="text-sm font-bold uppercase leading-tight text-foreground">{s.rotulo}</span>
             </Link>
           ))}
         </div>
@@ -247,32 +247,32 @@ function Pagina() {
 
       {/* 3. Este mês */}
       <section>
-        <h2 className="mb-3 text-xl font-extrabold text-foreground">Este mês</h2>
+        <h2 className="mb-3 text-xl font-bold uppercase text-foreground">Este mês</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
             to="/funil"
-            className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
             <span className="text-3xl font-extrabold text-primary">{mesQuery.data?.leads ?? 0}</span>
-            <span className="text-base font-bold text-foreground">Leads recebidos</span>
+            <span className="text-sm font-bold uppercase text-foreground">Leads recebidos</span>
           </Link>
           <Link
             to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
             <span className="text-3xl font-extrabold text-primary">
               {mesQuery.data?.enviados ?? 0}
             </span>
-            <span className="text-base font-bold text-foreground">Orçamentos enviados</span>
+            <span className="text-sm font-bold uppercase text-foreground">Orçamentos enviados</span>
           </Link>
           <Link
             to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-2xl border-2 border-border bg-card px-4 py-3 shadow-sm active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
             <span className="text-3xl font-extrabold text-primary">
               {mesQuery.data?.aprovados ?? 0}
             </span>
-            <span className="text-base font-bold text-foreground">Orçamentos aprovados</span>
+            <span className="text-sm font-bold uppercase text-foreground">Orçamentos aprovados</span>
           </Link>
         </div>
       </section>
