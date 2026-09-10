@@ -217,6 +217,12 @@
     transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
   }
 
+  .app-content [class*="bg-card"][class*="rounded-2xl"],
+  .app-content [class*="bg-card"][class*="rounded-3xl"] {
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+  }
+
   .app-content article:hover,
   .app-content a[class*="bg-card"]:hover {
     box-shadow: var(--card-shadow);

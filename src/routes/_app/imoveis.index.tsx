@@ -161,7 +161,7 @@ function Pagina() {
               key={t}
               type="button"
               onClick={() => setTipo(t)}
-              className={`h-12 flex-1 rounded-xl border-2 text-base font-extrabold ${
+              className={`h-12 flex-1 rounded-full border text-base font-extrabold uppercase transition-colors duration-200 ${
                 tipo === t
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground"

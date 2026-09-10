@@ -137,7 +137,7 @@ function Pagina() {
               key={s.valor || "todos"}
               type="button"
               onClick={() => setFiltro(s.valor)}
-              className={`h-12 rounded-xl border-2 px-4 text-base font-extrabold transition-colors ${
+              className={`h-12 rounded-full border px-4 text-base font-extrabold uppercase transition-colors duration-200 ${
                 ativo
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground hover:bg-accent"
