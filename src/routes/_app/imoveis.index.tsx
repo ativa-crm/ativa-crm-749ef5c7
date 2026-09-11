@@ -196,7 +196,7 @@ function Pagina() {
           Nenhum imóvel encontrado com esses filtros.
         </p>
       ) : (
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-4 space-y-2.5">
           {filtrados.map((i) => {
             const status = statusPorImovel?.[i.id];
             return (
@@ -204,27 +204,28 @@ function Pagina() {
                 <Link
                   to="/imoveis/$id"
                   params={{ id: i.id }}
-                  className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border bg-card p-4 transition-colors hover:bg-accent"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-xl font-extrabold text-foreground">{i.nome}</p>
-                    <p className="mt-0.5 truncate text-base font-semibold text-muted-foreground">
+                    <p className="truncate text-lg font-bold text-foreground">{i.nome}</p>
+                    <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">
                       {i.municipio || "Município não informado"}
                       {i.uf ? ` · ${i.uf}` : ""} · {rotulo(i.tipo ?? "rural")}
                     </p>
-                    <p className="mt-0.5 text-base font-bold text-foreground">
+                    <p className="mt-0.5 text-sm font-semibold text-foreground">
                       {i.area_ha !== null ? areaHa(i.area_ha) : "Área não informada"}
                     </p>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-xl px-3 py-2 text-sm font-extrabold ${
-                      status
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs"
                   >
+                    <span
+                      className={`size-2 rounded-full ${status ? "bg-primary" : "bg-muted"}`}
+                      aria-hidden
+                    />
                     {status ? rotulo(status) : "Sem serviço"}
-                  </span>
+                  </Badge>
                 </Link>
               </li>
             );
