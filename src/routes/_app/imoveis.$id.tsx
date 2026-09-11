@@ -456,7 +456,7 @@ function Pagina() {
                 variant="destructive"
                 onClick={() => excluir.mutate()}
                 disabled={excluir.isPending}
-                className="h-14 rounded-xl px-5 text-lg font-extrabold"
+                className="h-11 rounded-full px-4 text-base font-semibold"
               >
                 {excluir.isPending ? <Loader2 className="size-6 animate-spin" /> : null}
                 Sim, excluir

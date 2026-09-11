@@ -158,7 +158,7 @@ function Pagina() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-extrabold text-foreground">Início</h1>
+      <h1 className="text-2xl font-bold text-foreground">Início</h1>
 
       {/* 1. Precisam de você agora */}
       <section>

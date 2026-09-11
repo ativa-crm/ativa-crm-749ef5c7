@@ -7,6 +7,7 @@ import { usePerfil } from "@/lib/perfil";
 import { areaHa, rotulo, soDigitos } from "@/lib/formato";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_app/imoveis/")({
   head: () => ({
@@ -123,14 +124,14 @@ function Pagina() {
   return (
     <section>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-3xl font-extrabold text-foreground">
-          <MapPinned className="size-8 text-primary" strokeWidth={2.5} />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+          <MapPinned className="size-6 text-primary" strokeWidth={2.5} />
           Imóveis
         </h1>
         <Button
           onClick={() => criar.mutate()}
           disabled={criar.isPending}
-          className="h-14 rounded-xl px-5 text-lg font-extrabold"
+          className="h-11 rounded-full px-4 text-base font-semibold"
         >
           {criar.isPending ? (
             <Loader2 className="size-6 animate-spin" />
@@ -141,31 +142,28 @@ function Pagina() {
         </Button>
       </header>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
             strokeWidth={2.5}
           />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome, município ou matrícula"
-            className="h-14 rounded-xl border-2 pl-12 text-lg font-semibold"
+            className="h-11 rounded-full border pl-11 text-base font-medium"
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="seg">
           {(["todos", "rural", "urbano"] as const).map((t) => (
             <button
               key={t}
               type="button"
+              data-ativo={tipo === t}
               onClick={() => setTipo(t)}
-              className={`h-12 flex-1 rounded-full border text-base font-extrabold uppercase transition-colors duration-200 ${
-                tipo === t
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground"
-              }`}
+              className="seg-item"
             >
               {t === "todos" ? "Todos" : rotulo(t)}
             </button>
@@ -175,7 +173,7 @@ function Pagina() {
         <select
           value={cidade}
           onChange={(e) => setCidade(e.target.value)}
-          className="h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+          className="h-11 w-full rounded-full border border-border bg-card px-4 text-base font-semibold text-foreground"
         >
           <option value="todas">Todas as cidades</option>
           {cidades.map((c) => (
@@ -199,7 +197,7 @@ function Pagina() {
           Nenhum imóvel encontrado com esses filtros.
         </p>
       ) : (
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-4 space-y-2.5">
           {filtrados.map((i) => {
             const status = statusPorImovel?.[i.id];
             return (
@@ -207,27 +205,28 @@ function Pagina() {
                 <Link
                   to="/imoveis/$id"
                   params={{ id: i.id }}
-                  className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border bg-card p-4 transition-colors hover:bg-accent"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-xl font-extrabold text-foreground">{i.nome}</p>
-                    <p className="mt-0.5 truncate text-base font-semibold text-muted-foreground">
+                    <p className="truncate text-lg font-bold text-foreground">{i.nome}</p>
+                    <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">
                       {i.municipio || "Município não informado"}
                       {i.uf ? ` · ${i.uf}` : ""} · {rotulo(i.tipo ?? "rural")}
                     </p>
-                    <p className="mt-0.5 text-base font-bold text-foreground">
+                    <p className="mt-0.5 text-sm font-semibold text-foreground">
                       {i.area_ha !== null ? areaHa(i.area_ha) : "Área não informada"}
                     </p>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-xl px-3 py-2 text-sm font-extrabold ${
-                      status
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs"
                   >
+                    <span
+                      className={`size-2 rounded-full ${status ? "bg-primary" : "bg-muted"}`}
+                      aria-hidden
+                    />
                     {status ? rotulo(status) : "Sem serviço"}
-                  </span>
+                  </Badge>
                 </Link>
               </li>
             );

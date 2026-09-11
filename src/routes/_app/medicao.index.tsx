@@ -69,13 +69,13 @@ function Pagina() {
   return (
     <section>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-3xl font-extrabold text-foreground">
-          <RotaIcone className="size-8 text-primary" strokeWidth={2.5} />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+          <RotaIcone className="size-6 text-primary" strokeWidth={2.5} />
           Medição
         </h1>
         <Button
           onClick={() => setNovoAberto(true)}
-          className="h-14 rounded-xl px-5 text-lg font-extrabold"
+          className="h-11 rounded-full px-4 text-base font-semibold"
         >
           <Plus className="size-6" strokeWidth={3} />
           Novo roteiro

@@ -291,7 +291,7 @@ function Pagina() {
           <ArrowLeft className="size-6" strokeWidth={2.5} />
         </Link>
         <div>
-          <h1 className="text-3xl font-extrabold text-foreground">
+          <h1 className="text-2xl font-bold text-foreground">
             {orcamento.numero ? `Orçamento nº ${orcamento.numero}` : "Orçamento (rascunho)"}
           </h1>
           <p className="text-base font-semibold text-muted-foreground">

@@ -93,13 +93,13 @@ function Pagina() {
   return (
     <section>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-3xl font-extrabold text-foreground">
-          <Wrench className="size-8 text-primary" strokeWidth={2.5} />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+          <Wrench className="size-6 text-primary" strokeWidth={2.5} />
           Serviços
         </h1>
         <Button
           onClick={() => setNovaAberta(true)}
-          className="h-14 rounded-xl px-5 text-lg font-extrabold"
+          className="h-11 rounded-full px-4 text-base font-semibold"
         >
           <Plus className="size-6" strokeWidth={3} />
           Nova OS
@@ -107,12 +107,12 @@ function Pagina() {
       </header>
 
       <div className="relative mt-4">
-        <Search className="absolute left-4 top-1/2 size-6 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por número, cliente, imóvel ou serviço"
-          className="h-14 rounded-xl border-2 pl-12 text-lg font-semibold"
+          className="h-11 rounded-full border pl-11 text-base font-medium"
         />
       </div>
 
