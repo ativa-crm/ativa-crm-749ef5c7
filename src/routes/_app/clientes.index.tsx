@@ -114,7 +114,7 @@ function Pagina() {
         </Button>
       </header>
 
-      <div className="relative mt-5">
+      <div className="relative mt-4">
         <Search
           className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
           strokeWidth={2.5}
@@ -138,33 +138,42 @@ function Pagina() {
       ) : filtrados.length === 0 ? (
         <p className="mt-8 text-lg font-medium text-muted-foreground">Nenhum cliente encontrado.</p>
       ) : (
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-4 space-y-2.5">
           {filtrados.map((c) => (
             <li key={c.id}>
               <Link
                 to="/clientes/$id"
                 params={{ id: c.id }}
-                className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border bg-card p-4 transition-colors hover:bg-accent"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:bg-accent"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-xl font-extrabold text-foreground">{c.nome}</p>
+                  <p className="truncate text-lg font-bold text-foreground">{c.nome}</p>
                   {c.nome_fantasia ? (
-                    <p className="truncate text-base font-semibold text-muted-foreground">
+                    <p className="truncate text-sm font-medium text-muted-foreground">
                       {c.nome_fantasia}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 truncate text-base font-semibold text-muted-foreground">
+                  <p className="mt-0.5 truncate text-sm font-medium text-muted-foreground">
                     {c.documento
                       ? mascaraDocumento(c.documento, c.tipo ?? "pf")
                       : "Documento não informado"}
                   </p>
-                  <p className="truncate text-base font-bold text-foreground">
+                  <p className="truncate text-sm font-semibold text-foreground">
                     {c.telefone ? mascaraTelefone(c.telefone) : "Telefone não informado"}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-xl bg-secondary px-3 py-2 text-sm font-extrabold text-secondary-foreground">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs"
+                >
+                  <span
+                    className={`size-2 rounded-full ${
+                      (c.tipo ?? "pf") === "pj" ? "bg-primary" : "bg-muted"
+                    }`}
+                    aria-hidden
+                  />
                   {rotulo(c.tipo ?? "pf")}
-                </span>
+                </Badge>
               </Link>
             </li>
           ))}
