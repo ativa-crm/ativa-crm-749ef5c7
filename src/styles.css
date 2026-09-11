@@ -192,19 +192,61 @@
   .app-content > section > header h1,
   .app-content > div > header h1 {
     color: var(--foreground);
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
   }
 
   .app-content section > h2 {
     display: table;
-    padding-bottom: 0.4rem;
+    padding-bottom: 0.35rem;
     color: var(--foreground);
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0;
     text-transform: uppercase;
-    border-bottom: 3px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+  }
+
+  /* Segmented control compacto (filtros e abas) */
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--secondary);
+  }
+
+  .seg-item {
+    height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
+    cursor: pointer;
+  }
+
+  .seg-item:hover {
+    background: var(--accent);
+  }
+
+  .seg-item[data-ativo="true"] {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Cards com borda fina e sombra sutil */
+  .app-content [class*="bg-card"][class*="rounded-2xl"],
+  .app-content [class*="bg-card"][class*="rounded-3xl"] {
+    border-width: 1px;
   }
 
   .app-content input[placeholder^="Buscar"] {
