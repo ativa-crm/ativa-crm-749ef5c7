@@ -505,7 +505,7 @@ function ProximaParada({
         </Button>
         <Button
           onClick={() => setBaixaAberta(true)}
-          className="h-14 rounded-xl px-5 text-lg font-extrabold"
+          className="h-11 rounded-full px-4 text-base font-semibold"
         >
           <CheckCircle2 className="size-6" strokeWidth={2.5} />
           Dar baixa
@@ -1009,7 +1009,7 @@ function IncluirOrdens({ roteiroId, paradas }: { roteiroId: string; paradas: Par
                       })
                     }
                     disabled={adicionar.isPending}
-                    className="h-14 rounded-xl px-5 text-lg font-extrabold"
+                    className="h-11 rounded-full px-4 text-base font-semibold"
                   >
                     <Plus className="size-6" strokeWidth={3} />
                     Adicionar
@@ -1128,7 +1128,7 @@ function AbaClima({ roteiro, abertas }: { roteiro: Roteiro; abertas: ParadaCalcu
           <Button
             onClick={() => atualizar.mutate()}
             disabled={atualizar.isPending || gravar.isPending}
-            className="h-14 rounded-xl px-5 text-lg font-extrabold"
+            className="h-11 rounded-full px-4 text-base font-semibold"
           >
             {atualizar.isPending ? (
               <Loader2 className="size-6 animate-spin" />

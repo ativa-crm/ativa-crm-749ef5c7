@@ -95,14 +95,14 @@ function Pagina() {
   return (
     <section>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-3xl font-extrabold text-foreground">
-          <Users className="size-8 text-primary" strokeWidth={2.5} />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+          <Users className="size-6 text-primary" strokeWidth={2.5} />
           Clientes
         </h1>
         <Button
           onClick={() => criar.mutate()}
           disabled={criar.isPending}
-          className="h-14 rounded-xl px-5 text-lg font-extrabold"
+          className="h-11 rounded-full px-4 text-base font-semibold"
         >
           {criar.isPending ? (
             <Loader2 className="size-6 animate-spin" />
@@ -115,14 +115,14 @@ function Pagina() {
 
       <div className="relative mt-5">
         <Search
-          className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
           strokeWidth={2.5}
         />
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nome, documento ou telefone"
-          className="h-14 rounded-xl border-2 pl-12 text-lg font-semibold"
+          className="h-11 rounded-full border pl-11 text-base font-medium"
         />
       </div>
 
