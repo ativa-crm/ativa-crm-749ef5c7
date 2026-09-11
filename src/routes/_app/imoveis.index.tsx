@@ -141,7 +141,7 @@ function Pagina() {
         </Button>
       </header>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5">
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
@@ -155,17 +155,14 @@ function Pagina() {
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="seg">
           {(["todos", "rural", "urbano"] as const).map((t) => (
             <button
               key={t}
               type="button"
+              data-ativo={tipo === t}
               onClick={() => setTipo(t)}
-              className={`h-12 flex-1 rounded-full border text-base font-extrabold uppercase transition-colors duration-200 ${
-                tipo === t
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground"
-              }`}
+              className="seg-item"
             >
               {t === "todos" ? "Todos" : rotulo(t)}
             </button>
@@ -175,7 +172,7 @@ function Pagina() {
         <select
           value={cidade}
           onChange={(e) => setCidade(e.target.value)}
-          className="h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+          className="h-11 w-full rounded-full border border-border bg-card px-4 text-base font-semibold text-foreground"
         >
           <option value="todas">Todas as cidades</option>
           {cidades.map((c) => (
