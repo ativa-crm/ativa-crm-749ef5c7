@@ -16,6 +16,7 @@ import {
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { BotaoTema } from "@/components/tema";
 import logoPadraoAsset from "@/assets/ativa-consultoria-logo.png.asset.json";
 
 const ITENS = [
@@ -82,9 +83,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={to}
               to={to}
               activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-              className="flex items-center gap-3 rounded-[10px] px-4 py-3 text-base font-bold uppercase text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="flex items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-base font-bold uppercase text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
-              <Icone className="size-6" strokeWidth={2.5} />
+              <Icone className="size-[18px]" strokeWidth={2.5} />
               {rotulo}
             </Link>
           ))}
@@ -94,10 +95,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             {perfil?.nome ?? ""}
             {perfil?.papel ? ` · ${perfil.papel}` : ""}
           </p>
+          <BotaoTema className="h-auto w-full justify-start gap-2.5 px-4 py-2 text-xs text-muted hover:bg-sidebar-accent hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             onClick={sair}
-            className="flex h-auto w-full justify-start gap-3 rounded-[10px] px-4 py-3 text-base font-bold text-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex h-auto w-full justify-start gap-2.5 rounded-[10px] px-4 py-2 text-xs text-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <LogOut className="size-5" strokeWidth={2.5} />
             Sair
@@ -134,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             activeProps={{ className: "text-primary" }}
             className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-muted transition-colors duration-200 hover:bg-sidebar-accent"
           >
-            <Icone className="size-6" strokeWidth={2.5} />
+            <Icone className="size-5" strokeWidth={2.5} />
             <span className="text-[11px] font-bold leading-none">{rotulo}</span>
           </Link>
         ))}
