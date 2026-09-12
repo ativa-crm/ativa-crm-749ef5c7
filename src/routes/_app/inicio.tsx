@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
   Clock3,
