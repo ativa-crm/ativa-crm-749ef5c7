@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_app/funil")({
   head: () => ({
@@ -274,9 +275,13 @@ function Pagina() {
 
                     <div className="mt-2 flex items-center justify-between gap-2">
                       {o.servico ? (
-                        <span className="rounded-full bg-secondary px-2.5 py-1 text-sm font-extrabold text-secondary-foreground">
+                        <Badge
+                          variant="outline"
+                          className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                        >
+                          <span className="size-2 rounded-full bg-primary" aria-hidden />
                           {rotulo(o.servico)}
-                        </span>
+                        </Badge>
                       ) : (
                         <span className="text-sm font-bold text-muted-foreground">sem serviço</span>
                       )}

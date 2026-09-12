@@ -1,6 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronRight, Flame, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock3,
+  FileCheck2,
+  FileText,
+  Flame,
+  Loader2,
+  MapPinned,
+  Settings2,
+  TriangleAlert,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { areaHa, rotulo } from "@/lib/formato";
 import { desdeAgora } from "@/lib/tempo";
@@ -60,6 +73,15 @@ function inicioDoMes(): string {
   const h = new Date();
   return new Date(Date.UTC(h.getFullYear(), h.getMonth(), 1)).toISOString();
 }
+
+const ICONES_STATUS = {
+  aguardando_documentos: FileText,
+  aguardando_campo: Clock3,
+  em_campo: MapPinned,
+  processamento: Settings2,
+  documentacao: ClipboardList,
+  pendencia: TriangleAlert,
+} as const;
 
 function Pagina() {
   const leadsQuery = useQuery({
@@ -238,18 +260,24 @@ function Pagina() {
       <section>
         <h2 className="mb-3 text-xl font-bold uppercase text-foreground">Em andamento</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {porStatus.map((s) => (
-            <Link
-              key={s.valor}
-              to="/servicos"
-              className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
-            >
-              <span className="text-3xl font-extrabold text-primary">{s.total}</span>
-              <span className="text-sm font-bold uppercase leading-tight text-foreground">
-                {s.rotulo}
-              </span>
-            </Link>
-          ))}
+          {porStatus.map((s) => {
+            const Icone = ICONES_STATUS[s.valor as keyof typeof ICONES_STATUS] ?? Clock3;
+            return (
+              <Link
+                key={s.valor}
+                to="/servicos"
+                className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
+              >
+                <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
+                  <Icone className="size-4" aria-hidden />
+                  {s.total}
+                </span>
+                <span className="text-sm font-bold uppercase leading-tight text-foreground">
+                  {s.rotulo}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -261,7 +289,8 @@ function Pagina() {
             to="/funil"
             className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
-            <span className="text-3xl font-extrabold text-primary">
+            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
+              <Flame className="size-4" aria-hidden />
               {mesQuery.data?.leads ?? 0}
             </span>
             <span className="text-sm font-bold uppercase text-foreground">Leads recebidos</span>
@@ -270,7 +299,8 @@ function Pagina() {
             to="/orcamentos"
             className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
-            <span className="text-3xl font-extrabold text-primary">
+            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
+              <FileText className="size-4" aria-hidden />
               {mesQuery.data?.enviados ?? 0}
             </span>
             <span className="text-sm font-bold uppercase text-foreground">Orçamentos enviados</span>
@@ -279,7 +309,8 @@ function Pagina() {
             to="/orcamentos"
             className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
           >
-            <span className="text-3xl font-extrabold text-primary">
+            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
+              <FileCheck2 className="size-4" aria-hidden />
               {mesQuery.data?.aprovados ?? 0}
             </span>
             <span className="text-sm font-bold uppercase text-foreground">

@@ -8,6 +8,7 @@ import { usePerfil } from "@/lib/perfil";
 import { data as dataBR, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -59,18 +60,22 @@ function um<T>(v: T | T[] | null): T | null {
 }
 
 function Etiqueta({ status }: { status: string | null }) {
-  const cor =
+  const ponto =
     status === "aprovado"
-      ? "bg-primary text-primary-foreground"
+      ? "bg-primary"
       : status === "recusado" || status === "expirado"
-        ? "bg-destructive text-destructive-foreground"
+        ? "bg-destructive"
         : status === "enviado"
-          ? "bg-accent text-accent-foreground"
-          : "bg-muted text-muted-foreground";
+          ? "bg-amber-500"
+          : "bg-muted-foreground";
   return (
-    <span className={`rounded-lg px-2.5 py-1 text-sm font-extrabold ${cor}`}>
+    <Badge
+      variant="outline"
+      className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+    >
+      <span className={`size-2 rounded-full ${ponto}`} aria-hidden />
       {rotulo(status) || "—"}
-    </span>
+    </Badge>
   );
 }
 
@@ -133,7 +138,7 @@ function Pagina() {
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="seg mt-3">
         {[{ valor: "", rotulo: "Todos" }, ...STATUS].map((s) => {
           const ativo = filtro === s.valor;
           return (
@@ -141,11 +146,8 @@ function Pagina() {
               key={s.valor || "todos"}
               type="button"
               onClick={() => setFiltro(s.valor)}
-              className={`h-12 rounded-full border px-4 text-base font-extrabold uppercase transition-colors duration-200 ${
-                ativo
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:bg-accent"
-              }`}
+              data-ativo={ativo}
+              className="seg-item"
             >
               {s.rotulo}
             </button>

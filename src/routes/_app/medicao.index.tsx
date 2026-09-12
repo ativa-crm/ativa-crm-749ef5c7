@@ -130,7 +130,14 @@ function Pagina() {
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <Badge className="rounded-lg text-sm font-extrabold">
+                    <Badge
+                      variant="outline"
+                      className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                    >
+                      <span
+                        className={`size-2 rounded-full ${r.status === "concluido" ? "bg-primary" : "bg-amber-500"}`}
+                        aria-hidden
+                      />
                       {rotuloStatusRoteiro(r.status)}
                     </Badge>
                     <p className="mt-1 text-lg font-extrabold text-foreground">{reais(custo)}</p>

@@ -11,6 +11,7 @@ import { STATUS_OS, semaforoPrazo } from "@/lib/prazo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -179,12 +180,13 @@ function Cartao({ ordem }: { ordem: Ordem }) {
           <p className="mt-1 text-base font-bold text-primary">{rotulo(ordem.servico)}</p>
         </div>
         <div className="shrink-0 text-right">
-          <span
-            className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-extrabold ${sem.cor}`}
+          <Badge
+            variant="outline"
+            className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
           >
-            <span className="size-2.5 rounded-full bg-current" />
+            <span className={`size-2 rounded-full ${sem.ponto}`} aria-hidden />
             {sem.texto || "—"}
-          </span>
+          </Badge>
           <p className="mt-1 text-sm font-bold text-muted-foreground">
             {ordem.prazo ? dataBR(ordem.prazo) : ""}
           </p>
