@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.index'
 import { Route as AppClientesIdRouteImport } from './routes/_app/clientes.$id'
+import { Route as AppContratosIndexRouteImport } from './routes/_app/contratos.index'
+import { Route as AppContratosIdRouteImport } from './routes/_app/contratos.$id'
 import { Route as AppImoveisIndexRouteImport } from './routes/_app/imoveis.index'
 import { Route as AppImoveisIdRouteImport } from './routes/_app/imoveis.$id'
 import { Route as AppMedicaoIndexRouteImport } from './routes/_app/medicao.index'
@@ -40,6 +43,11 @@ const EntrarRoute = EntrarRouteImport.update({
   path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppAdministracaoRoute = AppAdministracaoRouteImport.update({
+  id: '/administracao',
+  path: '/administracao',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppFunilRoute = AppFunilRouteImport.update({
   id: '/funil',
   path: '/funil',
@@ -58,6 +66,16 @@ const AppClientesIndexRoute = AppClientesIndexRouteImport.update({
 const AppClientesIdRoute = AppClientesIdRouteImport.update({
   id: '/clientes/$id',
   path: '/clientes/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppContratosIndexRoute = AppContratosIndexRouteImport.update({
+  id: '/contratos/',
+  path: '/contratos/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppContratosIdRoute = AppContratosIdRouteImport.update({
+  id: '/contratos/$id',
+  path: '/contratos/$id',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppImoveisIndexRoute = AppImoveisIndexRouteImport.update({
@@ -109,15 +127,18 @@ const AppServicosIdRoute = AppServicosIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
+  '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
   '/clientes/$id': typeof AppClientesIdRoute
+  '/contratos/$id': typeof AppContratosIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
   '/medicao/$id': typeof AppMedicaoIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/servicos/$id': typeof AppServicosIdRoute
   '/clientes/': typeof AppClientesIndexRoute
+  '/contratos/': typeof AppContratosIndexRoute
   '/imoveis/': typeof AppImoveisIndexRoute
   '/medicao/': typeof AppMedicaoIndexRoute
   '/orcamentos/': typeof AppOrcamentosIndexRoute
@@ -126,15 +147,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
+  '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
   '/clientes/$id': typeof AppClientesIdRoute
+  '/contratos/$id': typeof AppContratosIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
   '/medicao/$id': typeof AppMedicaoIdRoute
   '/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/servicos/$id': typeof AppServicosIdRoute
   '/clientes': typeof AppClientesIndexRoute
+  '/contratos': typeof AppContratosIndexRoute
   '/imoveis': typeof AppImoveisIndexRoute
   '/medicao': typeof AppMedicaoIndexRoute
   '/orcamentos': typeof AppOrcamentosIndexRoute
@@ -145,15 +169,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteRouteWithChildren
   '/entrar': typeof EntrarRoute
+  '/_app/administracao': typeof AppAdministracaoRoute
   '/_app/funil': typeof AppFunilRoute
   '/_app/inicio': typeof AppInicioRoute
   '/_app/clientes/$id': typeof AppClientesIdRoute
+  '/_app/contratos/$id': typeof AppContratosIdRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
   '/_app/medicao/$id': typeof AppMedicaoIdRoute
   '/_app/oportunidades/$id': typeof AppOportunidadesIdRoute
   '/_app/orcamentos/$id': typeof AppOrcamentosIdRoute
   '/_app/servicos/$id': typeof AppServicosIdRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
+  '/_app/contratos/': typeof AppContratosIndexRoute
   '/_app/imoveis/': typeof AppImoveisIndexRoute
   '/_app/medicao/': typeof AppMedicaoIndexRoute
   '/_app/orcamentos/': typeof AppOrcamentosIndexRoute
@@ -164,15 +191,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/entrar'
+    | '/administracao'
     | '/funil'
     | '/inicio'
     | '/clientes/$id'
+    | '/contratos/$id'
     | '/imoveis/$id'
     | '/medicao/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
     | '/servicos/$id'
     | '/clientes/'
+    | '/contratos/'
     | '/imoveis/'
     | '/medicao/'
     | '/orcamentos/'
@@ -181,15 +211,18 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/entrar'
+    | '/administracao'
     | '/funil'
     | '/inicio'
     | '/clientes/$id'
+    | '/contratos/$id'
     | '/imoveis/$id'
     | '/medicao/$id'
     | '/oportunidades/$id'
     | '/orcamentos/$id'
     | '/servicos/$id'
     | '/clientes'
+    | '/contratos'
     | '/imoveis'
     | '/medicao'
     | '/orcamentos'
@@ -199,15 +232,18 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/entrar'
+    | '/_app/administracao'
     | '/_app/funil'
     | '/_app/inicio'
     | '/_app/clientes/$id'
+    | '/_app/contratos/$id'
     | '/_app/imoveis/$id'
     | '/_app/medicao/$id'
     | '/_app/oportunidades/$id'
     | '/_app/orcamentos/$id'
     | '/_app/servicos/$id'
     | '/_app/clientes/'
+    | '/_app/contratos/'
     | '/_app/imoveis/'
     | '/_app/medicao/'
     | '/_app/orcamentos/'
@@ -243,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/administracao': {
+      id: '/_app/administracao'
+      path: '/administracao'
+      fullPath: '/administracao'
+      preLoaderRoute: typeof AppAdministracaoRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/funil': {
       id: '/_app/funil'
       path: '/funil'
@@ -269,6 +312,20 @@ declare module '@tanstack/react-router' {
       path: '/clientes/$id'
       fullPath: '/clientes/$id'
       preLoaderRoute: typeof AppClientesIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/contratos/': {
+      id: '/_app/contratos/'
+      path: '/contratos'
+      fullPath: '/contratos/'
+      preLoaderRoute: typeof AppContratosIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/contratos/$id': {
+      id: '/_app/contratos/$id'
+      path: '/contratos/$id'
+      fullPath: '/contratos/$id'
+      preLoaderRoute: typeof AppContratosIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/imoveis/': {
@@ -338,15 +395,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteRouteChildren {
+  AppAdministracaoRoute: typeof AppAdministracaoRoute
   AppFunilRoute: typeof AppFunilRoute
   AppInicioRoute: typeof AppInicioRoute
   AppClientesIdRoute: typeof AppClientesIdRoute
+  AppContratosIdRoute: typeof AppContratosIdRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
   AppMedicaoIdRoute: typeof AppMedicaoIdRoute
   AppOportunidadesIdRoute: typeof AppOportunidadesIdRoute
   AppOrcamentosIdRoute: typeof AppOrcamentosIdRoute
   AppServicosIdRoute: typeof AppServicosIdRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
+  AppContratosIndexRoute: typeof AppContratosIndexRoute
   AppImoveisIndexRoute: typeof AppImoveisIndexRoute
   AppMedicaoIndexRoute: typeof AppMedicaoIndexRoute
   AppOrcamentosIndexRoute: typeof AppOrcamentosIndexRoute
@@ -354,15 +414,18 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppAdministracaoRoute: AppAdministracaoRoute,
   AppFunilRoute: AppFunilRoute,
   AppInicioRoute: AppInicioRoute,
   AppClientesIdRoute: AppClientesIdRoute,
+  AppContratosIdRoute: AppContratosIdRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
   AppMedicaoIdRoute: AppMedicaoIdRoute,
   AppOportunidadesIdRoute: AppOportunidadesIdRoute,
   AppOrcamentosIdRoute: AppOrcamentosIdRoute,
   AppServicosIdRoute: AppServicosIdRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
+  AppContratosIndexRoute: AppContratosIndexRoute,
   AppImoveisIndexRoute: AppImoveisIndexRoute,
   AppMedicaoIndexRoute: AppMedicaoIndexRoute,
   AppOrcamentosIndexRoute: AppOrcamentosIndexRoute,
