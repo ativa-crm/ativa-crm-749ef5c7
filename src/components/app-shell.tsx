@@ -12,6 +12,8 @@ import {
   LogOut,
   Loader2,
   ShieldAlert,
+  ShieldCheck,
+  FileSignature,
 } from "lucide-react";
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
@@ -27,7 +29,10 @@ const ITENS = [
   { to: "/servicos", rotulo: "Serviços", Icone: Wrench },
   { to: "/orcamentos", rotulo: "Orçamentos", Icone: FileText },
   { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
+  { to: "/contratos", rotulo: "Contratos", Icone: FileSignature },
 ] as const;
+
+const ITEM_ADMIN = { to: "/administracao", rotulo: "Administração", Icone: ShieldCheck } as const;
 
 function useSair() {
   const navigate = useNavigate();
@@ -71,6 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nomeEmpresa = perfil?.empresa?.nome ?? "";
   const logo = perfil?.empresa?.logo_url ?? null;
+  const itens = perfil?.papel === "admin" ? [...ITENS, ITEM_ADMIN] : ITENS;
 
   return (
     <div className="min-h-screen bg-background-light">
@@ -78,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar p-4 text-sidebar-foreground md:flex">
         <Marca nome={nomeEmpresa} logo={logo} />
         <nav className="mt-6 flex flex-1 flex-col gap-1">
-          {ITENS.map(({ to, rotulo, Icone }) => (
+          {itens.map(({ to, rotulo, Icone }) => (
             <Link
               key={to}
               to={to}
@@ -128,13 +134,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Barra inferior (celular) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-7 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
-        {ITENS.map(({ to, rotulo, Icone }) => (
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
+        {itens.map(({ to, rotulo, Icone }) => (
           <Link
             key={to}
             to={to}
             activeProps={{ className: "text-primary" }}
-            className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-muted transition-colors duration-200 hover:bg-sidebar-accent"
+            className="flex min-h-16 min-w-20 flex-1 flex-col items-center justify-center gap-1 px-1 text-muted transition-colors duration-200 hover:bg-sidebar-accent"
           >
             <Icone className="size-5" strokeWidth={2.5} />
             <span className="text-[11px] font-bold leading-none">{rotulo}</span>
