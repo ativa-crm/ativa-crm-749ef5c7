@@ -1,4 +1,8 @@
-- [x] Criar Administração restrita a administradores com Empresas, Usuários e Modelos de documento.
-- [x] Exibir Administração no menu apenas para administradores.
-- [x] Conectar geração de documento na ficha de Contratos via documento_solicitado_em e espera por pdf_url.
-- [x] Validar tipagem, lint e preview.
+- [ ] Reativar geração de documento em Orçamentos com espera por PDF.
+- [ ] Exigir contrato ao criar OS manualmente e por Orçamento.
+- [ ] Criar Eventos, adicionar ao menu e integrar eventos ao semáforo da Início.
+- [ ] Restringir itens de Orçamento ao status rascunho.
+- [ ] Adicionar upload ou link externo em listas de Documentos.
+- [ ] Adicionar busca global por clientes, imóveis e orçamentos.
+- [ ] Adicionar paradas de Medição por KML/KMZ, Google Maps ou coordenadas.
+- [ ] Validar tipagem, lint e preview.
