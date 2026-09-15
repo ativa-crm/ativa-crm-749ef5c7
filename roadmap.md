@@ -1,4 +1,4 @@
-- [ ] Criar Administração restrita a administradores com Empresas, Usuários e Modelos de documento.
-- [ ] Exibir Administração no menu apenas para administradores.
-- [ ] Conectar geração de documento na ficha de Contratos via documento_solicitado_em e espera por pdf_url.
-- [ ] Validar tipagem, lint e preview.
+- [x] Criar Administração restrita a administradores com Empresas, Usuários e Modelos de documento.
+- [x] Exibir Administração no menu apenas para administradores.
+- [x] Conectar geração de documento na ficha de Contratos via documento_solicitado_em e espera por pdf_url.
+- [x] Validar tipagem, lint e preview.
