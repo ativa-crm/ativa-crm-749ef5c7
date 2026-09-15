@@ -1,0 +1,22 @@
+/* Espaçamento — múltiplos de 4px (escala Tailwind do código) com exceções reais. */
+:root {
+  --esp-1: 0.25rem;   /* 4px */
+  --esp-2: 0.5rem;    /* 8px */
+  --esp-25: 0.625rem; /* 10px — space-y-2.5 das listas */
+  --esp-3: 0.75rem;   /* 12px */
+  --esp-35: 0.875rem; /* 14px — padding de cartão de lista (p-3.5) */
+  --esp-4: 1rem;      /* 16px */
+  --esp-5: 1.25rem;   /* 20px */
+  --esp-6: 1.5rem;    /* 24px — padding interno de Card */
+  --esp-7: 1.75rem;   /* 28px */
+  --esp-8: 2rem;      /* 32px — respiro entre seções da tela */
+
+  /* Alturas de alvo de toque — o usuário é técnico em campo, uma mão só */
+  --alvo-min: 2.75rem;   /* 44px — h-11, altura padrão de busca e ação */
+  --alvo-conforto: 3.5rem; /* 56px — h-14, campos de formulário e CTA */
+  --alvo-lista: 5rem;    /* 80px — min-h-20 dos cartões de alerta */
+
+  --sidebar-largura: 16rem;  /* w-64 */
+  --conteudo-max: 64rem;     /* max-w-5xl */
+  --site-max-largura: 1180px; /* @kind spacing */
+}

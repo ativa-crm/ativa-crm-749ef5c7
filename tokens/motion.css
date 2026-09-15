@@ -1,0 +1,11 @@
+/* Movimento — transições curtas, easing padrão do navegador. Nada de bounce. */
+:root {
+  --dur-rapida: 180ms; /* @kind other */  /* segmented control, cartões */
+  --dur-padrao: 200ms; /* @kind other */  /* botões, links de menu, inputs */
+  --dur-site: 280ms; /* @kind other */    /* hovers do site institucional */
+  --dur-reveal: 700ms; /* @kind other */  /* entrada por scroll no site */
+  --ease-padrao: ease; /* @kind other */
+  --ease-site: cubic-bezier(0.2, 0.7, 0.2, 1); /* @kind other */
+  --elevacao-hover: translateY(-1px); /* @kind other */ /* cartões do app */
+  --elevacao-hover-site: translateY(-2px); /* @kind other */
+}

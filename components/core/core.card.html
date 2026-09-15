@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Core" subtitle="Botão, etiqueta, cartão, avatar, ícone" -->
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script><style>*,*:before,*:after{box-sizing:border-box}</style>
+</head>
+<body style="margin:0;background:var(--background-light)"><div id="root"></div>
+<script type="text/babel">
+const { Button, Badge, Card, CardHeader, CardTitle, CardDescription, CardContent, Avatar, Separator, Skeleton, Icon } = window.AtivaConsultoriaDesignSystem_f6c44d;
+const Linha = ({ children }) => <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:10}}>{children}</div>;
+function App(){return (
+  <div style={{padding:18,display:"flex",flexDirection:"column",gap:14,fontFamily:"var(--font-sans)"}}>
+    <Linha>
+      <Button>Novo imóvel</Button>
+      <Button variant="outline">Filtrar</Button>
+      <Button variant="secondary">Exportar</Button>
+      <Button variant="ghost">Cancelar</Button>
+      <Button variant="destructive">Excluir</Button>
+      <Button variant="link">Ver detalhes</Button>
+    </Linha>
+    <Linha>
+      <Button size="sm">Pequeno</Button>
+      <Button size="lg">Grande</Button>
+      <Button size="icon"><Icon name="plus" size={16} color="#fff" /></Button>
+      <Button disabled>Desativado</Button>
+      <Button><Icon name="plus" size={16} color="#fff" />Nova OS</Button>
+    </Linha>
+    <Linha>
+      <Badge>Aprovado</Badge>
+      <Badge variant="secondary">Rascunho</Badge>
+      <Badge variant="destructive">Vencido</Badge>
+      <Badge variant="outline" pill dot="var(--primary)">Em campo</Badge>
+      <Badge variant="outline" pill dot="var(--ambar)">Pendência</Badge>
+      <Avatar nome="Renato Muzel" size={36} />
+      <Icon name="map-pinned" size={22} color="var(--primary)" />
+      <Icon name="flame" size={22} color="var(--vermelho)" />
+      <Icon name="wrench" size={22} color="var(--foreground)" />
+    </Linha>
+    <Linha>
+      <Card hover style={{width:260}}>
+        <CardHeader style={{padding:14,gap:2}}>
+          <CardTitle style={{fontSize:"var(--texto-lg)"}}>Fazenda Santa Rita</CardTitle>
+          <CardDescription>Itapeva · SP · Rural</CardDescription>
+        </CardHeader>
+        <CardContent style={{padding:"0 14px 14px",fontWeight:600}}>142,5000 ha</CardContent>
+      </Card>
+      <div style={{width:250,display:"flex",flexDirection:"column",gap:8}}>
+        <Skeleton height={14} width="70%" /><Skeleton height={14} width="45%" /><Separator /><Skeleton height={44} radius={14} />
+      </div>
+    </Linha>
+  </div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script></body></html>

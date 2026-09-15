@@ -1,0 +1,119 @@
+/* Cores — valores extraídos de src/styles.css (CRM) e index.html (site).
+   NUNCA arredonde: se a origem diz #9ab137, use #9ab137. */
+:root {
+  /* ---- Marca ---- */
+  --verde-ativa: #9ab137;          /* verde oliva do CRM (primary) */
+  --verde-ativa-escuro: #7e9530;   /* hover do primary no CRM */
+  --verde-vivo: #69d500;           /* verde do site institucional */
+  --verde-vivo-2: #55bd20;         /* hover/segunda camada no site */
+  --verde-vivo-suave: #8ee63a;
+  --verde-legado: #73d52d;         /* theme-color histórico do site */
+
+  /* ---- Neutros do app (tema claro) ---- */
+  --preto: #000000;
+  --preto-azulado: #0d181c;
+  --branco: #ffffff;
+  --areia-clara: #f7f8f5;
+  --tinta: #333333;
+  --cinza: #999999;
+  --linha: #eeeeee;
+
+  /* ---- Neutros do app (tema escuro) ---- */
+  --grafite-fundo: #101414;
+  --grafite-card: #191d1d;
+  --grafite-superficie: #232827;
+  --grafite-linha: #2c3130;
+  --grafite-texto: #ececec;
+  --grafite-cinza: #8b918f;
+
+  /* ---- Neutros do site institucional ---- */
+  --site-preto: #090b0a;
+  --site-preto-2: #101210;
+  --site-rodape: #0a0d0b;
+  --site-linha: #292d2a;
+  --site-branco: #f7f8f6;
+  --site-cinza: #a9afaa;
+
+  /* ---- Sinalização (semáforo de prazo, notas de lead) ---- */
+  --ambar: #f59e0b;      /* amber-500 — prazo de 3 a 7 dias */
+  --vermelho: #ef4444;   /* red-500 — nota "quente" do lead */
+  --whatsapp: #25d366;
+  --instagram: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 48%, #6228d7 100%); /* @kind color */
+
+  /* ---- Semânticos do app: tema claro ---- */
+  --background: #000000;
+  --background-secondary: #0d181c;
+  --background-light: #f7f8f5;
+  --foreground: #333333;
+  --foreground-inverse: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #333333;
+  --popover: #ffffff;
+  --popover-foreground: #333333;
+  --primary: #9ab137;
+  --primary-dark: #7e9530;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f8f5;
+  --secondary-foreground: #333333;
+  --muted: #999999;
+  --muted-foreground: #999999;
+  --accent: #f7f8f5;
+  --accent-foreground: #333333;
+  --destructive: oklch(0.52 0.21 27.325);
+  --destructive-foreground: oklch(0.99 0.003 247.858);
+  --border: #eeeeee;
+  --input: #eeeeee;
+  --ring: #9ab137;
+
+  /* ---- Barra lateral (idêntica nos dois temas) ---- */
+  --sidebar: #000000;
+  --sidebar-foreground: #eeeeee;
+  --sidebar-primary: #9ab137;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0d181c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #333333;
+  --sidebar-ring: #9ab137;
+
+  /* ---- Gráficos (recharts) ---- */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* ---- Site institucional (semânticos) ---- */
+  --site-bg: #090b0a;
+  --site-bg-alt: #0d0f0e;
+  --site-text: #f7f8f6;
+  --site-text-muted: #a9afaa;
+  --site-accent: #69d500;
+  --site-border: #292d2a;
+  --site-max: 1180px; /* @kind spacing */
+}
+
+.dark {
+  --background: #000000;
+  --background-secondary: #0d181c;
+  --background-light: #101414;
+  --foreground: #ececec;
+  --foreground-inverse: #101414;
+  --card: #191d1d;
+  --card-foreground: #ececec;
+  --popover: #191d1d;
+  --popover-foreground: #ececec;
+  --primary: #9ab137;
+  --primary-dark: #7e9530;
+  --primary-foreground: #ffffff;
+  --secondary: #232827;
+  --secondary-foreground: #ececec;
+  --muted: #8b918f;
+  --muted-foreground: #8b918f;
+  --accent: #232827;
+  --accent-foreground: #ececec;
+  --destructive: oklch(0.6 0.21 27.325);
+  --destructive-foreground: oklch(0.99 0.003 247.858);
+  --border: #2c3130;
+  --input: #2c3130;
+  --ring: #9ab137;
+}

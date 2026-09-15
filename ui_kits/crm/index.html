@@ -1,0 +1,76 @@
+<!-- @dsCard group="CRM Ativa" viewport="1280x760" name="CRM — app completo" subtitle="Login, início, imóveis, clientes, funil, serviços e orçamentos" -->
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ativa CRM — UI kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+*,*:before,*:after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--background-light);font-family:var(--font-sans)}
+#root{height:100vh}
+.palco{position:relative;height:100vh;overflow:hidden}
+.moldura{margin:0 auto;height:100%;width:100%;overflow:hidden;background:var(--background-light)}
+.moldura.celular{width:390px;height:min(844px,100vh - 32px);margin:16px auto;border-radius:34px;border:8px solid #111;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.controles{position:fixed;right:14px;bottom:14px;z-index:80;display:flex;gap:6px;padding:6px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:0 10px 24px rgba(0,0,0,.14)}
+.controles button{height:32px;padding:0 12px;border-radius:999px;border:none;background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer}
+.controles button[data-ativo="true"]{background:var(--primary);color:#fff}
+@media (max-width:720px){.grade-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+a{color:var(--primary)}a:hover{color:var(--primary-dark)}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="dados.js"></script>
+</head>
+<body><div id="root"></div>
+<script type="text/babel" src="AppShell.jsx"></script>
+<script type="text/babel" src="TelaEntrar.jsx"></script>
+<script type="text/babel" src="TelaInicio.jsx"></script>
+<script type="text/babel" src="TelaImoveis.jsx"></script>
+<script type="text/babel" src="TelaClientes.jsx"></script>
+<script type="text/babel" src="TelaFunil.jsx"></script>
+<script type="text/babel" src="TelaServicos.jsx"></script>
+<script type="text/babel" src="TelaOrcamentos.jsx"></script>
+<script type="text/babel" src="TelaEmBranco.jsx"></script>
+<script type="text/babel">
+function App() {
+  const [logado, setLogado] = React.useState(true);
+  const [tela, setTela] = React.useState("inicio");
+  const [celular, setCelular] = React.useState(false);
+  const [escuro, setEscuro] = React.useState(false);
+
+  React.useEffect(() => {
+    document.documentElement.classList.toggle("dark", escuro);
+  }, [escuro]);
+
+  const telas = {
+    inicio: <window.TelaInicio aoNavegar={setTela} />,
+    imoveis: <window.TelaImoveis />,
+    clientes: <window.TelaClientes />,
+    funil: <window.TelaFunil />,
+    servicos: <window.TelaServicos />,
+    orcamentos: <window.TelaOrcamentos />,
+  };
+
+  return (
+    <div className="palco">
+      <div className={"moldura" + (celular ? " celular" : "")}>
+        {logado ? (
+          <window.AppShell tela={tela} aoNavegar={setTela} celular={celular} escuro={escuro} alternarTema={() => setEscuro((v) => !v)}>
+            {telas[tela] || <window.TelaEmBranco titulo={(window.DADOS.navegacao.find((n) => n.valor === tela) || {}).rotulo || "Tela"} />}
+          </window.AppShell>
+        ) : (
+          <window.TelaEntrar celular={celular} aoEntrar={() => { setLogado(true); setTela("inicio"); }} />
+        )}
+      </div>
+      <div className="controles">
+        <button data-ativo={!celular} onClick={() => setCelular(false)}>Desktop</button>
+        <button data-ativo={celular} onClick={() => setCelular(true)}>Celular</button>
+        <button data-ativo={escuro} onClick={() => setEscuro((v) => !v)}>Escuro</button>
+        <button data-ativo={!logado} onClick={() => setLogado((v) => !v)}>Login</button>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script></body></html>

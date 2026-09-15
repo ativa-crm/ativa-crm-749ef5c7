@@ -1,0 +1,16 @@
+/* Regras base herdadas de @layer base do CRM. */
+body {
+  background-color: var(--background-light);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-weight: var(--peso-regular);
+  letter-spacing: 0;
+}
+h1 { font-weight: var(--peso-bold); letter-spacing: var(--tracking-h1); text-transform: none; }
+h2 { font-weight: var(--peso-semi); letter-spacing: 0; }
+h3, label, button { letter-spacing: 0; }
+label, button { font-weight: var(--peso-semi); }
+input, textarea, select { color: var(--foreground); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-dark); }

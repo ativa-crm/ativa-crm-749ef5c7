@@ -1,0 +1,38 @@
+/* Tipografia — Poppins no produto, Inter no site institucional. */
+:root {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-site: "Inter", Arial, sans-serif;
+
+  /* Pesos usados de fato no código */
+  --peso-regular: 400; /* @kind font */
+  --peso-medio: 500; /* @kind font */
+  --peso-semi: 600; /* @kind font */
+  --peso-bold: 700; /* @kind font */
+  --peso-extra: 800; /* @kind font */
+
+  /* Escala do app (px reais do código do CRM) */
+  --texto-xs: 0.6875rem;   /* 11px — rótulo da barra inferior */
+  --texto-sm: 0.75rem;     /* 12px — botões sm, metadados da sidebar */
+  --texto-seg: 0.8125rem;  /* 13px — segmented control / tabs */
+  --texto-base: 0.875rem;  /* 14px — corpo padrão do desktop */
+  --texto-md: 1rem;        /* 16px — corpo no celular, itens de menu */
+  --texto-lg: 1.125rem;    /* 18px — título de cartão de lista */
+  --texto-xl: 1.25rem;     /* 20px — h2 de seção */
+  --texto-2xl: 1.5rem;     /* 24px — h1 de tela */
+  --texto-3xl: 1.875rem;   /* 30px — número grande de KPI */
+
+  /* Escala do site institucional (bem menor, densa) */
+  --site-kicker: 13px;
+  --site-corpo: 12px;
+  --site-titulo: 32px;
+  --site-h1: 42px;
+  --site-display: 48px;
+
+  --entrelinha-apertada: 1.06; /* @kind font */
+  --entrelinha-titulo: 1.2; /* @kind font */
+  --entrelinha-corpo: 1.6; /* @kind font */
+
+  --tracking-h1: 0.01em; /* @kind font */     /* h1 do app abre levemente */
+  --tracking-kicker: 0.14em; /* @kind font */ /* eyebrow do site */
+  --tracking-display: -0.045em; /* @kind font */
+}

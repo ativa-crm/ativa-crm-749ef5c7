@@ -1,0 +1,32 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Site institucional" subtitle="Botões, cartões de serviço e ficha técnica do site" -->
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script><style>*,*:before,*:after{box-sizing:border-box}</style>
+</head>
+<body style="margin:0;background:var(--site-bg)"><div id="root"></div>
+<script type="text/babel">
+const { SiteButton, ServiceCard, SpecCard, SpecGrid, Chip, SiteSectionHeading } = window.AtivaConsultoriaDesignSystem_f6c44d;
+function App(){return (
+  <div style={{padding:18,display:"flex",flexDirection:"column",gap:14,fontFamily:"var(--font-site)",color:"var(--site-text)"}}>
+    <SiteSectionHeading kicker="O que fazemos" tamanho={28}>Soluções técnicas para todas as etapas</SiteSectionHeading>
+    <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center"}}>
+      <SiteButton variant="primary">◉ &nbsp;Fale no WhatsApp</SiteButton>
+      <SiteButton variant="outline">Ver Serviços</SiteButton>
+      <SiteButton variant="ghost">Ver todos os serviços</SiteButton>
+      <SiteButton variant="whatsapp" tamanho="cta" icone="../../assets/brand/whatsapp-brand.png">Falar no WhatsApp</SiteButton>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr) 1.4fr",gap:8,alignItems:"start"}}>
+      <ServiceCard glifo="⌖" titulo={<>Georreferenciamento<br/>de Imóveis Rurais</>} descricao="Regularize seu imóvel rural dentro das exigências do INCRA." />
+      <ServiceCard glifo="◈" titulo={<>Levantamentos<br/>Topográficos</>} descricao="Planialtimétricos e altimétricos com alta precisão." />
+      <ServiceCard glifo="▣" titulo={<>Usucapião<br/>Administrativo</>} descricao="Plantas e memoriais técnicos para processos de usucapião." />
+      <SpecCard tag="Aeronave" titulo="DJI Phantom 4 Pro">
+        <SpecGrid style={{marginTop:6}} itens={[{titulo:'20 MP · sensor 1"',detalhe:"alta resolução"},{titulo:"Obturador mecânico",detalhe:"sem distorção em voo"}]} />
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:12}}><Chip>2 a 5 cm por pixel</Chip><Chip>Curvas de nível</Chip></div>
+      </SpecCard>
+    </div>
+  </div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script></body></html>

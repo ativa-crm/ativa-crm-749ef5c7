@@ -1,0 +1,16 @@
+/* Sombras — muito discretas no app; o site usa sombras profundas em botões. */
+:root {
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --sombra-card: var(--card-shadow);
+  --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --sombra-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --sombra-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --foco-anel: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+
+  --site-sombra-btn: 0 12px 28px rgba(0, 0, 0, 0.22);
+  --site-sombra-primary: 0 10px 28px rgba(105, 213, 0, 0.25);
+}
+
+.dark {
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}

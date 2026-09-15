@@ -1,0 +1,5 @@
+/* Webfonts da marca. Ambos vêm do Google Fonts nos projetos de origem:
+   - Poppins: CRM (src/routes/__root.tsx, pesos 400;500;600;700;800)
+   - Inter: site institucional (index.html, pesos 400;500;600;700;800) */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");

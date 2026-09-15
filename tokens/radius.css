@@ -1,0 +1,17 @@
+/* Raios — base 14px (--radius: 0.875rem) no app; site usa cantos quase retos. */
+:root {
+  --radius: 0.875rem;                        /* 14px */
+  --radius-sm: calc(var(--radius) - 4px);    /* 10px */
+  --radius-md: calc(var(--radius) - 2px);    /* 12px */
+  --radius-lg: var(--radius);                /* 14px — Card */
+  --radius-xl: calc(var(--radius) + 4px);    /* 18px — Input */
+  --radius-2xl: calc(var(--radius) + 8px);   /* 22px — cartão de lista */
+  --radius-3xl: calc(var(--radius) + 12px);  /* 26px — diálogo */
+  --radius-4xl: calc(var(--radius) + 16px);  /* 30px */
+  --radius-pill: 999px;                      /* botões, tabs, busca */
+
+  /* Site institucional */
+  --site-radius: 4px;
+  --site-radius-btn: 5px;
+  --site-radius-cta: 10px;
+}
