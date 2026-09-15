@@ -25,9 +25,15 @@ export const Route = createFileRoute("/_app/administracao")({
   head: () => ({
     meta: [
       { title: "Administração | CRM de Topografia" },
-      { name: "description", content: "Administração de empresas, usuários e modelos de documento." },
+      {
+        name: "description",
+        content: "Administração de empresas, usuários e modelos de documento.",
+      },
       { property: "og:title", content: "Administração | CRM de Topografia" },
-      { property: "og:description", content: "Gerencie empresas, usuários e modelos de documento." },
+      {
+        property: "og:description",
+        content: "Gerencie empresas, usuários e modelos de documento.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -116,7 +122,15 @@ function Pagina() {
   const modelo = modelosQuery.data?.find((item) => item.id === modeloId) ?? null;
 
   const salvar = useMutation({
-    mutationFn: async ({ tabela, id, mudanca }: { tabela: "empresas" | "usuarios" | "modelos_documento"; id: string; mudanca: Record<string, unknown> }) => {
+    mutationFn: async ({
+      tabela,
+      id,
+      mudanca,
+    }: {
+      tabela: "empresas" | "usuarios" | "modelos_documento";
+      id: string;
+      mudanca: Record<string, unknown>;
+    }) => {
       const { error } = await supabase.from(tabela).update(mudanca).eq("id", id);
       if (error) throw error;
       return tabela;
@@ -136,7 +150,11 @@ function Pagina() {
   }, [modelo]);
 
   if (empresasQuery.isPending || usuariosQuery.isPending || modelosQuery.isPending) {
-    return <div className="flex justify-center py-16"><Loader2 className="size-9 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="size-9 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
@@ -147,61 +165,268 @@ function Pagina() {
       </header>
       <Tabs defaultValue="empresas" className="mt-5">
         <TabsList className="h-auto max-w-full flex-wrap justify-start">
-          <TabsTrigger value="empresas"><Building2 /> Empresas</TabsTrigger>
-          <TabsTrigger value="usuarios"><Users /> Usuários</TabsTrigger>
-          <TabsTrigger value="modelos"><FileCode2 /> Modelos</TabsTrigger>
+          <TabsTrigger value="empresas">
+            <Building2 /> Empresas
+          </TabsTrigger>
+          <TabsTrigger value="usuarios">
+            <Users /> Usuários
+          </TabsTrigger>
+          <TabsTrigger value="modelos">
+            <FileCode2 /> Modelos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresas" className="mt-4">
-          <PainelLista itens={empresasQuery.data ?? []} selecionado={empresaId} aoSelecionar={setEmpresaId} rotulo={(item) => item.nome || "Empresa sem nome"}>
-            {empresa ? <Bloco titulo={empresa.nome || "Empresa"}>
-              <Grade>
-                <Campo rotulo="Nome" valor={empresa.nome ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { nome: v } })} />
-                <Campo rotulo="CNPJ" valor={empresa.cnpj ?? ""} mascara={mascaraCNPJ} inputMode="numeric" onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { cnpj: v || null } })} />
-                <Campo rotulo="Telefone do agente" valor={empresa.telefone_agente ?? ""} mascara={mascaraTelefone} inputMode="tel" onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { telefone_agente: v || null } })} />
-                <Campo rotulo="Instância Evolution" valor={empresa.instancia_evolution ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { instancia_evolution: v || null } })} />
-                <Campo rotulo="Raio de atendimento (km)" valor={numero(empresa.raio_atendimento_km)} inputMode="decimal" onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { raio_atendimento_km: paraNumero(v) } })} />
-                <Campo rotulo="Cidade base" valor={empresa.cidade_base ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { cidade_base: v || null } })} />
-                <Campo rotulo="URL do logo" valor={empresa.logo_url ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { logo_url: v || null } })} larguraTotal />
-                <ControleBooleano rotulo="Empresa ativa" marcado={empresa.ativa ?? false} aoMudar={(ativa) => salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { ativa } })} />
-              </Grade>
-            </Bloco> : <Vazio />}
+          <PainelLista
+            itens={empresasQuery.data ?? []}
+            selecionado={empresaId}
+            aoSelecionar={setEmpresaId}
+            rotulo={(item) => item.nome || "Empresa sem nome"}
+          >
+            {empresa ? (
+              <Bloco titulo={empresa.nome || "Empresa"}>
+                <Grade>
+                  <Campo
+                    rotulo="Nome"
+                    valor={empresa.nome ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { nome: v } })
+                    }
+                  />
+                  <Campo
+                    rotulo="CNPJ"
+                    valor={empresa.cnpj ?? ""}
+                    mascara={mascaraCNPJ}
+                    inputMode="numeric"
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { cnpj: v || null },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="Telefone do agente"
+                    valor={empresa.telefone_agente ?? ""}
+                    mascara={mascaraTelefone}
+                    inputMode="tel"
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { telefone_agente: v || null },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="Instância Evolution"
+                    valor={empresa.instancia_evolution ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { instancia_evolution: v || null },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="Raio de atendimento (km)"
+                    valor={numero(empresa.raio_atendimento_km)}
+                    inputMode="decimal"
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { raio_atendimento_km: paraNumero(v) },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="Cidade base"
+                    valor={empresa.cidade_base ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { cidade_base: v || null },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="URL do logo"
+                    valor={empresa.logo_url ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "empresas",
+                        id: empresa.id,
+                        mudanca: { logo_url: v || null },
+                      })
+                    }
+                    larguraTotal
+                  />
+                  <ControleBooleano
+                    rotulo="Empresa ativa"
+                    marcado={empresa.ativa ?? false}
+                    aoMudar={(ativa) =>
+                      salvar.mutate({ tabela: "empresas", id: empresa.id, mudanca: { ativa } })
+                    }
+                  />
+                </Grade>
+              </Bloco>
+            ) : (
+              <Vazio />
+            )}
           </PainelLista>
         </TabsContent>
 
         <TabsContent value="usuarios" className="mt-4">
-          <PainelLista itens={usuariosQuery.data ?? []} selecionado={usuarioId} aoSelecionar={setUsuarioId} rotulo={(item) => item.nome || item.email || "Usuário sem nome"}>
-            {usuario ? <Bloco titulo={usuario.nome || "Usuário"}>
-              <Grade>
-                <Campo rotulo="Nome" valor={usuario.nome ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { nome: v } })} />
-                <Campo rotulo="E-mail" valor={usuario.email ?? ""} inputMode="email" onSalvar={(v) => salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { email: v || null } })} />
-                <CampoOpcoes rotulo="Papel" valor={usuario.papel ?? "usuario"} opcoes={[{ valor: "usuario", rotulo: "Usuário" }, { valor: "admin", rotulo: "Administrador" }]} onSalvar={(papel) => salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { papel } })} larguraTotal />
-                <ControleBooleano rotulo="Usuário ativo" marcado={usuario.ativo ?? false} aoMudar={(ativo) => salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { ativo } })} />
-              </Grade>
-            </Bloco> : <Vazio />}
+          <PainelLista
+            itens={usuariosQuery.data ?? []}
+            selecionado={usuarioId}
+            aoSelecionar={setUsuarioId}
+            rotulo={(item) => item.nome || item.email || "Usuário sem nome"}
+          >
+            {usuario ? (
+              <Bloco titulo={usuario.nome || "Usuário"}>
+                <Grade>
+                  <Campo
+                    rotulo="Nome"
+                    valor={usuario.nome ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { nome: v } })
+                    }
+                  />
+                  <Campo
+                    rotulo="E-mail"
+                    valor={usuario.email ?? ""}
+                    inputMode="email"
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "usuarios",
+                        id: usuario.id,
+                        mudanca: { email: v || null },
+                      })
+                    }
+                  />
+                  <CampoOpcoes
+                    rotulo="Papel"
+                    valor={usuario.papel ?? "usuario"}
+                    opcoes={[
+                      { valor: "usuario", rotulo: "Usuário" },
+                      { valor: "admin", rotulo: "Administrador" },
+                    ]}
+                    onSalvar={(papel) =>
+                      salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { papel } })
+                    }
+                    larguraTotal
+                  />
+                  <ControleBooleano
+                    rotulo="Usuário ativo"
+                    marcado={usuario.ativo ?? false}
+                    aoMudar={(ativo) =>
+                      salvar.mutate({ tabela: "usuarios", id: usuario.id, mudanca: { ativo } })
+                    }
+                  />
+                </Grade>
+              </Bloco>
+            ) : (
+              <Vazio />
+            )}
           </PainelLista>
         </TabsContent>
 
         <TabsContent value="modelos" className="mt-4">
-          <PainelLista itens={modelosQuery.data ?? []} selecionado={modeloId} aoSelecionar={setModeloId} rotulo={(item) => item.nome || item.tipo || "Modelo sem nome"}>
-            {modelo ? <Bloco titulo={modelo.nome || "Modelo de documento"}>
-              <Grade>
-                <Campo rotulo="Tipo" valor={modelo.tipo ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "modelos_documento", id: modelo.id, mudanca: { tipo: v || null } })} />
-                <Campo rotulo="Nome" valor={modelo.nome ?? ""} onSalvar={(v) => salvar.mutate({ tabela: "modelos_documento", id: modelo.id, mudanca: { nome: v || null } })} />
-              </Grade>
-              <div className="mt-4"><CampoLongo rotulo="Campos do modelo" valor={camposModelo} placeholder="Lista ou objeto de campos" onSalvar={(v) => {
-                let campos: unknown = v || null;
-                if (v) {
-                  try { campos = JSON.parse(v); } catch { toast.error("Use um JSON válido no campo de marcadores."); return; }
-                }
-                salvar.mutate({ tabela: "modelos_documento", id: modelo.id, mudanca: { campos } });
-              }} /></div>
-              <div className="mt-4">
-                <p className="mb-2 text-sm font-medium text-muted-foreground">Edite o HTML usando marcadores como {"{{cliente_nome}}"}, {"{{numero}}"}, {"{{itens}}"} e {"{{total}}"}.</p>
-                <CampoLongo rotulo="HTML do documento" valor={modelo.arquivo_url ?? ""} placeholder="<html>...</html>" onSalvar={(arquivo_url) => salvar.mutate({ tabela: "modelos_documento", id: modelo.id, mudanca: { arquivo_url: arquivo_url || null } })} />
-              </div>
-              <div className="mt-4"><ControleBooleano rotulo="Modelo padrão" marcado={modelo.padrao ?? false} aoMudar={(padrao) => salvar.mutate({ tabela: "modelos_documento", id: modelo.id, mudanca: { padrao } })} /></div>
-            </Bloco> : <Vazio />}
+          <PainelLista
+            itens={modelosQuery.data ?? []}
+            selecionado={modeloId}
+            aoSelecionar={setModeloId}
+            rotulo={(item) => item.nome || item.tipo || "Modelo sem nome"}
+          >
+            {modelo ? (
+              <Bloco titulo={modelo.nome || "Modelo de documento"}>
+                <Grade>
+                  <Campo
+                    rotulo="Tipo"
+                    valor={modelo.tipo ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "modelos_documento",
+                        id: modelo.id,
+                        mudanca: { tipo: v || null },
+                      })
+                    }
+                  />
+                  <Campo
+                    rotulo="Nome"
+                    valor={modelo.nome ?? ""}
+                    onSalvar={(v) =>
+                      salvar.mutate({
+                        tabela: "modelos_documento",
+                        id: modelo.id,
+                        mudanca: { nome: v || null },
+                      })
+                    }
+                  />
+                </Grade>
+                <div className="mt-4">
+                  <CampoLongo
+                    rotulo="Campos do modelo"
+                    valor={camposModelo}
+                    placeholder="Lista ou objeto de campos"
+                    onSalvar={(v) => {
+                      let campos: unknown = v || null;
+                      if (v) {
+                        try {
+                          campos = JSON.parse(v);
+                        } catch {
+                          toast.error("Use um JSON válido no campo de marcadores.");
+                          return;
+                        }
+                      }
+                      salvar.mutate({
+                        tabela: "modelos_documento",
+                        id: modelo.id,
+                        mudanca: { campos },
+                      });
+                    }}
+                  />
+                </div>
+                <div className="mt-4">
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">
+                    Edite o HTML usando marcadores como {"{{cliente_nome}}"}, {"{{numero}}"},{" "}
+                    {"{{itens}}"} e {"{{total}}"}.
+                  </p>
+                  <CampoLongo
+                    rotulo="HTML do documento"
+                    valor={modelo.arquivo_url ?? ""}
+                    placeholder="<html>...</html>"
+                    onSalvar={(arquivo_url) =>
+                      salvar.mutate({
+                        tabela: "modelos_documento",
+                        id: modelo.id,
+                        mudanca: { arquivo_url: arquivo_url || null },
+                      })
+                    }
+                  />
+                </div>
+                <div className="mt-4">
+                  <ControleBooleano
+                    rotulo="Modelo padrão"
+                    marcado={modelo.padrao ?? false}
+                    aoMudar={(padrao) =>
+                      salvar.mutate({
+                        tabela: "modelos_documento",
+                        id: modelo.id,
+                        mudanca: { padrao },
+                      })
+                    }
+                  />
+                </div>
+              </Bloco>
+            ) : (
+              <Vazio />
+            )}
           </PainelLista>
         </TabsContent>
       </Tabs>
@@ -209,17 +434,61 @@ function Pagina() {
   );
 }
 
-function PainelLista<T extends { id: string }>({ itens, selecionado, aoSelecionar, rotulo, children }: { itens: T[]; selecionado: string | null; aoSelecionar: (id: string) => void; rotulo: (item: T) => string; children: React.ReactNode }) {
-  return <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
-    <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible">
-      {itens.map((item) => <button key={item.id} type="button" onClick={() => aoSelecionar(item.id)} className={`min-h-12 min-w-48 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-colors lg:w-full lg:min-w-0 ${selecionado === item.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-accent"}`}>{rotulo(item)}</button>)}
+function PainelLista<T extends { id: string }>({
+  itens,
+  selecionado,
+  aoSelecionar,
+  rotulo,
+  children,
+}: {
+  itens: T[];
+  selecionado: string | null;
+  aoSelecionar: (id: string) => void;
+  rotulo: (item: T) => string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible">
+        {itens.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => aoSelecionar(item.id)}
+            className={`min-h-12 min-w-48 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-colors lg:w-full lg:min-w-0 ${selecionado === item.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-accent"}`}
+          >
+            {rotulo(item)}
+          </button>
+        ))}
+      </div>
+      {children}
     </div>
-    {children}
-  </div>;
+  );
 }
 
-function ControleBooleano({ rotulo, marcado, aoMudar }: { rotulo: string; marcado: boolean; aoMudar: (valor: boolean) => void }) {
-  return <div className="flex min-h-14 items-center justify-between rounded-xl border-2 border-border px-4 sm:col-span-2"><Label className="text-base font-bold">{rotulo}</Label><Switch checked={marcado} onCheckedChange={aoMudar} className="h-7 w-12 [&>span]:size-6 data-[state=checked]:[&>span]:translate-x-5" /></div>;
+function ControleBooleano({
+  rotulo,
+  marcado,
+  aoMudar,
+}: {
+  rotulo: string;
+  marcado: boolean;
+  aoMudar: (valor: boolean) => void;
+}) {
+  return (
+    <div className="flex min-h-14 items-center justify-between rounded-xl border-2 border-border px-4 sm:col-span-2">
+      <Label className="text-base font-bold">{rotulo}</Label>
+      <Switch
+        checked={marcado}
+        onCheckedChange={aoMudar}
+        className="h-7 w-12 [&>span]:size-6 data-[state=checked]:[&>span]:translate-x-5"
+      />
+    </div>
+  );
 }
 
-function Vazio() { return <p className="py-8 text-lg font-medium text-muted-foreground">Nenhum registro disponível.</p>; }
+function Vazio() {
+  return (
+    <p className="py-8 text-lg font-medium text-muted-foreground">Nenhum registro disponível.</p>
+  );
+}
