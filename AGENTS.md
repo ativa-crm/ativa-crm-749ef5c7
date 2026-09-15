@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Design system
+
+Leia `DESIGN.md` antes de alterar UI. Use os componentes de `design-system/components/` e os tokens de `design-system/tokens/`; registre componentes novos em `design-system/catalog.ts` e valide a rota `/design-system`. Referências HTML ficam em `design-system/referencia/`. Não crie cores, fontes, espaçamentos ou raios hardcoded.
