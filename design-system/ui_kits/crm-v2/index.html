@@ -1,0 +1,80 @@
+<!-- @dsCard group="CRM Ativa" viewport="1280x820" name="CRM v2 — redesenho completo" subtitle="Menu retrátil, painel com metas e pontos, 9 telas navegáveis" -->
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ativa CRM — redesenho</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="jarvis.css">
+<style>
+*,*:before,*:after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--background-light);font-family:var(--font-sans);color:var(--foreground)}
+#root{height:100vh}
+.palco{position:relative;height:100vh;overflow:hidden}
+.moldura{height:100%;width:100%;overflow:hidden}
+.moldura.celular{width:390px;height:min(844px,100vh - 32px);margin:16px auto;border-radius:34px;border:8px solid #141414;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.controles{position:fixed;right:14px;bottom:14px;z-index:90;display:flex;gap:6px;padding:6px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.controles button{height:32px;padding:0 12px;border-radius:999px;border:none;background:transparent;color:var(--foreground);font-family:var(--font-sans);font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer}
+.controles button[data-ativo="true"]{background:var(--primary);color:#fff}
+a{color:var(--primary)}a:hover{color:var(--primary-dark)}
+code{font-size:.92em;padding:1px 4px;border-radius:4px;background:var(--secondary)}
+@media (max-width:1080px){.grade-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}.grade-meta,.grade-medicao{grid-template-columns:minmax(0,1fr)!important}.grade-3{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:640px){.grade-4,.grade-3{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="dados.js"></script>
+</head>
+<body><div id="root"></div>
+<script type="text/babel" src="widgets.jsx"></script>
+<script type="text/babel" src="Shell.jsx"></script>
+<script type="text/babel" src="TelaInicioV2.jsx"></script>
+<script type="text/babel" src="TelaImoveisV2.jsx"></script>
+<script type="text/babel" src="TelaClientesV2.jsx"></script>
+<script type="text/babel" src="TelaFunilV2.jsx"></script>
+<script type="text/babel" src="TelaServicosV2.jsx"></script>
+<script type="text/babel" src="TelaOrcamentosV2.jsx"></script>
+<script type="text/babel" src="TelaMedicao.jsx"></script>
+<script type="text/babel" src="TelaContratos.jsx"></script>
+<script type="text/babel" src="TelaAdministracao.jsx"></script>
+<script type="text/babel">
+function App() {
+  const [tela, setTela] = React.useState("inicio");
+  const [celular, setCelular] = React.useState(false);
+  const [escuro, setEscuro] = React.useState(true);
+  const [perfil, setPerfil] = React.useState("admin");
+  const [hud, setHud] = React.useState(true);
+
+  React.useEffect(() => { document.documentElement.classList.toggle("dark", escuro); }, [escuro]);
+
+  const telas = {
+    inicio: <window.TelaInicioV2 aoNavegar={setTela} />,
+    imoveis: <window.TelaImoveisV2 aoNavegar={setTela} />,
+    clientes: <window.TelaClientesV2 aoNavegar={setTela} />,
+    funil: <window.TelaFunilV2 />,
+    servicos: <window.TelaServicosV2 />,
+    orcamentos: <window.TelaOrcamentosV2 />,
+    medicao: <window.TelaMedicao />,
+    contratos: <window.TelaContratos />,
+    administracao: <window.TelaAdministracao />,
+  };
+
+  return (
+    <div className={"palco" + (hud ? " jarvis" : "")}>
+      <div className={"moldura" + (celular ? " celular" : "")}>
+        <window.Shell tela={tela} aoNavegar={setTela} celular={celular} escuro={escuro}
+          alternarTema={() => setEscuro((v) => !v)} perfil={perfil} aoTrocarPerfil={(p) => { setPerfil(p); setTela("inicio"); }}>
+          {telas[tela]}
+        </window.Shell>
+      </div>
+      <div className="controles">
+        <button data-ativo={!celular} onClick={() => setCelular(false)}>Desktop</button>
+        <button data-ativo={celular} onClick={() => setCelular(true)}>Celular</button>
+        <button data-ativo={escuro} onClick={() => setEscuro((v) => !v)}>{escuro ? "Escuro" : "Claro"}</button>
+        <button data-ativo={hud} onClick={() => setHud((v) => !v)}>Jarvis</button>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script></body></html>
