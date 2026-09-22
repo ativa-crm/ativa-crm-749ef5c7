@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  ChevronLeft,
+  ChevronRight,
   Download,
   Loader2,
   Mail,
@@ -102,27 +104,64 @@ type LinhaImovel = {
 
 type Localizacao = { imovel_id: string; lat: number | null; lon: number | null };
 
-const LIMITE = 800;
+const POR_PAGINA = 100;
+const LOTE = 1000;
+const TETO_MAPA = 20000;
+
+const COLUNAS_LINHA =
+  "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, observacoes, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
+
+type Filtros = {
+  municipio: string;
+  servico: string;
+  soContato: boolean;
+  soCandidato: boolean;
+  busca: string;
+};
 
 function um<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
+function escaparTermo(v: string): string {
+  return v.replace(/[,%()]/g, " ").trim();
+}
+
+function aplicarFiltros<T>(consulta: T, f: Filtros): T {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  let c = consulta as any;
+  if (f.municipio !== "todos") c = c.eq("municipio", f.municipio);
+  if (f.servico !== "todos") c = c.eq("servico_sugerido", f.servico);
+  if (f.soContato) c = c.not("prospeccao_id", "is", null);
+  if (f.soCandidato) c = c.is("prospeccao_id", null).eq("tem_candidato_pendente", true);
+  const termo = escaparTermo(f.busca);
+  if (termo) {
+    c = c.or(
+      `nome.ilike.%${termo}%,municipio.ilike.%${termo}%,titular_ccir.ilike.%${termo}%,servico_sugerido.ilike.%${termo}%`,
+    );
+  }
+  return c as T;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+/** Municípios distintos: busca em lotes para não parar no limite padrão do PostgREST. */
 function useMunicipios() {
   return useQuery({
     queryKey: ["prospeccao", "municipios"],
     queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from("imoveis")
-        .select("municipio")
-        .not("municipio", "is", null)
-        .order("municipio", { ascending: true });
-      if (error) throw error;
       const set = new Set<string>();
-      for (const linha of data ?? []) {
-        const m = (linha as { municipio: string | null }).municipio;
-        if (m) set.add(m);
+      for (let inicio = 0; inicio < TETO_MAPA; inicio += LOTE) {
+        const { data, error } = await supabase
+          .from("imoveis")
+          .select("municipio")
+          .not("municipio", "is", null)
+          .order("municipio", { ascending: true })
+          .range(inicio, inicio + LOTE - 1);
+        if (error) throw error;
+        const linhas = (data ?? []) as { municipio: string | null }[];
+        for (const l of linhas) if (l.municipio) set.add(l.municipio);
+        if (linhas.length < LOTE) break;
       }
       return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
     },
@@ -130,37 +169,86 @@ function useMunicipios() {
   });
 }
 
-function useImoveis(municipio: string, servico: string) {
+type ResumoFiltro = {
+  total: number;
+  comContato: number;
+  candidatos: number;
+  areaTotal: number;
+  ids: string[];
+};
+
+/** Resumo real do filtro inteiro (não só da página) e ids para o mapa. */
+function useResumoFiltro(f: Filtros) {
   return useQuery({
-    queryKey: ["prospeccao", "imoveis", municipio, servico],
-    queryFn: async (): Promise<LinhaImovel[]> => {
-      let consulta = supabase
-        .from("imoveis")
-        .select(
-          "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, observacoes, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)",
-        )
-        .order("nome", { ascending: true })
-        .limit(LIMITE);
-      if (municipio !== "todos") consulta = consulta.eq("municipio", municipio);
-      if (servico !== "todos") consulta = consulta.eq("servico_sugerido", servico);
-      const { data, error } = await consulta;
-      if (error) throw error;
-      return (data ?? []) as unknown as LinhaImovel[];
+    queryKey: ["prospeccao", "resumo", f],
+    queryFn: async (): Promise<ResumoFiltro> => {
+      const ids: string[] = [];
+      let comContato = 0;
+      let candidatos = 0;
+      let areaTotal = 0;
+
+      for (let inicio = 0; inicio < TETO_MAPA; inicio += LOTE) {
+        const base = supabase
+          .from("imoveis")
+          .select("id, area_ha, prospeccao_id, tem_candidato_pendente")
+          .order("id", { ascending: true })
+          .range(inicio, inicio + LOTE - 1);
+        const { data, error } = await aplicarFiltros(base, f);
+        if (error) throw error;
+        const linhas = (data ?? []) as {
+          id: string;
+          area_ha: number | null;
+          prospeccao_id: string | null;
+          tem_candidato_pendente: boolean | null;
+        }[];
+        for (const l of linhas) {
+          ids.push(l.id);
+          areaTotal += Number(l.area_ha ?? 0);
+          if (l.prospeccao_id) comContato++;
+          else if (l.tem_candidato_pendente) candidatos++;
+        }
+        if (linhas.length < LOTE) break;
+      }
+
+      return { total: ids.length, comContato, candidatos, areaTotal, ids };
     },
   });
 }
 
+function usePaginaImoveis(f: Filtros, pagina: number) {
+  return useQuery({
+    queryKey: ["prospeccao", "imoveis", f, pagina],
+    queryFn: async (): Promise<{ linhas: LinhaImovel[]; total: number }> => {
+      const inicio = pagina * POR_PAGINA;
+      const base = supabase
+        .from("imoveis")
+        .select(COLUNAS_LINHA, { count: "exact" })
+        .order("nome", { ascending: true })
+        .range(inicio, inicio + POR_PAGINA - 1);
+      const { data, error, count } = await aplicarFiltros(base, f);
+      if (error) throw error;
+      return { linhas: (data ?? []) as unknown as LinhaImovel[], total: count ?? 0 };
+    },
+  });
+}
+
+/** Localizações de TODOS os imóveis do filtro, em lotes de 1000 ids. */
 function useLocalizacoes(ids: string[]) {
   return useQuery({
-    queryKey: ["prospeccao", "localizacoes", ids.length, ids[0] ?? ""],
+    queryKey: ["prospeccao", "localizacoes", ids.length, ids[0] ?? "", ids[ids.length - 1] ?? ""],
     enabled: ids.length > 0,
     queryFn: async (): Promise<Localizacao[]> => {
-      const { data, error } = await supabase
-        .from("imovel_localizacao")
-        .select("imovel_id, lat, lon")
-        .in("imovel_id", ids);
-      if (error) throw error;
-      return (data ?? []) as Localizacao[];
+      const saida: Localizacao[] = [];
+      for (let i = 0; i < ids.length; i += LOTE) {
+        const fatia = ids.slice(i, i + LOTE);
+        const { data, error } = await supabase
+          .from("imovel_localizacao")
+          .select("imovel_id, lat, lon")
+          .in("imovel_id", fatia);
+        if (error) throw error;
+        saida.push(...((data ?? []) as Localizacao[]));
+      }
+      return saida;
     },
   });
 }
@@ -174,63 +262,78 @@ function Pagina() {
   const [soContato, setSoContato] = useState(false);
   const [soCandidato, setSoCandidato] = useState(false);
   const [busca, setBusca] = useState("");
+  const [buscaAplicada, setBuscaAplicada] = useState("");
+  const [pagina, setPagina] = useState(0);
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const [modelo, setModelo] = useState<ModeloMensagem>(() => lerModelo());
   const [configAberta, setConfigAberta] = useState(false);
 
   useEffect(() => setModelo(lerModelo()), []);
 
+  // Busca com pequeno atraso para não consultar a cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setBuscaAplicada(busca), 350);
+    return () => clearTimeout(t);
+  }, [busca]);
+
+  const filtros = useMemo<Filtros>(
+    () => ({ municipio, servico, soContato, soCandidato, busca: buscaAplicada }),
+    [municipio, servico, soContato, soCandidato, buscaAplicada],
+  );
+
+  useEffect(() => {
+    setPagina(0);
+    setSelecionado(null);
+  }, [filtros]);
+
   const municipiosQuery = useMunicipios();
-  const { data: imoveis, isPending, error } = useImoveis(municipio, servico);
+  const resumoQuery = useResumoFiltro(filtros);
+  const paginaQuery = usePaginaImoveis(filtros, pagina);
 
-  const filtrados = useMemo(() => {
-    const termo = busca.trim().toLocaleLowerCase("pt-BR");
-    return (imoveis ?? []).filter((i) => {
-      if (soContato && !i.prospeccao_id) return false;
-      if (soCandidato && !(i.tem_candidato_pendente && !i.prospeccao_id)) return false;
-      if (!termo) return true;
-      const lead = um(i.prospeccao);
-      const alvo = `${i.nome} ${i.municipio ?? ""} ${i.titular_ccir ?? ""} ${i.servico_sugerido ?? ""} ${lead?.nome ?? ""}`;
-      return alvo.toLocaleLowerCase("pt-BR").includes(termo);
-    });
-  }, [imoveis, soContato, soCandidato, busca]);
+  const linhas = useMemo(() => paginaQuery.data?.linhas ?? [], [paginaQuery.data]);
+  const total = paginaQuery.data?.total ?? resumoQuery.data?.total ?? 0;
+  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
-  const idsFiltrados = useMemo(() => filtrados.map((i) => i.id), [filtrados]);
-  const localizacoesQuery = useLocalizacoes(idsFiltrados);
+  const localizacoesQuery = useLocalizacoes(resumoQuery.data?.ids ?? []);
+
+  const nomesPorId = useMemo(() => {
+    const mapa = new Map<string, LinhaImovel>();
+    for (const l of linhas) mapa.set(l.id, l);
+    return mapa;
+  }, [linhas]);
 
   const pontos = useMemo<PontoImovel[]>(() => {
-    const porId = new Map(filtrados.map((i) => [i.id, i]));
     const lista: PontoImovel[] = [];
     for (const loc of localizacoesQuery.data ?? []) {
-      const imovel = porId.get(loc.imovel_id);
-      if (!imovel || loc.lat === null || loc.lon === null) continue;
+      if (loc.lat === null || loc.lon === null) continue;
+      const imovel = nomesPorId.get(loc.imovel_id);
       lista.push({
-        id: imovel.id,
+        id: loc.imovel_id,
         lat: Number(loc.lat),
         lon: Number(loc.lon),
-        nome: imovel.nome,
-        municipio: [imovel.municipio, imovel.uf].filter(Boolean).join("/"),
-        servico: imovel.servico_sugerido ?? "Sem serviço sugerido",
-        comContato: Boolean(imovel.prospeccao_id),
+        nome: imovel?.nome ?? "Imóvel",
+        municipio: imovel
+          ? [imovel.municipio, imovel.uf].filter(Boolean).join("/")
+          : municipio === "todos"
+            ? ""
+            : municipio,
+        servico: imovel?.servico_sugerido ?? "Abra a página da lista para ver os detalhes",
+        comContato: Boolean(imovel?.prospeccao_id),
       });
     }
     return lista;
-  }, [filtrados, localizacoesQuery.data]);
+  }, [localizacoesQuery.data, nomesPorId, municipio]);
 
-  const comContato = filtrados.filter((i) => i.prospeccao_id).length;
-  const candidatos = filtrados.filter((i) => i.tem_candidato_pendente && !i.prospeccao_id).length;
-  const areaTotal = filtrados.reduce((soma, i) => soma + Number(i.area_ha ?? 0), 0);
-
-  const leadsDoFiltro = useMemo(() => {
+  const leadsDaPagina = useMemo(() => {
     const mapa = new Map<string, { lead: Lead; imovel: LinhaImovel }>();
-    for (const i of filtrados) {
+    for (const i of linhas) {
       const lead = um(i.prospeccao);
       if (lead && !mapa.has(lead.id)) mapa.set(lead.id, { lead, imovel: i });
     }
     return [...mapa.values()];
-  }, [filtrados]);
+  }, [linhas]);
 
-  const imovelAberto = filtrados.find((i) => i.id === selecionado) ?? null;
+  const imovelAberto = linhas.find((i) => i.id === selecionado) ?? null;
 
   const mudarEstagio = useMutation({
     mutationFn: async ({ leadId, estagio }: { leadId: string; estagio: Estagio }) => {
@@ -287,46 +390,66 @@ function Pagina() {
     }
   }
 
-  function exportar() {
-    baixarCsv(
-      `prospeccao-${municipio === "todos" ? "todos-municipios" : municipio.toLocaleLowerCase("pt-BR").replace(/\s+/g, "-")}.csv`,
-      [
-        "Imóvel",
-        "Município",
-        "UF",
-        "Área (ha)",
-        "Serviço sugerido",
-        "Titular CCIR",
-        "Candidato pendente",
-        "Situação documental",
-        "Lead",
-        "Telefone",
-        "E-mail",
-        "Etapa do lead",
-        "Próxima ação",
-        "Próxima data",
-      ],
-      filtrados.map((i) => {
-        const lead = um(i.prospeccao);
-        return [
-          i.nome,
-          i.municipio ?? "",
-          i.uf ?? "",
-          i.area_ha !== null ? String(i.area_ha).replace(".", ",") : "",
-          i.servico_sugerido ?? "",
-          i.titular_ccir ?? "",
-          i.tem_candidato_pendente ? "sim" : "não",
-          i.observacoes ?? "",
-          lead?.nome ?? "",
-          lead?.telefone ?? "",
-          lead?.email ?? "",
-          lead ? rotuloEstagio(lead.estagio) : "",
-          lead?.proxima_acao ?? "",
-          lead?.proxima_data ?? "",
-        ];
-      }),
-    );
-  }
+  const exportacao = useMutation({
+    mutationFn: async () => {
+      const linhasCsv: string[][] = [];
+      for (let inicio = 0; inicio < TETO_MAPA; inicio += LOTE) {
+        const base = supabase
+          .from("imoveis")
+          .select(COLUNAS_LINHA)
+          .order("nome", { ascending: true })
+          .range(inicio, inicio + LOTE - 1);
+        const { data, error } = await aplicarFiltros(base, filtros);
+        if (error) throw error;
+        const lote = (data ?? []) as unknown as LinhaImovel[];
+        for (const i of lote) {
+          const lead = um(i.prospeccao);
+          linhasCsv.push([
+            i.nome,
+            i.municipio ?? "",
+            i.uf ?? "",
+            i.area_ha !== null ? String(i.area_ha).replace(".", ",") : "",
+            i.servico_sugerido ?? "",
+            i.titular_ccir ?? "",
+            i.tem_candidato_pendente ? "sim" : "não",
+            i.observacoes ?? "",
+            lead?.nome ?? "",
+            lead?.telefone ?? "",
+            lead?.email ?? "",
+            lead ? rotuloEstagio(lead.estagio) : "",
+            lead?.proxima_acao ?? "",
+            lead?.proxima_data ?? "",
+          ]);
+        }
+        if (lote.length < LOTE) break;
+      }
+      baixarCsv(
+        `prospeccao-${municipio === "todos" ? "todos-municipios" : municipio.toLocaleLowerCase("pt-BR").replace(/\s+/g, "-")}.csv`,
+        [
+          "Imóvel",
+          "Município",
+          "UF",
+          "Área (ha)",
+          "Serviço sugerido",
+          "Titular CCIR",
+          "Candidato pendente",
+          "Situação documental",
+          "Lead",
+          "Telefone",
+          "E-mail",
+          "Etapa do lead",
+          "Próxima ação",
+          "Próxima data",
+        ],
+        linhasCsv,
+      );
+      return linhasCsv.length;
+    },
+    onSuccess: (qtd) => toast.success(`${qtd} imóveis exportados.`),
+    onError: () => toast.error("Não foi possível exportar agora."),
+  });
+
+  const ufDoFiltro = linhas.find((l) => l.uf)?.uf ?? "SP";
 
   return (
     <section className="space-y-4">
@@ -338,10 +461,7 @@ function Pagina() {
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={municipio}
-            onChange={(e) => {
-              setMunicipio(e.target.value);
-              setSelecionado(null);
-            }}
+            onChange={(e) => setMunicipio(e.target.value)}
             aria-label="Município"
             className="h-11 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground"
           >
@@ -360,8 +480,17 @@ function Pagina() {
             <Settings2 className="size-5" strokeWidth={2.5} />
             Mensagem
           </Button>
-          <Button variant="outline" onClick={exportar} className="h-11 px-4 text-base">
-            <Download className="size-5" strokeWidth={2.5} />
+          <Button
+            variant="outline"
+            onClick={() => exportacao.mutate()}
+            disabled={exportacao.isPending}
+            className="h-11 px-4 text-base"
+          >
+            {exportacao.isPending ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Download className="size-5" strokeWidth={2.5} />
+            )}
             Exportar CSV
           </Button>
         </div>
@@ -376,7 +505,7 @@ function Pagina() {
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por imóvel, titular ou lead"
+            placeholder="Buscar por imóvel, titular ou serviço"
             className="h-11 rounded-full border pl-11"
           />
         </div>
@@ -424,21 +553,21 @@ function Pagina() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <CartaoIndicador
           icone={MapPinned}
-          valor={filtrados.length}
+          valor={resumoQuery.isPending ? "…" : total}
           rotulo="Imóveis no filtro"
-          apoio={`limite de ${LIMITE} por consulta`}
+          apoio="total real, não só a página"
           destino="/prospeccao"
         />
         <CartaoIndicador
           icone={Phone}
-          valor={comContato}
+          valor={resumoQuery.isPending ? "…" : (resumoQuery.data?.comContato ?? 0)}
           rotulo="Com contato"
           apoio="lead vinculado ao imóvel"
           destino="/prospeccao"
         />
         <CartaoIndicador
           icone={UserCheck}
-          valor={candidatos}
+          valor={resumoQuery.isPending ? "…" : (resumoQuery.data?.candidatos ?? 0)}
           rotulo="Candidato a confirmar"
           apoio="sem contato conhecido"
           tom="atencao"
@@ -446,7 +575,7 @@ function Pagina() {
         />
         <CartaoIndicador
           icone={Target}
-          valor={areaHa(areaTotal)}
+          valor={resumoQuery.isPending ? "…" : areaHa(resumoQuery.data?.areaTotal ?? 0)}
           rotulo="Área somada"
           apoio="hectares no filtro"
           destino="/prospeccao"
@@ -465,30 +594,32 @@ function Pagina() {
 
         <TabsContent value="mapa" className="mt-3">
           <Painel titulo="Localização dos imóveis" icone={MapPinned}>
-            {localizacoesQuery.isPending && idsFiltrados.length > 0 ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="size-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <MapaProspeccao
-                pontos={pontos}
-                selecionado={selecionado}
-                onSelecionar={setSelecionado}
-              />
+            <MapaProspeccao
+              pontos={pontos}
+              selecionado={selecionado}
+              onSelecionar={setSelecionado}
+              municipio={municipio === "todos" ? null : municipio}
+              uf={ufDoFiltro}
+            />
+            {localizacoesQuery.isPending && (resumoQuery.data?.ids.length ?? 0) > 0 && (
+              <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" /> Carregando as localizações
+                do filtro…
+              </p>
             )}
           </Painel>
         </TabsContent>
 
         <TabsContent value="funil" className="mt-3">
-          <Painel titulo="Funil de leads do filtro" icone={Users}>
-            {leadsDoFiltro.length === 0 ? (
+          <Painel titulo="Funil de leads desta página" icone={Users}>
+            {leadsDaPagina.length === 0 ? (
               <p className="text-base font-medium text-muted-foreground">
-                Nenhum lead vinculado aos imóveis desse filtro.
+                Nenhum lead vinculado aos imóveis desta página.
               </p>
             ) : (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {ESTAGIOS.map((etapa) => {
-                  const cartoes = leadsDoFiltro.filter(
+                  const cartoes = leadsDaPagina.filter(
                     ({ lead }) => (lead.estagio ?? "novo") === etapa,
                   );
                   return (
@@ -541,29 +672,25 @@ function Pagina() {
         titulo="Imóveis para prospectar"
         icone={Target}
         acao={
-          <span className="text-sm font-bold text-muted-foreground">{filtrados.length} itens</span>
+          <span className="text-sm font-bold text-muted-foreground">
+            {total} itens · página {pagina + 1} de {paginas}
+          </span>
         }
       >
-        {error ? (
+        {paginaQuery.error ? (
           <p className="text-base font-bold text-destructive">
             Não foi possível carregar os imóveis.
           </p>
-        ) : isPending ? (
+        ) : paginaQuery.isPending ? (
           <div className="flex justify-center py-10">
             <Loader2 className="size-8 animate-spin text-primary" />
           </div>
-        ) : filtrados.length === 0 ? (
+        ) : linhas.length === 0 ? (
           <p className="text-base font-medium text-muted-foreground">
             Nenhum imóvel encontrado com esses filtros.
           </p>
         ) : (
           <>
-            {(imoveis ?? []).length >= LIMITE && (
-              <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                Mostrando os primeiros {LIMITE} imóveis. Escolha um município ou serviço para
-                estreitar a lista.
-              </p>
-            )}
             <Tabela>
               <table className="w-full min-w-[1040px] border-collapse text-left">
                 <thead>
@@ -579,7 +706,7 @@ function Pagina() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtrados.map((i) => {
+                  {linhas.map((i) => {
                     const lead = um(i.prospeccao);
                     return (
                       <tr
@@ -633,6 +760,32 @@ function Pagina() {
                 </tbody>
               </table>
             </Tabela>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">
+                Mostrando {pagina * POR_PAGINA + 1}–{pagina * POR_PAGINA + linhas.length} de {total}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPagina((p) => Math.max(0, p - 1))}
+                  disabled={pagina === 0}
+                  className="h-11 px-4 text-base"
+                >
+                  <ChevronLeft className="size-5" strokeWidth={2.5} />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setPagina((p) => Math.min(paginas - 1, p + 1))}
+                  disabled={pagina + 1 >= paginas}
+                  className="h-11 px-4 text-base"
+                >
+                  Próxima
+                  <ChevronRight className="size-5" strokeWidth={2.5} />
+                </Button>
+              </div>
+            </div>
           </>
         )}
       </Painel>
@@ -715,114 +868,109 @@ function DetalheImovel({
 }) {
   const lead = um(imovel.prospeccao);
   return (
-    <div className="fixed inset-0 z-[600] flex justify-end bg-foreground/40" onClick={onFechar}>
-      <aside
-        onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-border bg-card p-4"
-      >
-        <header className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-xl font-extrabold text-foreground">{imovel.nome}</h2>
-            <p className="text-sm font-semibold text-muted-foreground">
-              {[imovel.municipio, imovel.uf].filter(Boolean).join("/") || "Sem município"}
-              {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onFechar} aria-label="Fechar">
-            <X className="size-5" />
-          </Button>
-        </header>
-
-        <dl className="mt-4 space-y-2 text-sm">
-          <Campo rotulo="Serviço sugerido" valor={imovel.servico_sugerido} />
-          <Campo
-            rotulo="Titular no CCIR"
-            valor={
-              imovel.titular_ccir
-                ? `${imovel.titular_ccir}${imovel.titular_tipo ? ` · ${imovel.titular_tipo.toUpperCase()}` : ""}`
-                : null
-            }
-          />
-          <Campo rotulo="Situação documental" valor={imovel.observacoes} />
-          <Campo
-            rotulo="Candidato a confirmar"
-            valor={imovel.tem_candidato_pendente ? "Sim" : "Não"}
-          />
-        </dl>
-
-        <div className="mt-5 rounded-lg border border-border bg-muted/30 p-3">
-          {lead ? (
-            <>
-              <p className="text-xs font-bold uppercase text-muted-foreground">Contato do lead</p>
-              <p className="mt-1 text-lg font-extrabold text-foreground">
-                {lead.nome || "Lead sem nome"}
-              </p>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {lead.telefone ? telefoneVisivel(lead.telefone) : "Sem telefone"} ·{" "}
-                {lead.email || "sem e-mail"}
-              </p>
-              <p className="mt-1 text-sm font-bold text-foreground">
-                Etapa: {rotuloEstagio(lead.estagio)}
-              </p>
-              {lead.proxima_acao && (
-                <p className="text-sm font-medium text-muted-foreground">
-                  Próxima ação: {lead.proxima_acao}
-                  {lead.proxima_data ? ` (${lead.proxima_data})` : ""}
-                </p>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button onClick={onWhats} disabled={!lead.telefone} className="h-11 px-4 text-base">
-                  <MessageCircle className="size-5" strokeWidth={2.5} />
-                  Enviar WhatsApp
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={onEmail}
-                  disabled={!lead.email}
-                  className="h-11 px-4 text-base"
-                >
-                  <Mail className="size-5" strokeWidth={2.5} />
-                  Enviar e-mail
-                </Button>
-              </div>
-
-              <div className="mt-3">
-                <Label htmlFor="etapa-lead" className="text-xs font-bold uppercase">
-                  Mudar etapa
-                </Label>
-                <select
-                  id="etapa-lead"
-                  value={(lead.estagio ?? "novo") as Estagio}
-                  onChange={(e) => onEstagio(e.target.value as Estagio)}
-                  className="mt-1 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground"
-                >
-                  {ESTAGIOS.map((etapa) => (
-                    <option key={etapa} value={etapa}>
-                      {rotuloEstagio(etapa)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {responsavel && (
-                <p className="mt-3 text-xs font-medium text-muted-foreground">
-                  Abordagem por {responsavel}.
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <p className="text-xs font-bold uppercase text-muted-foreground">Sem contato</p>
-              <p className="mt-1 text-sm font-medium text-muted-foreground">
-                {imovel.tem_candidato_pendente
-                  ? "Há um candidato a confirmar para este imóvel. Confirme o titular antes de abordar."
-                  : "Este imóvel ainda não tem lead vinculado."}
-              </p>
-            </>
-          )}
+    <aside className="fixed right-0 top-0 z-[600] flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-border bg-card p-4 shadow-2xl">
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-xl font-extrabold text-foreground">{imovel.nome}</h2>
+          <p className="text-sm font-semibold text-muted-foreground">
+            {[imovel.municipio, imovel.uf].filter(Boolean).join("/") || "Sem município"}
+            {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}
+          </p>
         </div>
-      </aside>
-    </div>
+        <Button variant="ghost" size="icon" onClick={onFechar} aria-label="Fechar">
+          <X className="size-5" />
+        </Button>
+      </header>
+
+      <dl className="mt-4 space-y-2 text-sm">
+        <Campo rotulo="Serviço sugerido" valor={imovel.servico_sugerido} />
+        <Campo
+          rotulo="Titular no CCIR"
+          valor={
+            imovel.titular_ccir
+              ? `${imovel.titular_ccir}${imovel.titular_tipo ? ` · ${imovel.titular_tipo.toUpperCase()}` : ""}`
+              : null
+          }
+        />
+        <Campo rotulo="Situação documental" valor={imovel.observacoes} />
+        <Campo
+          rotulo="Candidato a confirmar"
+          valor={imovel.tem_candidato_pendente ? "Sim" : "Não"}
+        />
+      </dl>
+
+      <div className="mt-5 rounded-lg border border-border bg-muted/30 p-3">
+        {lead ? (
+          <>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Contato do lead</p>
+            <p className="mt-1 text-lg font-extrabold text-foreground">
+              {lead.nome || "Lead sem nome"}
+            </p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              {lead.telefone ? telefoneVisivel(lead.telefone) : "Sem telefone"} ·{" "}
+              {lead.email || "sem e-mail"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-foreground">
+              Etapa: {rotuloEstagio(lead.estagio)}
+            </p>
+            {lead.proxima_acao && (
+              <p className="text-sm font-medium text-muted-foreground">
+                Próxima ação: {lead.proxima_acao}
+                {lead.proxima_data ? ` (${lead.proxima_data})` : ""}
+              </p>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={onWhats} disabled={!lead.telefone} className="h-11 px-4 text-base">
+                <MessageCircle className="size-5" strokeWidth={2.5} />
+                Enviar WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onEmail}
+                disabled={!lead.email}
+                className="h-11 px-4 text-base"
+              >
+                <Mail className="size-5" strokeWidth={2.5} />
+                Enviar e-mail
+              </Button>
+            </div>
+
+            <div className="mt-3">
+              <Label htmlFor="etapa-lead" className="text-xs font-bold uppercase">
+                Mudar etapa
+              </Label>
+              <select
+                id="etapa-lead"
+                value={(lead.estagio ?? "novo") as Estagio}
+                onChange={(e) => onEstagio(e.target.value as Estagio)}
+                className="mt-1 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground"
+              >
+                {ESTAGIOS.map((etapa) => (
+                  <option key={etapa} value={etapa}>
+                    {rotuloEstagio(etapa)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {responsavel && (
+              <p className="mt-3 text-xs font-medium text-muted-foreground">
+                Abordagem por {responsavel}.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Sem contato</p>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              {imovel.tem_candidato_pendente
+                ? "Há um candidato a confirmar para este imóvel. Confirme o titular antes de abordar."
+                : "Este imóvel ainda não tem lead vinculado."}
+            </p>
+          </>
+        )}
+      </div>
+    </aside>
   );
 }
 
