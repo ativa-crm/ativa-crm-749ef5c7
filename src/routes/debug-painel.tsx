@@ -27,6 +27,7 @@ const imovelFalso: LinhaImovel = {
     documento: null,
     proxima_acao: "Ligar de volta",
     proxima_data: "2026-09-25",
+    observacoes: null,
   },
 };
 
