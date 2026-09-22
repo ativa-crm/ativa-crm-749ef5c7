@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as DebugPainelRouteImport } from './routes/debug-painel'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugPainelRoute = DebugPainelRouteImport.update({
+  id: '/debug-painel',
+  path: '/debug-painel',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesignSystemRoute = DesignSystemRouteImport.update({
@@ -138,6 +144,7 @@ const AppServicosIdRoute = AppServicosIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/debug-painel': typeof DebugPainelRoute
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
   '/administracao': typeof AppAdministracaoRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/debug-painel': typeof DebugPainelRoute
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
   '/administracao': typeof AppAdministracaoRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteRouteWithChildren
+  '/debug-painel': typeof DebugPainelRoute
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
   '/_app/administracao': typeof AppAdministracaoRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/debug-painel'
     | '/design-system'
     | '/entrar'
     | '/administracao'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/debug-painel'
     | '/design-system'
     | '/entrar'
     | '/administracao'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/debug-painel'
     | '/design-system'
     | '/entrar'
     | '/_app/administracao'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DebugPainelRoute: typeof DebugPainelRoute
   DesignSystemRoute: typeof DesignSystemRoute
   EntrarRoute: typeof EntrarRoute
 }
@@ -295,6 +308,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug-painel': {
+      id: '/debug-painel'
+      path: '/debug-painel'
+      fullPath: '/debug-painel'
+      preLoaderRoute: typeof DebugPainelRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/design-system': {
@@ -480,6 +500,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
+  DebugPainelRoute: DebugPainelRoute,
   DesignSystemRoute: DesignSystemRoute,
   EntrarRoute: EntrarRoute,
 }

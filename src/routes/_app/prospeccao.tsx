@@ -86,7 +86,7 @@ type Lead = {
   observacoes: string | null;
 };
 
-type LinhaImovel = {
+export type LinhaImovel = {
   id: string;
   nome: string;
   municipio: string | null;
