@@ -105,7 +105,8 @@ function Pagina() {
       if (tipo !== "todos" && (i.tipo ?? "rural") !== tipo) return false;
       if (cidade !== "todas" && i.municipio !== cidade) return false;
       if (!termo) return true;
-      const alvo = `${i.nome} ${i.municipio ?? ""} ${i.uf ?? ""} ${i.matricula ?? ""} ${um(i.clientes)?.nome ?? ""}`.toLowerCase();
+      const alvo =
+        `${i.nome} ${i.municipio ?? ""} ${i.uf ?? ""} ${i.matricula ?? ""} ${um(i.clientes)?.nome ?? ""}`.toLowerCase();
       if (alvo.includes(termo)) return true;
       return digitos.length > 0 && soDigitos(i.matricula ?? "").includes(digitos);
     });
@@ -156,7 +157,9 @@ function Pagina() {
       .filter((linha): linha is string => linha !== null)
       .join("");
     const kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${placemarks}</Document></kml>`;
-    const url = URL.createObjectURL(new Blob([kml], { type: "application/vnd.google-earth.kml+xml" }));
+    const url = URL.createObjectURL(
+      new Blob([kml], { type: "application/vnd.google-earth.kml+xml" }),
+    );
     const link = document.createElement("a");
     link.href = url;
     link.download = "imoveis.kml";
@@ -176,8 +179,16 @@ function Pagina() {
             <Download className="size-5" strokeWidth={2.5} />
             Exportar KML
           </Button>
-          <Button onClick={() => criar.mutate()} disabled={criar.isPending} className="h-11 px-4 text-base">
-            {criar.isPending ? <Loader2 className="size-5 animate-spin" /> : <Plus className="size-5" strokeWidth={3} />}
+          <Button
+            onClick={() => criar.mutate()}
+            disabled={criar.isPending}
+            className="h-11 px-4 text-base"
+          >
+            {criar.isPending ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Plus className="size-5" strokeWidth={3} />
+            )}
             Novo imóvel
           </Button>
         </div>
@@ -185,35 +196,88 @@ function Pagina() {
 
       <BarraFerramentas>
         <div className="relative min-w-64 flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" strokeWidth={2.5} />
-          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por imóvel, município, matrícula ou cliente" className="h-11 rounded-full border pl-11" />
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2.5}
+          />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por imóvel, município, matrícula ou cliente"
+            className="h-11 rounded-full border pl-11"
+          />
         </div>
         <div className="seg">
           {(["todos", "rural", "urbano"] as const).map((t) => (
-            <button key={t} type="button" data-ativo={tipo === t} onClick={() => setTipo(t)} className="seg-item">
+            <button
+              key={t}
+              type="button"
+              data-ativo={tipo === t}
+              onClick={() => setTipo(t)}
+              className="seg-item"
+            >
               {t === "todos" ? "Todos" : rotulo(t)}
             </button>
           ))}
         </div>
-        <select value={cidade} onChange={(e) => setCidade(e.target.value)} className="h-11 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground">
+        <select
+          value={cidade}
+          onChange={(e) => setCidade(e.target.value)}
+          className="h-11 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground"
+        >
           <option value="todas">Todas as cidades</option>
-          {cidades.map((c) => <option key={c} value={c}>{c}</option>)}
+          {cidades.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
       </BarraFerramentas>
 
       <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <CartaoIndicador icone={MapPinned} valor={filtrados.length} rotulo="Imóveis no filtro" apoio={`de ${(imoveis ?? []).length} cadastrados`} destino="/imoveis" />
-        <CartaoIndicador icone={Home} valor={areaHa(areaTotal)} rotulo="Área somada" apoio="hectares no filtro" destino="/imoveis" />
-        <CartaoIndicador icone={Wrench} valor={comServico} rotulo="Com serviço ativo" apoio="última OS vinculada" tom="atencao" destino="/servicos" />
+        <CartaoIndicador
+          icone={MapPinned}
+          valor={filtrados.length}
+          rotulo="Imóveis no filtro"
+          apoio={`de ${(imoveis ?? []).length} cadastrados`}
+          destino="/imoveis"
+        />
+        <CartaoIndicador
+          icone={Home}
+          valor={areaHa(areaTotal)}
+          rotulo="Área somada"
+          apoio="hectares no filtro"
+          destino="/imoveis"
+        />
+        <CartaoIndicador
+          icone={Wrench}
+          valor={comServico}
+          rotulo="Com serviço ativo"
+          apoio="última OS vinculada"
+          tom="atencao"
+          destino="/servicos"
+        />
       </div>
 
-      <Painel titulo="Carteira de imóveis" icone={MapPinned} acao={<span className="text-sm font-bold text-muted-foreground">{filtrados.length} itens</span>}>
+      <Painel
+        titulo="Carteira de imóveis"
+        icone={MapPinned}
+        acao={
+          <span className="text-sm font-bold text-muted-foreground">{filtrados.length} itens</span>
+        }
+      >
         {error ? (
-          <p className="text-base font-bold text-destructive">Não foi possível carregar os imóveis.</p>
+          <p className="text-base font-bold text-destructive">
+            Não foi possível carregar os imóveis.
+          </p>
         ) : isPending ? (
-          <div className="flex justify-center py-10"><Loader2 className="size-8 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-10">
+            <Loader2 className="size-8 animate-spin text-primary" />
+          </div>
         ) : filtrados.length === 0 ? (
-          <p className="text-base font-medium text-muted-foreground">Nenhum imóvel encontrado com esses filtros.</p>
+          <p className="text-base font-medium text-muted-foreground">
+            Nenhum imóvel encontrado com esses filtros.
+          </p>
         ) : (
           <Tabela>
             <table className="w-full min-w-[980px] border-collapse text-left">
@@ -234,16 +298,38 @@ function Pagina() {
                   return (
                     <tr key={i.id} className="border-b border-border last:border-0">
                       <td className="px-3 py-3">
-                        <Link to="/imoveis/$id" params={{ id: i.id }} className="font-extrabold text-foreground hover:text-primary">{i.nome}</Link>
+                        <Link
+                          to="/imoveis/$id"
+                          params={{ id: i.id }}
+                          className="font-extrabold text-foreground hover:text-primary"
+                        >
+                          {i.nome}
+                        </Link>
                       </td>
-                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">{[i.municipio, i.uf].filter(Boolean).join("/") || "—"}</td>
-                      <td className="px-3 py-3 text-sm font-semibold text-foreground">{rotulo(i.tipo ?? "rural")}</td>
-                      <td className="px-3 py-3 text-right text-sm font-extrabold text-foreground">{i.area_ha !== null ? areaHa(i.area_ha) : "—"}</td>
-                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">{i.matricula || "—"}</td>
-                      <td className="px-3 py-3 text-sm font-bold text-foreground">{um(i.clientes)?.nome ?? "—"}</td>
+                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">
+                        {[i.municipio, i.uf].filter(Boolean).join("/") || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-sm font-semibold text-foreground">
+                        {rotulo(i.tipo ?? "rural")}
+                      </td>
+                      <td className="px-3 py-3 text-right text-sm font-extrabold text-foreground">
+                        {i.area_ha !== null ? areaHa(i.area_ha) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">
+                        {i.matricula || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-sm font-bold text-foreground">
+                        {um(i.clientes)?.nome ?? "—"}
+                      </td>
                       <td className="px-3 py-3">
-                        <Badge variant="outline" className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground">
-                          <span className={`size-2 rounded-full ${status ? "bg-primary" : "bg-muted-foreground"}`} aria-hidden />
+                        <Badge
+                          variant="outline"
+                          className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                        >
+                          <span
+                            className={`size-2 rounded-full ${status ? "bg-primary" : "bg-muted-foreground"}`}
+                            aria-hidden
+                          />
                           {status ? rotulo(status) : "Sem serviço"}
                         </Badge>
                       </td>
