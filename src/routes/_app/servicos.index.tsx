@@ -108,6 +108,7 @@ function progresso(osId: string, etapas: Etapa[]) {
 }
 
 function Pagina() {
+  const { perfil } = usePerfil();
   const [busca, setBusca] = useState("");
   const [visao, setVisao] = useState<Visao>("lista");
   const [novaAberta, setNovaAberta] = useState(false);

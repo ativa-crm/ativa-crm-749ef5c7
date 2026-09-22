@@ -90,6 +90,10 @@ function processo(p: Parada): string {
   const os = um(p.ordens_servico);
   return `${os?.numero ? `OS ${os.numero}` : "OS sem número"} · ${rotulo(os?.servico ?? "")}`;
 }
+function responsavelDaParada(p: Parada): string | null {
+  const os = um(p.ordens_servico) as (OrdemDisponivel & { id: string }) | null;
+  return os?.responsavel_id ?? null;
+}
 function cidade(p: Parada): string {
   const im = um(um(p.ordens_servico)?.imoveis);
   return [im?.municipio, im?.uf].filter(Boolean).join("/");
@@ -166,7 +170,7 @@ function Pagina() {
       const paradas = r.roteiro_paradas ?? [];
       if (
         responsavel !== "todos" &&
-        !paradas.some((p) => um(p.ordens_servico)?.responsavel_id === responsavel)
+        !paradas.some((p) => responsavelDaParada(p) === responsavel)
       )
         return false;
       if (!termo) return true;
