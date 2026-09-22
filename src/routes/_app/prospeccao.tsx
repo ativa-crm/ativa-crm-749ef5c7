@@ -128,8 +128,8 @@ function escaparTermo(v: string): string {
   return v.replace(/[,%()]/g, " ").trim();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function aplicarFiltros<T extends any>(consulta: T, f: Filtros): T {
+function aplicarFiltros<T>(consulta: T, f: Filtros): T {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   let c = consulta as any;
   if (f.municipio !== "todos") c = c.eq("municipio", f.municipio);
   if (f.servico !== "todos") c = c.eq("servico_sugerido", f.servico);
