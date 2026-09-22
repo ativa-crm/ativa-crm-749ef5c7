@@ -7,15 +7,21 @@ const CHAVE = "ativa-tema";
 export type Tema = "claro" | "escuro";
 
 /** Script injetado no <head> para aplicar o tema antes do primeiro render (evita piscar). */
-export const SCRIPT_TEMA = `(function(){try{var t=localStorage.getItem("${CHAVE}");if(t==="escuro"){document.documentElement.classList.add("dark")}else if(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches){document.documentElement.classList.add("dark")}}catch(e){}})();`;
+export const SCRIPT_TEMA = `(function(){try{var t=localStorage.getItem("${CHAVE}");document.documentElement.classList.toggle("dark",t!=="claro")}catch(e){document.documentElement.classList.add("dark")}})();`;
 
 function temaAtual(): Tema {
-  if (typeof document === "undefined") return "claro";
+  if (typeof document === "undefined") return "escuro";
   return document.documentElement.classList.contains("dark") ? "escuro" : "claro";
 }
 
-export function BotaoTema({ className }: { className?: string }) {
-  const [tema, setTema] = useState<Tema>("claro");
+export function BotaoTema({
+  className,
+  mostrarRotulo = true,
+}: {
+  className?: string;
+  mostrarRotulo?: boolean;
+}) {
+  const [tema, setTema] = useState<Tema>("escuro");
 
   useEffect(() => {
     setTema(temaAtual());
@@ -40,11 +46,11 @@ export function BotaoTema({ className }: { className?: string }) {
       className={className}
     >
       {tema === "escuro" ? (
-        <Sun className="size-[18px]" strokeWidth={2.5} />
+        <Sun className="size-4.5" strokeWidth={2.5} />
       ) : (
-        <Moon className="size-[18px]" strokeWidth={2.5} />
+        <Moon className="size-4.5" strokeWidth={2.5} />
       )}
-      {tema === "escuro" ? "Tema claro" : "Tema escuro"}
+      {mostrarRotulo && (tema === "escuro" ? "Tema claro" : "Tema escuro")}
     </Button>
   );
 }

@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { areaHa, rotulo } from "@/lib/formato";
 import { desdeAgora } from "@/lib/tempo";
 import { STATUS_OS, STATUS_ENCERRADOS, semaforoPrazo, diasAtePrazo } from "@/lib/prazo";
+import { CartaoIndicador, Painel } from "@/components/painel";
 
 export const Route = createFileRoute("/_app/inicio")({
   head: () => ({
@@ -178,22 +179,43 @@ function Pagina() {
   }));
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-foreground">Início</h1>
+    <div className="space-y-6">
+      <h1 className="sr-only">Início</h1>
+
+      <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <CartaoIndicador
+          icone={Flame}
+          valor={semContato.length}
+          rotulo="Oportunidades sem contato"
+          apoio="há mais de 24 horas"
+          tom={semContato.length > 0 ? "critico" : "neutro"}
+          destino="/funil"
+        />
+        <CartaoIndicador
+          icone={TriangleAlert}
+          valor={osUrgentes.length}
+          rotulo="Prazos urgentes"
+          apoio="vencidos ou em até 3 dias"
+          tom={osUrgentes.length > 0 ? "atencao" : "neutro"}
+          destino="/servicos"
+        />
+        <CartaoIndicador
+          icone={FileCheck2}
+          valor={mesQuery.data?.aprovados ?? 0}
+          rotulo="Orçamentos aprovados"
+          apoio="neste mês"
+          destino="/orcamentos"
+        />
+      </div>
 
       {/* 1. Precisam de você agora */}
-      <section>
-        <h2 className="mb-3 flex items-center gap-2 text-xl font-bold uppercase text-foreground">
-          <AlertTriangle className="size-6 text-destructive" strokeWidth={2.5} />
-          Precisam de você agora
-        </h2>
-
+      <Painel titulo="Precisam de você agora" icone={AlertTriangle}>
         {carregando ? (
           <div className="flex justify-center py-10">
             <Loader2 className="size-8 animate-spin text-primary" />
           </div>
         ) : semContato.length === 0 && osUrgentes.length === 0 ? (
-          <p className="rounded-[14px] border border-border border-l-4 border-l-primary bg-card px-4 py-5 text-lg font-semibold text-foreground shadow-card">
+          <p className="border-l-2 border-l-primary py-4 pl-4 text-base font-semibold text-foreground">
             Nada urgente por aqui. Bom trabalho.
           </p>
         ) : (
@@ -205,7 +227,7 @@ function Pagina() {
                   <Link
                     to="/oportunidades/$id"
                     params={{ id: l.id }}
-                    className="flex min-h-20 items-center gap-3 rounded-2xl border-2 border-destructive/40 bg-card px-4 py-3 shadow-sm active:bg-accent"
+                    className="flex min-h-20 items-center gap-3 rounded-lg border-2 border-destructive/40 bg-card px-4 py-3 transition-all duration-200 hover:-translate-y-px hover:bg-accent"
                   >
                     <Flame className="size-7 shrink-0 text-destructive" strokeWidth={2.5} />
                     <span className="min-w-0 flex-1">
@@ -234,7 +256,7 @@ function Pagina() {
                   <Link
                     to="/servicos/$id"
                     params={{ id: o.id }}
-                    className="flex min-h-20 items-center gap-3 rounded-2xl border-2 border-destructive/40 bg-card px-4 py-3 shadow-sm active:bg-accent"
+                    className="flex min-h-20 items-center gap-3 rounded-lg border-2 border-destructive/40 bg-card px-4 py-3 transition-all duration-200 hover:-translate-y-px hover:bg-accent"
                   >
                     <span className={`size-4 shrink-0 rounded-full ${s.ponto}`} />
                     <span className="min-w-0 flex-1">
@@ -253,19 +275,18 @@ function Pagina() {
             })}
           </ul>
         )}
-      </section>
+      </Painel>
 
       {/* 2. Em andamento */}
-      <section>
-        <h2 className="mb-3 text-xl font-bold uppercase text-foreground">Em andamento</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <Painel titulo="Em andamento" icone={Settings2}>
+        <div className="grade-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {porStatus.map((s) => {
             const Icone = ICONES_STATUS[s.valor as keyof typeof ICONES_STATUS] ?? Clock3;
             return (
               <Link
                 key={s.valor}
                 to="/servicos"
-                className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
+                className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
               >
                 <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
                   <Icone className="size-4" aria-hidden />
@@ -278,25 +299,26 @@ function Pagina() {
             );
           })}
         </div>
-      </section>
+      </Painel>
 
       {/* 3. Este mês */}
-      <section>
-        <h2 className="mb-3 text-xl font-bold uppercase text-foreground">Este mês</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <Painel titulo="Este mês" icone={Clock3}>
+        <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
             to="/funil"
-            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
           >
             <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
               <Flame className="size-4" aria-hidden />
               {mesQuery.data?.leads ?? 0}
             </span>
-            <span className="text-sm font-bold uppercase text-foreground">Leads recebidos</span>
+            <span className="text-sm font-bold uppercase text-foreground">
+              Oportunidades recebidas
+            </span>
           </Link>
           <Link
             to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
           >
             <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
               <FileText className="size-4" aria-hidden />
@@ -306,7 +328,7 @@ function Pagina() {
           </Link>
           <Link
             to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-[14px] border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 active:bg-accent"
+            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
           >
             <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
               <FileCheck2 className="size-4" aria-hidden />
@@ -317,7 +339,7 @@ function Pagina() {
             </span>
           </Link>
         </div>
-      </section>
+      </Painel>
     </div>
   );
 }
