@@ -1,0 +1,1 @@
+Blocos densos do painel CRM: `CartaoIndicador`, `AnelMeta`, `Barras`, `BarrasFunil`, `Painel`, `Tabela` e `BarraFerramentas`. Usam exclusivamente tokens do design system, Poppins, alvos mínimos de toque e os efeitos opcionais da classe `jarvis`.

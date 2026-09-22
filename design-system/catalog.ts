@@ -4,7 +4,21 @@ export const designSystemCatalog = {
   navigation: ["SidebarNav", "BottomNav", "Tabs", "SegmentedControl"],
   feedback: ["Alert", "Toast", "Progress"],
   overlays: ["Dialog", "DropdownMenu", "Tooltip"],
-  patterns: ["StatTile", "ListRow", "KanbanCard", "DeadlineBadge", "StatusDot", "SectionHeading"],
+  patterns: [
+    "StatTile",
+    "ListRow",
+    "KanbanCard",
+    "DeadlineBadge",
+    "StatusDot",
+    "SectionHeading",
+    "CartaoIndicador",
+    "AnelMeta",
+    "Barras",
+    "BarrasFunil",
+    "Painel",
+    "Tabela",
+    "BarraFerramentas",
+  ],
   site: ["SiteButton", "ServiceCard", "SpecCard", "SpecGrid", "Chip", "SiteSectionHeading"],
 } as const;
 

@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./styles/jarvis.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -65,6 +66,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --shadow-card: var(--card-shadow);
+  --color-warning: var(--ambar);
+  --color-warning-ink: var(--ambar-tinta);
 }
 
 :root {
@@ -93,6 +96,10 @@
   --border: #eeeeee;
   --input: #eeeeee;
   --ring: #9ab137;
+  --verde-vivo: #69d500;
+  --verde-tinta: #5c6b1f;
+  --ambar: #f59e0b;
+  --ambar-tinta: #8a5200;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -106,6 +113,8 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #333333;
   --sidebar-ring: #9ab137;
+  --dur-padrao: 180ms;
+  --ease-padrao: ease;
 }
 
 .dark {
