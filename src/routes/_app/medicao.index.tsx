@@ -168,10 +168,7 @@ function Pagina() {
     const termo = busca.trim().toLowerCase();
     return (roteirosQuery.data ?? []).filter((r) => {
       const paradas = r.roteiro_paradas ?? [];
-      if (
-        responsavel !== "todos" &&
-        !paradas.some((p) => responsavelDaParada(p) === responsavel)
-      )
+      if (responsavel !== "todos" && !paradas.some((p) => responsavelDaParada(p) === responsavel))
         return false;
       if (!termo) return true;
       return `${r.nome} ${r.base_endereco ?? ""} ${paradas.map((p) => `${nomeCliente(p)} ${processo(p)} ${cidade(p)}`).join(" ")}`
