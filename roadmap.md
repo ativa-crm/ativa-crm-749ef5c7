@@ -1,5 +1,5 @@
-- [ ] Aplicar a camada HUD Jarvis e tema escuro padrão.
-- [ ] Redesenhar a casca responsiva com lateral retrátil, topo e gaveta móvel.
-- [ ] Implementar e registrar os seis blocos reutilizáveis de painel.
-- [ ] Integrar os blocos à tela Início sem alterar consultas ou regras.
-- [ ] Validar design system, tipagem, lint e preview em desktop e celular.
+- [x] Aplicar a camada HUD Jarvis e tema escuro padrão.
+- [x] Redesenhar a casca responsiva com lateral retrátil, topo e gaveta móvel.
+- [x] Implementar e registrar os seis blocos reutilizáveis de painel.
+- [x] Integrar os blocos à tela Início sem alterar consultas ou regras.
+- [x] Validar design system, tipagem, lint e preview em desktop e celular.
