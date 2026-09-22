@@ -14,21 +14,38 @@
   background-image:
     linear-gradient(var(--grade) 1px, transparent 1px),
     linear-gradient(90deg, var(--grade) 1px, transparent 1px);
-  background-size: 64px 64px, 64px 64px;
-  background-position: -1px -1px, -1px -1px;
+  background-size:
+    64px 64px,
+    64px 64px;
+  background-position:
+    -1px -1px,
+    -1px -1px;
 }
 /* No tema claro a grade verde sujava o branco: fica cinza e discreta. */
-.jarvis { --grade: color-mix(in srgb, var(--foreground) 7%, transparent) }
-.dark .jarvis, .jarvis.dark {
+.jarvis {
+  --grade: color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+.dark .jarvis,
+.jarvis.dark {
   --grade: var(--hud-fraco);
 }
 .dark .jarvis main {
   background-image:
     linear-gradient(var(--grade) 1px, transparent 1px),
     linear-gradient(90deg, var(--grade) 1px, transparent 1px),
-    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--verde-vivo) 6%, transparent), transparent 60%);
-  background-size: 64px 64px, 64px 64px, 100% 100%;
-  background-position: -1px -1px, -1px -1px, 0 0;
+    radial-gradient(
+      120% 80% at 50% 0%,
+      color-mix(in srgb, var(--verde-vivo) 6%, transparent),
+      transparent 60%
+    );
+  background-size:
+    64px 64px,
+    64px 64px,
+    100% 100%;
+  background-position:
+    -1px -1px,
+    -1px -1px,
+    0 0;
 }
 
 /* ---- Painéis: vidro, borda luminosa, cantos em esquadro ---- */
@@ -37,31 +54,67 @@
   background: color-mix(in srgb, var(--card) 78%, transparent) !important;
   backdrop-filter: blur(8px);
   border-color: var(--hud-linha) !important;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--verde-vivo) 8%, transparent),
-              0 18px 40px -24px color-mix(in srgb, var(--verde-vivo) 40%, transparent) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--verde-vivo) 8%, transparent),
+    0 18px 40px -24px color-mix(in srgb, var(--verde-vivo) 40%, transparent) !important;
 }
-.jarvis main section:before, .jarvis main section:after {
-  content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
-  border: 2px solid var(--hud); opacity: .8;
+.jarvis main section:before,
+.jarvis main section:after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border: 2px solid var(--hud);
+  opacity: 0.8;
 }
-.jarvis main section:before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; border-radius: 14px 0 0 0 }
-.jarvis main section:after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; border-radius: 0 0 14px 0 }
+.jarvis main section:before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 14px 0 0 0;
+}
+.jarvis main section:after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 14px 0;
+}
 
 /* Varredura lenta no cabeçalho do painel */
 .jarvis main section > header {
-  position: relative; overflow: hidden;
+  position: relative;
+  overflow: hidden;
   border-bottom-color: var(--hud-linha) !important;
 }
 .dark .jarvis main section > header:after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--verde-vivo) 16%, transparent), transparent);
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--verde-vivo) 16%, transparent),
+    transparent
+  );
   transform: translateX(-100%);
-  animation: jarvis-varre 5.5s cubic-bezier(.4,0,.2,1) infinite;
+  animation: jarvis-varre 5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
-@keyframes jarvis-varre { 0%,55%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+@keyframes jarvis-varre {
+  0%,
+  55% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
 
 .jarvis main section > header h2 {
-  letter-spacing: .09em !important;
+  letter-spacing: 0.09em !important;
   color: var(--verde-tinta) !important;
 }
 .dark .jarvis main section > header h2 {
@@ -70,23 +123,36 @@
 }
 
 /* ---- Números e progresso ganham brilho ---- */
-.jarvis main section p, .jarvis main button > span { font-variant-numeric: tabular-nums }
+.jarvis main section p,
+.jarvis main button > span {
+  font-variant-numeric: tabular-nums;
+}
 .jarvis [role="progressbar"] > div {
   box-shadow: 0 0 12px color-mix(in srgb, var(--verde-vivo) 60%, transparent);
 }
 
 /* ---- Cartões de indicador: chanfro, telemetria e realce no hover ---- */
-.jarvis .grade-4 > button, .jarvis .grade-3 > button {
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+.jarvis .grade-4 > button,
+.jarvis .grade-3 > button {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% 100%,
+    16px 100%,
+    0 calc(100% - 16px)
+  );
   background: color-mix(in srgb, var(--card) 70%, transparent) !important;
   border-color: var(--hud-linha) !important;
   backdrop-filter: blur(6px);
-  transition: box-shadow 200ms ease, transform 200ms ease !important;
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms ease !important;
 }
 .jarvis .grade-4 > button > span:nth-child(2),
 .jarvis .grade-3 > button > span:nth-child(2) {
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
+  letter-spacing: -0.02em;
 }
 /* Brilho no numeral vira borrão sobre fundo claro — só no escuro. */
 .dark .jarvis .grade-4 > button > span:nth-child(2),
@@ -95,11 +161,14 @@
 }
 .jarvis .grade-4 > button > span:nth-child(3),
 .jarvis .grade-3 > button > span:nth-child(3) {
-  letter-spacing: .09em !important;
+  letter-spacing: 0.09em !important;
   text-transform: uppercase;
 }
-.jarvis .grade-4 > button:hover, .jarvis .grade-3 > button:hover {
-  box-shadow: 0 0 0 1px var(--hud), 0 16px 38px -18px color-mix(in srgb, var(--verde-vivo) 75%, transparent) !important;
+.jarvis .grade-4 > button:hover,
+.jarvis .grade-3 > button:hover {
+  box-shadow:
+    0 0 0 1px var(--hud),
+    0 16px 38px -18px color-mix(in srgb, var(--verde-vivo) 75%, transparent) !important;
 }
 
 /* ---- Barra lateral: trilho luminoso e marcador do item ativo ---- */
@@ -107,24 +176,38 @@
   border-right: 1px solid var(--hud-linha) !important;
   box-shadow: 1px 0 24px -6px color-mix(in srgb, var(--verde-vivo) 32%, transparent);
 }
-.jarvis aside nav [data-ativo] { letter-spacing: .05em !important }
+.jarvis aside nav [data-ativo] {
+  letter-spacing: 0.05em !important;
+}
 .jarvis aside nav [data-ativo="1"] {
-  box-shadow: 0 0 22px -2px color-mix(in srgb, var(--verde-vivo) 70%, transparent),
-              inset 3px 0 0 0 var(--hud);
+  box-shadow:
+    0 0 22px -2px color-mix(in srgb, var(--verde-vivo) 70%, transparent),
+    inset 3px 0 0 0 var(--hud);
 }
 .jarvis aside nav [data-ativo="0"]:hover {
   box-shadow: inset 3px 0 0 0 var(--hud-linha);
 }
 
 /* ---- Barra superior: linha de energia embaixo ---- */
-.jarvis header:first-of-type { border-bottom-color: var(--hud-linha) !important }
-.jarvis > div > header:first-of-type { position: relative }
-.jarvis > div > header:first-of-type:after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--hud), transparent);
-  opacity: .55;
+.jarvis header:first-of-type {
+  border-bottom-color: var(--hud-linha) !important;
 }
-.jarvis > div > header:first-of-type h1 { letter-spacing: .1em !important }
+.jarvis > div > header:first-of-type {
+  position: relative;
+}
+.jarvis > div > header:first-of-type:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hud), transparent);
+  opacity: 0.55;
+}
+.jarvis > div > header:first-of-type h1 {
+  letter-spacing: 0.1em !important;
+}
 .dark .jarvis > div > header:first-of-type h1 {
   color: var(--hud) !important;
   text-shadow: 0 0 16px color-mix(in srgb, var(--verde-vivo) 40%, transparent);
@@ -132,16 +215,21 @@
 
 /* ---- Tabelas: cabeçalho em telemetria ---- */
 .jarvis table thead th {
-  letter-spacing: .12em !important;
+  letter-spacing: 0.12em !important;
   color: var(--verde-tinta) !important;
   border-bottom: 1px solid var(--hud-linha);
   padding-bottom: 12px !important;
 }
-.dark .jarvis table thead th { color: var(--hud) !important }
-.jarvis table tbody td { border-top-color: color-mix(in srgb, var(--verde-vivo) 14%, transparent) !important }
+.dark .jarvis table thead th {
+  color: var(--hud) !important;
+}
+.jarvis table tbody td {
+  border-top-color: color-mix(in srgb, var(--verde-vivo) 14%, transparent) !important;
+}
 
 /* ---- Colunas do funil ---- */
-.jarvis main section ~ div > div, .jarvis main > div > div[style*="overflow-x"] > div {
+.jarvis main section ~ div > div,
+.jarvis main > div > div[style*="overflow-x"] > div {
   border-color: var(--hud-linha) !important;
 }
 
@@ -152,34 +240,66 @@
 
 /* Respeita quem pediu menos movimento */
 @media (prefers-reduced-motion: reduce) {
-  .dark .jarvis main section > header:after { animation: none; opacity: 0 }
+  .dark .jarvis main section > header:after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* ---- Presença de HUD no palco ---- */
 .dark .jarvis:before {
-  content: ""; position: absolute; inset: 0; z-index: 70; pointer-events: none;
-  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--verde-vivo) 5%, transparent) 0 1px, transparent 1px 3px);
-  opacity: .5; mix-blend-mode: screen;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--verde-vivo) 5%, transparent) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.5;
+  mix-blend-mode: screen;
 }
 .dark .jarvis:after {
-  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 75; pointer-events: none;
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  z-index: 75;
+  pointer-events: none;
   background: linear-gradient(90deg, transparent, var(--hud), transparent);
-  filter: blur(.4px);
+  filter: blur(0.4px);
   animation: jarvis-radar 7s linear infinite;
 }
 @keyframes jarvis-radar {
-  0% { transform: translateY(0); opacity: 0 }
-  6% { opacity: .75 }
-  94% { opacity: .35 }
-  100% { transform: translateY(100vh); opacity: 0 }
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.75;
+  }
+  94% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
 }
 
 /* Pílulas e filtros ganham contorno de energia */
-.jarvis main [role="tablist"], .jarvis main section ~ div [role="tablist"] {
+.jarvis main [role="tablist"],
+.jarvis main section ~ div [role="tablist"] {
   border-color: var(--hud-linha) !important;
   box-shadow: inset 0 0 18px -10px color-mix(in srgb, var(--verde-vivo) 60%, transparent);
 }
-.jarvis button[data-ativo="true"] { box-shadow: 0 0 16px -2px color-mix(in srgb, var(--verde-vivo) 70%, transparent) }
+.jarvis button[data-ativo="true"] {
+  box-shadow: 0 0 16px -2px color-mix(in srgb, var(--verde-vivo) 70%, transparent);
+}
 
 /* Contador das colunas do funil e badges sólidos pulsam de leve */
 .jarvis main span[style*="border-radius: 999px"][style*="primary)"] {
@@ -187,5 +307,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dark .jarvis:after { animation: none; opacity: 0 }
+  .dark .jarvis:after {
+    animation: none;
+    opacity: 0;
+  }
 }

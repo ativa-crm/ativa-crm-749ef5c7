@@ -8,7 +8,10 @@ type DestinoIndicador = "/funil" | "/servicos" | "/orcamentos" | "/imoveis";
 
 const tons: Record<Tom, { icone: string; numero: string }> = {
   neutro: { icone: "bg-secondary text-primary", numero: "text-primary" },
-  atencao: { icone: "bg-warning/15 text-warning-ink dark:text-warning", numero: "text-warning-ink dark:text-warning" },
+  atencao: {
+    icone: "bg-warning/15 text-warning-ink dark:text-warning",
+    numero: "text-warning-ink dark:text-warning",
+  },
   critico: { icone: "bg-destructive/15 text-destructive", numero: "text-destructive" },
 };
 
@@ -36,7 +39,12 @@ export function CartaoIndicador({
         <Icone className="size-4" aria-hidden />
       </span>
       <span>
-        <span className={cn("block text-3xl font-extrabold leading-none tabular-nums", tons[tom].numero)}>
+        <span
+          className={cn(
+            "block text-3xl font-extrabold leading-none tabular-nums",
+            tons[tom].numero,
+          )}
+        >
           {valor}
         </span>
         <span className="mt-2 block text-sm font-bold uppercase text-foreground">{rotulo}</span>
@@ -131,7 +139,12 @@ export function Painel({
   className?: string;
 }) {
   return (
-    <section className={cn("overflow-hidden rounded-lg border border-border bg-card shadow-card", className)}>
+    <section
+      className={cn(
+        "overflow-hidden rounded-lg border border-border bg-card shadow-card",
+        className,
+      )}
+    >
       <header className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase text-foreground">
           <Icone className="size-4 text-primary" aria-hidden />

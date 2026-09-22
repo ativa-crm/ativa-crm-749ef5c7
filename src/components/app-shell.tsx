@@ -316,7 +316,13 @@ function BarraTopo({
 
   return (
     <header className="relative z-30 flex h-15 shrink-0 items-center gap-3 border-b border-border bg-card px-3 md:h-17 md:px-6">
-      <Button variant="outline" size="icon" onClick={onAbrirMenu} aria-label="Abrir menu" className="size-11 md:hidden">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onAbrirMenu}
+        aria-label="Abrir menu"
+        className="size-11 md:hidden"
+      >
         <Menu className="size-5" />
       </Button>
       <h1 className="min-w-0 flex-1 truncate text-base font-bold uppercase text-foreground md:text-xl">
@@ -324,9 +330,16 @@ function BarraTopo({
       </h1>
       <label className="relative hidden w-75 lg:block">
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input className="h-11 rounded-full pl-10" placeholder="Buscar cliente, imóvel, orçamento…" aria-label="Busca global" />
+        <Input
+          className="h-11 rounded-full pl-10"
+          placeholder="Buscar cliente, imóvel, orçamento…"
+          aria-label="Busca global"
+        />
       </label>
-      <span className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-secondary px-3 text-xs font-extrabold text-foreground" title="Pontos de atividade">
+      <span
+        className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-secondary px-3 text-xs font-extrabold text-foreground"
+        title="Pontos de atividade"
+      >
         <Flame className="size-4 text-primary" />
         <span className="tabular-nums">0</span>
         <span className="hidden text-muted-foreground sm:inline">PTS</span>
@@ -337,7 +350,9 @@ function BarraTopo({
       </span>
       <BotaoTema mostrarRotulo={false} className="size-11 px-0 [&>svg]:size-4.5" />
       <Avatar className="size-11 border border-border">
-        <AvatarFallback className="bg-secondary text-xs font-extrabold text-foreground">{iniciais}</AvatarFallback>
+        <AvatarFallback className="bg-secondary text-xs font-extrabold text-foreground">
+          {iniciais}
+        </AvatarFallback>
       </Avatar>
     </header>
   );
@@ -346,7 +361,8 @@ function BarraTopo({
 function rotuloPerfil(papel: string) {
   const normalizado = papel.toLocaleLowerCase("pt-BR");
   if (normalizado === "admin" || normalizado.includes("dono")) return "Dono";
-  if (normalizado.includes("engenheiro") || normalizado.includes("responsavel")) return "Eng. responsável";
+  if (normalizado.includes("engenheiro") || normalizado.includes("responsavel"))
+    return "Eng. responsável";
   if (normalizado.includes("administrativo")) return "Administrativo";
   return papel || "Usuário";
 }
@@ -363,7 +379,11 @@ function Marca({ nome, logo, aberta }: { nome: string; logo: string | null; aber
           className="h-full w-full object-contain"
         />
       </span>
-      {aberta && <span className="truncate text-sm font-extrabold uppercase text-sidebar-foreground">{nome}</span>}
+      {aberta && (
+        <span className="truncate text-sm font-extrabold uppercase text-sidebar-foreground">
+          {nome}
+        </span>
+      )}
     </div>
   );
 }

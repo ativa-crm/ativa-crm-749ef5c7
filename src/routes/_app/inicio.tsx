@@ -312,7 +312,9 @@ function Pagina() {
               <Flame className="size-4" aria-hidden />
               {mesQuery.data?.leads ?? 0}
             </span>
-            <span className="text-sm font-bold uppercase text-foreground">Oportunidades recebidas</span>
+            <span className="text-sm font-bold uppercase text-foreground">
+              Oportunidades recebidas
+            </span>
           </Link>
           <Link
             to="/orcamentos"
