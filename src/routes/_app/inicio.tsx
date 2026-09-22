@@ -124,7 +124,8 @@ function Pagina() {
 
       const ultima: Record<string, string> = {};
       for (const m of (msgs ?? []) as { oportunidade_id: string | null; criado_em: string }[]) {
-        if (m.oportunidade_id && !ultima[m.oportunidade_id]) ultima[m.oportunidade_id] = m.criado_em;
+        if (m.oportunidade_id && !ultima[m.oportunidade_id])
+          ultima[m.oportunidade_id] = m.criado_em;
       }
       return { leads, ultima };
     },
@@ -149,8 +150,14 @@ function Pagina() {
     queryFn: async () => {
       const desde = inicioDoMes();
       const [leads, enviados, aprovados, empresa, contratos, resposta] = await Promise.all([
-        supabase.from("oportunidades").select("id", { count: "exact", head: true }).gte("criado_em", desde),
-        supabase.from("orcamentos").select("id", { count: "exact", head: true }).gte("enviado_em", desde),
+        supabase
+          .from("oportunidades")
+          .select("id", { count: "exact", head: true })
+          .gte("criado_em", desde),
+        supabase
+          .from("orcamentos")
+          .select("id", { count: "exact", head: true })
+          .gte("enviado_em", desde),
         supabase
           .from("orcamentos")
           .select("id", { count: "exact", head: true })
@@ -281,7 +288,9 @@ function Pagina() {
                         {um(l.clientes)?.nome?.trim() || "Sem cliente"}
                       </span>
                       <span className="block truncate text-base font-semibold text-muted-foreground">
-                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)].filter(Boolean).join(" · ")}
+                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       <span className="block text-base font-bold text-destructive">
                         sem contato {desdeAgora(ultima)}
@@ -335,7 +344,9 @@ function Pagina() {
                   <Icone className="size-4" aria-hidden />
                   {s.total}
                 </span>
-                <span className="text-sm font-bold uppercase leading-tight text-foreground">{s.rotulo}</span>
+                <span className="text-sm font-bold uppercase leading-tight text-foreground">
+                  {s.rotulo}
+                </span>
               </Link>
             );
           })}
@@ -347,7 +358,9 @@ function Pagina() {
           <div className="rounded-lg border border-border bg-background-light p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-bold uppercase text-muted-foreground">Faturamento do mês</p>
+                <p className="text-sm font-bold uppercase text-muted-foreground">
+                  Faturamento do mês
+                </p>
                 <p className="mt-1 text-3xl font-extrabold text-foreground">
                   {reais(mesQuery.data?.faturamento ?? 0)}
                 </p>
@@ -366,7 +379,8 @@ function Pagina() {
                   {resposta?.respondidos ?? 0}/{resposta?.leadsPeriodo ?? 0}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                  {resposta?.pontosSemana ?? 0} pontos na semana · sequência de {resposta?.sequenciaDias ?? 0} dias
+                  {resposta?.pontosSemana ?? 0} pontos na semana · sequência de{" "}
+                  {resposta?.sequenciaDias ?? 0} dias
                 </p>
               </div>
               <span className="flex size-12 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary">
@@ -374,16 +388,35 @@ function Pagina() {
               </span>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, resposta?.progresso ?? 0)}%` }} />
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${Math.min(100, resposta?.progresso ?? 0)}%` }}
+              />
             </div>
             <p className="mt-2 text-xs font-bold uppercase text-muted-foreground">
-              {resposta?.progresso ?? 0}% respondidos em até 24h · {resposta?.pontosPorResposta ?? 0} pontos por resposta
+              {resposta?.progresso ?? 0}% respondidos em até 24h ·{" "}
+              {resposta?.pontosPorResposta ?? 0} pontos por resposta
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:col-span-2">
-            <ResumoMes to="/funil" icone={Flame} valor={mesQuery.data?.leads ?? 0} rotulo="Oportunidades recebidas" />
-            <ResumoMes to="/orcamentos" icone={FileText} valor={mesQuery.data?.enviados ?? 0} rotulo="Orçamentos enviados" />
-            <ResumoMes to="/orcamentos" icone={TrendingUp} valor={mesQuery.data?.aprovados ?? 0} rotulo="Orçamentos aprovados" />
+            <ResumoMes
+              to="/funil"
+              icone={Flame}
+              valor={mesQuery.data?.leads ?? 0}
+              rotulo="Oportunidades recebidas"
+            />
+            <ResumoMes
+              to="/orcamentos"
+              icone={FileText}
+              valor={mesQuery.data?.enviados ?? 0}
+              rotulo="Orçamentos enviados"
+            />
+            <ResumoMes
+              to="/orcamentos"
+              icone={TrendingUp}
+              valor={mesQuery.data?.aprovados ?? 0}
+              rotulo="Orçamentos aprovados"
+            />
           </div>
         </div>
       </Painel>

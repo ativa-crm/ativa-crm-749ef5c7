@@ -1,17 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search, Wrench } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Loader2,
+  Plus,
+  Search,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
-import { data as dataBR, rotulo } from "@/lib/formato";
-import { SERVICOS } from "@/lib/funil";
-import { STATUS_OS, semaforoPrazo } from "@/lib/prazo";
+import { data as dataBR, numero, reais, rotulo } from "@/lib/formato";
+import { STATUS_ENCERRADOS, STATUS_OS, semaforoPrazo } from "@/lib/prazo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { BarraFerramentas, CartaoIndicador, Painel, Tabela } from "@/components/painel";
 import {
   Dialog,
   DialogContent,
@@ -27,13 +37,15 @@ export const Route = createFileRoute("/_app/servicos/")({
       {
         name: "description",
         content:
-          "Ordens de serviço agrupadas por status, com semáforo de prazo e checklist técnico.",
+          "Ordens de serviço em lista e por etapa, com checklist, progresso e semáforo de prazo.",
       },
       { property: "og:title", content: "Serviços | CRM de Topografia" },
       {
         property: "og:description",
-        content: "Ordens de serviço por status, com prazos em verde, âmbar e vermelho.",
+        content: "OS com etapa atual, responsáveis, checklist e prazos em semáforo.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Pagina,
@@ -46,23 +58,59 @@ type Ordem = {
   status: string | null;
   prazo: string | null;
   criado_em: string | null;
+  responsavel_id: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
   imoveis:
-    | { nome: string | null; municipio: string | null }
-    | { nome: string | null; municipio: string | null }[]
+    | { nome: string | null; municipio: string | null; uf: string | null }
+    | { nome: string | null; municipio: string | null; uf: string | null }[]
     | null;
 };
 
-function um<T>(v: T | T[] | null): T | null {
+type Etapa = {
+  id: string;
+  os_id: string;
+  nome: string | null;
+  ordem: number | null;
+  concluida_em: string | null;
+  responsavel_id: string | null;
+};
+type Catalogo = {
+  id: string;
+  nome: string | null;
+  preco_base: number | null;
+  prazo_padrao_dias: number | null;
+  ativo: boolean | null;
+};
+type Cliente = { id: string; nome: string | null };
+type Imovel = { id: string; nome: string | null; municipio: string | null };
+
+type Visao = "lista" | "etapa";
+
+const CLASSE_SELECT =
+  "mt-1.5 h-12 w-full rounded-lg border border-border bg-card px-3 text-base font-semibold text-foreground";
+
+function um<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
-const CLASSE_SELECT =
-  "mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-semibold text-foreground";
+function progresso(osId: string, etapas: Etapa[]) {
+  const itens = etapas
+    .filter((e) => e.os_id === osId)
+    .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  const feitas = itens.filter((e) => e.concluida_em).length;
+  return {
+    itens,
+    feitas,
+    total: itens.length,
+    valor: itens.length ? Math.round((feitas / itens.length) * 100) : 0,
+  };
+}
 
 function Pagina() {
+  const { perfil } = usePerfil();
   const [busca, setBusca] = useState("");
+  const [visao, setVisao] = useState<Visao>("lista");
   const [novaAberta, setNovaAberta] = useState(false);
 
   const ordensQuery = useQuery({
@@ -71,7 +119,7 @@ function Pagina() {
       const { data, error } = await supabase
         .from("ordens_servico")
         .select(
-          "id, numero, servico, status, prazo, criado_em, clientes(nome), imoveis(nome, municipio)",
+          "id, numero, servico, status, prazo, criado_em, responsavel_id, clientes(nome), imoveis(nome, municipio, uf), usuarios(nome)",
         )
         .order("prazo", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -79,75 +127,275 @@ function Pagina() {
     },
   });
 
+  const usuariosQuery = useQuery({
+    queryKey: ["usuarios", "responsaveis", perfil?.empresa_id],
+    enabled: !!perfil?.empresa_id,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data, error } = await supabase
+        .from("usuarios")
+        .select("id, nome")
+        .eq("empresa_id", perfil?.empresa_id as string)
+        .order("nome");
+      if (error) throw error;
+      return Object.fromEntries(
+        ((data ?? []) as { id: string; nome: string | null }[]).map((u) => [u.id, u.nome ?? "—"]),
+      );
+    },
+  });
+
+  const etapasQuery = useQuery({
+    queryKey: ["os_etapas", "lista"],
+    queryFn: async (): Promise<Etapa[]> => {
+      const { data, error } = await supabase
+        .from("os_etapas")
+        .select("id, os_id, nome, ordem, concluida_em, responsavel_id")
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Etapa[];
+    },
+  });
+
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return ordensQuery.data ?? [];
-    return (ordensQuery.data ?? []).filter((o) =>
-      `${o.numero ?? ""} ${um(o.clientes)?.nome ?? ""} ${um(o.imoveis)?.nome ?? ""} ${
-        um(o.imoveis)?.municipio ?? ""
-      } ${rotulo(o.servico)}`
+    return (ordensQuery.data ?? []).filter((o) => {
+      if (!termo) return true;
+      return `${o.numero ?? ""} ${um(o.clientes)?.nome ?? ""} ${um(o.imoveis)?.nome ?? ""} ${um(o.imoveis)?.municipio ?? ""} ${rotulo(o.servico)} ${rotulo(o.status)}`
         .toLowerCase()
-        .includes(termo),
-    );
+        .includes(termo);
+    });
   }, [ordensQuery.data, busca]);
 
+  const abertas = filtradas.filter((o) => !STATUS_ENCERRADOS.includes(o.status ?? ""));
+  const urgentes = abertas.filter((o) => {
+    const sem = semaforoPrazo(o.prazo, o.status);
+    return sem.nivel === "vermelho";
+  });
+  const concluidas = filtradas.filter((o) => STATUS_ENCERRADOS.includes(o.status ?? "")).length;
+  const etapas = etapasQuery.data ?? [];
+
   return (
-    <section>
+    <section className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Wrench className="size-6 text-primary" strokeWidth={2.5} />
           Serviços
         </h1>
-        <Button
-          onClick={() => setNovaAberta(true)}
-          className="h-11 rounded-full px-4 text-base font-semibold"
-        >
-          <Plus className="size-6" strokeWidth={3} />
+        <Button onClick={() => setNovaAberta(true)} className="h-11 px-4 text-base">
+          <Plus className="size-5" strokeWidth={3} />
           Nova OS
         </Button>
       </header>
 
-      <div className="relative mt-4">
-        <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por número, cliente, imóvel ou serviço"
-          className="h-11 rounded-full border pl-11 text-base font-medium"
+      <BarraFerramentas>
+        <div className="relative min-w-64 flex-1">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2.5}
+          />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por número, cliente, imóvel, serviço ou etapa"
+            className="h-11 rounded-full border pl-11"
+          />
+        </div>
+        <div className="seg">
+          <button
+            type="button"
+            data-ativo={visao === "lista"}
+            onClick={() => setVisao("lista")}
+            className="seg-item"
+          >
+            Lista
+          </button>
+          <button
+            type="button"
+            data-ativo={visao === "etapa"}
+            onClick={() => setVisao("etapa")}
+            className="seg-item"
+          >
+            Por etapa
+          </button>
+        </div>
+      </BarraFerramentas>
+
+      <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <CartaoIndicador
+          icone={ClipboardList}
+          valor={abertas.length}
+          rotulo="OS abertas"
+          apoio="em execução"
+          destino="/servicos"
+        />
+        <CartaoIndicador
+          icone={TriangleAlert}
+          valor={urgentes.length}
+          rotulo="Prazo vermelho"
+          apoio="atenção imediata"
+          tom={urgentes.length ? "critico" : "neutro"}
+          destino="/servicos"
+        />
+        <CartaoIndicador
+          icone={CheckCircle2}
+          valor={concluidas}
+          rotulo="Encerradas"
+          apoio="no filtro atual"
+          destino="/servicos"
         />
       </div>
 
-      {ordensQuery.isPending ? (
+      {ordensQuery.isPending || etapasQuery.isPending || usuariosQuery.isPending ? (
         <div className="flex justify-center py-16">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
-      ) : ordensQuery.error ? (
-        <p className="mt-6 text-lg font-semibold text-destructive">
+      ) : ordensQuery.error || etapasQuery.error || usuariosQuery.error ? (
+        <p className="text-lg font-semibold text-destructive">
           Não foi possível carregar as ordens de serviço.
         </p>
       ) : filtradas.length === 0 ? (
-        <p className="mt-6 text-lg font-medium text-muted-foreground">
+        <p className="text-lg font-medium text-muted-foreground">
           Nenhuma ordem de serviço encontrada.
         </p>
+      ) : visao === "lista" ? (
+        <Painel
+          titulo="Ordens de serviço"
+          icone={Wrench}
+          acao={
+            <span className="text-sm font-bold text-muted-foreground">
+              {filtradas.length} itens
+            </span>
+          }
+        >
+          <Tabela>
+            <table className="w-full min-w-[1080px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-border text-xs font-bold uppercase text-muted-foreground">
+                  <th className="px-3 py-2">OS</th>
+                  <th className="px-3 py-2">Cliente / imóvel</th>
+                  <th className="px-3 py-2">Serviço</th>
+                  <th className="px-3 py-2">Etapa</th>
+                  <th className="px-3 py-2">Checklist</th>
+                  <th className="px-3 py-2">Responsável</th>
+                  <th className="px-3 py-2">Prazo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtradas.map((o) => {
+                  const p = progresso(o.id, etapas);
+                  const atual = p.itens.find((e) => !e.concluida_em) ?? p.itens[p.itens.length - 1];
+                  const sem = semaforoPrazo(o.prazo, o.status);
+                  return (
+                    <tr key={o.id} className="border-b border-border last:border-0">
+                      <td className="px-3 py-3">
+                        <Link
+                          to="/servicos/$id"
+                          params={{ id: o.id }}
+                          className="font-extrabold text-foreground hover:text-primary"
+                        >
+                          {o.numero ? `OS ${o.numero}` : "OS"}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="block font-bold text-foreground">
+                          {um(o.clientes)?.nome ?? "—"}
+                        </span>
+                        <span className="block text-sm font-semibold text-muted-foreground">
+                          {[um(o.imoveis)?.nome, um(o.imoveis)?.municipio]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-sm font-semibold text-foreground">
+                        {rotulo(o.servico)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge
+                          variant="outline"
+                          className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                        >
+                          <span className="size-2 rounded-full bg-primary" aria-hidden />
+                          {rotulo(o.status) || atual?.nome || "—"}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="min-w-36">
+                          <Progress value={p.valor} className="h-2" />
+                          <span className="mt-1 block text-xs font-bold text-muted-foreground">
+                            {p.feitas}/{p.total} · {p.valor}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">
+                        {o.responsavel_id ? (usuariosQuery.data?.[o.responsavel_id] ?? "—") : "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge
+                          variant="outline"
+                          className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                        >
+                          <span className={`size-2 rounded-full ${sem.ponto}`} aria-hidden />
+                          {sem.texto || (o.prazo ? dataBR(o.prazo) : "—")}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Tabela>
+        </Painel>
       ) : (
-        <div className="mt-5 space-y-6">
-          {STATUS_OS.map((s) => {
-            const grupo = filtradas.filter((o) => (o.status ?? "") === s.valor);
-            if (grupo.length === 0) return null;
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-3 md:mx-0 md:px-0">
+          {STATUS_OS.map((status) => {
+            const grupo = filtradas.filter((o) => (o.status ?? "") === status.valor);
             return (
-              <div key={s.valor}>
-                <h2 className="flex items-center gap-2 text-xl font-extrabold text-foreground">
-                  {s.rotulo}
-                  <span className="rounded-lg bg-muted px-2 py-0.5 text-base font-extrabold text-muted-foreground">
+              <section
+                key={status.valor}
+                className="w-[85vw] shrink-0 rounded-lg border border-border bg-background-light p-3 sm:w-80"
+              >
+                <header className="mb-3 flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase text-foreground">{status.rotulo}</h2>
+                  <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
                     {grupo.length}
                   </span>
-                </h2>
-                <div className="mt-2 space-y-2">
-                  {grupo.map((o) => (
-                    <Cartao key={o.id} ordem={o} />
-                  ))}
+                </header>
+                <div className="space-y-3">
+                  {grupo.map((o) => {
+                    const p = progresso(o.id, etapas);
+                    const sem = semaforoPrazo(o.prazo, o.status);
+                    return (
+                      <Link
+                        key={o.id}
+                        to="/servicos/$id"
+                        params={{ id: o.id }}
+                        className="block rounded-lg border border-border bg-card p-3 shadow-card hover:bg-accent"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <strong className="truncate text-base text-foreground">
+                            {o.numero ? `OS ${o.numero}` : "OS"}
+                          </strong>
+                          <span className={`size-3 rounded-full ${sem.ponto}`} />
+                        </div>
+                        <p className="mt-1 truncate text-sm font-bold text-foreground">
+                          {um(o.clientes)?.nome ?? "Sem cliente"}
+                        </p>
+                        <p className="truncate text-sm font-semibold text-muted-foreground">
+                          {um(o.imoveis)?.nome ?? "Sem imóvel"}
+                        </p>
+                        <Progress value={p.valor} className="mt-3 h-2" />
+                        <p className="mt-1 text-xs font-bold uppercase text-muted-foreground">
+                          {p.feitas}/{p.total} etapas · {sem.texto}
+                        </p>
+                      </Link>
+                    );
+                  })}
+                  {grupo.length === 0 ? (
+                    <p className="py-6 text-center text-base font-semibold text-muted-foreground">
+                      Nenhuma OS
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
@@ -158,122 +406,100 @@ function Pagina() {
   );
 }
 
-function Cartao({ ordem }: { ordem: Ordem }) {
-  const sem = semaforoPrazo(ordem.prazo, ordem.status);
-  const cliente = um(ordem.clientes)?.nome ?? "sem cliente";
-  const imovel = um(ordem.imoveis);
-  return (
-    <Link
-      to="/servicos/$id"
-      params={{ id: ordem.id }}
-      className="block rounded-2xl border-2 border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-lg font-extrabold text-foreground">
-            {ordem.numero ? `OS ${ordem.numero}` : "OS sem número"} · {cliente}
-          </p>
-          <p className="truncate text-base font-semibold text-muted-foreground">
-            {imovel?.nome ?? "sem imóvel"}
-            {imovel?.municipio ? ` · ${imovel.municipio}` : ""}
-          </p>
-          <p className="mt-1 text-base font-bold text-primary">{rotulo(ordem.servico)}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <Badge
-            variant="outline"
-            className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
-          >
-            <span className={`size-2 rounded-full ${sem.ponto}`} aria-hidden />
-            {sem.texto || "—"}
-          </Badge>
-          <p className="mt-1 text-sm font-bold text-muted-foreground">
-            {ordem.prazo ? dataBR(ordem.prazo) : ""}
-          </p>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void }) {
   const { perfil } = usePerfil();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
   const [clienteId, setClienteId] = useState("");
   const [imovelId, setImovelId] = useState("");
-  const [servico, setServico] = useState("georreferenciamento");
+  const [catalogoId, setCatalogoId] = useState("");
   const [prazo, setPrazo] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
   useEffect(() => {
     if (!aberta) {
       setClienteId("");
       setImovelId("");
-      setServico("georreferenciamento");
+      setCatalogoId("");
       setPrazo("");
+      setObservacoes("");
     }
   }, [aberta]);
 
+  const catalogoQuery = useQuery({
+    queryKey: ["servicos_catalogo", "ativos"],
+    enabled: aberta,
+    queryFn: async (): Promise<Catalogo[]> => {
+      const { data, error } = await supabase
+        .from("servicos_catalogo")
+        .select("id, nome, preco_base, prazo_padrao_dias, ativo")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return (data ?? []) as Catalogo[];
+    },
+  });
   const clientesQuery = useQuery({
     queryKey: ["clientes", "seletor"],
     enabled: aberta,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clientes")
-        .select("id, nome")
-        .order("nome", { ascending: true });
+    queryFn: async (): Promise<Cliente[]> => {
+      const { data, error } = await supabase.from("clientes").select("id, nome").order("nome");
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string | null }[];
+      return (data ?? []) as Cliente[];
     },
   });
-
   const imoveisQuery = useQuery({
     queryKey: ["imoveis", "seletor", clienteId],
     enabled: aberta && clienteId !== "",
-    queryFn: async () => {
+    queryFn: async (): Promise<Imovel[]> => {
       const { data, error } = await supabase
         .from("imoveis")
         .select("id, nome, municipio")
         .eq("cliente_id", clienteId)
-        .order("nome", { ascending: true });
+        .order("nome");
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string | null; municipio: string | null }[];
+      return (data ?? []) as Imovel[];
     },
   });
+
+  const selecionado = catalogoQuery.data?.find((s) => s.id === catalogoId);
+  useEffect(() => {
+    if (!selecionado?.prazo_padrao_dias || prazo) return;
+    const data = new Date();
+    data.setDate(data.getDate() + Number(selecionado.prazo_padrao_dias));
+    setPrazo(data.toISOString().slice(0, 10));
+  }, [selecionado, prazo]);
 
   const criar = useMutation({
     mutationFn: async () => {
       if (!perfil) throw new Error("Perfil não carregado.");
       if (!clienteId) throw new Error("Escolha o cliente.");
-
-      let numero: string | null = null;
+      if (!catalogoId || !selecionado?.nome) throw new Error("Escolha o serviço.");
       const { data: gerado, error: erroNumero } = await supabase.rpc("proximo_numero", {
         p_empresa: perfil.empresa_id,
         p_tipo: "os",
       });
-      if (!erroNumero) numero = gerado as string;
-
+      const numeroGerado = erroNumero ? null : (gerado as string);
       const { data: nova, error } = await supabase
         .from("ordens_servico")
         .insert({
           empresa_id: perfil.empresa_id,
           cliente_id: clienteId,
           imovel_id: imovelId || null,
-          numero,
-          servico,
+          numero: numeroGerado,
+          servico: selecionado.nome,
           status: "aguardando_documentos",
           prazo: prazo || null,
           responsavel_id: perfil.id,
+          observacoes: observacoes.trim() || null,
         })
         .select("id")
         .single();
       if (error) throw error;
-
       const osId = nova.id as string;
       const { error: erroEtapas } = await supabase.rpc("criar_etapas_padrao", {
         p_os: osId,
-        p_servico: servico,
+        p_servico: selecionado.nome,
       });
       if (erroEtapas) toast.error("OS criada, mas o checklist padrão não foi gerado.");
       return osId;
@@ -289,12 +515,11 @@ function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void })
 
   return (
     <Dialog open={aberta} onOpenChange={(v) => (v ? null : onFechar())}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl border-2">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-lg border-2 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold">Nova ordem de serviço</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label className="text-base font-bold text-foreground">Cliente</Label>
             <select
@@ -313,7 +538,6 @@ function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void })
               ))}
             </select>
           </div>
-
           <div>
             <Label className="text-base font-bold text-foreground">Imóvel</Label>
             <select
@@ -333,22 +557,25 @@ function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void })
               ))}
             </select>
           </div>
-
           <div>
             <Label className="text-base font-bold text-foreground">Serviço</Label>
             <select
-              value={servico}
-              onChange={(e) => setServico(e.target.value)}
+              value={catalogoId}
+              onChange={(e) => {
+                setCatalogoId(e.target.value);
+                setPrazo("");
+              }}
               className={CLASSE_SELECT}
             >
-              {SERVICOS.map((s) => (
-                <option key={s.valor} value={s.valor}>
-                  {s.rotulo}
+              <option value="">Escolha no catálogo</option>
+              {(catalogoQuery.data ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nome ?? "Serviço"}
+                  {s.preco_base ? ` — ${reais(s.preco_base)}` : ""}
                 </option>
               ))}
             </select>
           </div>
-
           <div>
             <Label htmlFor="prazo-os" className="text-base font-bold text-foreground">
               Prazo
@@ -358,18 +585,34 @@ function NovaOs({ aberta, onFechar }: { aberta: boolean; onFechar: () => void })
               type="date"
               value={prazo}
               onChange={(e) => setPrazo(e.target.value)}
-              className="mt-1.5 h-14 rounded-xl border-2 text-lg font-semibold"
+              className="mt-1.5 h-12 rounded-lg border text-base font-semibold"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="obs-os" className="text-base font-bold text-foreground">
+              Observações
+            </Label>
+            <Input
+              id="obs-os"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Informações para a equipe"
+              className="mt-1.5 h-12 rounded-lg border text-base font-semibold"
             />
           </div>
         </div>
-
         <DialogFooter>
           <Button
             onClick={() => criar.mutate()}
-            disabled={!clienteId || criar.isPending}
-            className="h-14 w-full rounded-xl text-lg font-extrabold"
+            disabled={!clienteId || !catalogoId || criar.isPending}
+            className="h-12 w-full text-base font-extrabold"
           >
-            {criar.isPending ? <Loader2 className="size-6 animate-spin" /> : "Criar OS"}
+            {criar.isPending ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Plus className="size-5" />
+            )}
+            Criar OS
           </Button>
         </DialogFooter>
       </DialogContent>

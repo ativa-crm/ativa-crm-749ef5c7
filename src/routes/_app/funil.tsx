@@ -28,7 +28,10 @@ export const Route = createFileRoute("/_app/funil")({
           "Kanban de oportunidades de georreferenciamento e topografia, do primeiro contato ao fechamento.",
       },
       { property: "og:title", content: "Funil de oportunidades | CRM de Topografia" },
-      { property: "og:description", content: "Acompanhe cada lead por estágio, nota, serviço e última interação." },
+      {
+        property: "og:description",
+        content: "Acompanhe cada lead por estágio, nota, serviço e última interação.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -73,7 +76,9 @@ function Pagina() {
     queryFn: async (): Promise<Oportunidade[]> => {
       const { data, error } = await supabase
         .from("oportunidades")
-        .select("id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, clientes(nome)")
+        .select(
+          "id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, clientes(nome)",
+        )
         .eq("arquivada", false)
         .order("criado_em", { ascending: false });
       if (error) throw error;
@@ -114,7 +119,17 @@ function Pagina() {
   }, [queryClient]);
 
   const mover = useMutation({
-    mutationFn: async ({ id, de, para, cliente }: { id: string; de: string | null; para: string; cliente: string }) => {
+    mutationFn: async ({
+      id,
+      de,
+      para,
+      cliente,
+    }: {
+      id: string;
+      de: string | null;
+      para: string;
+      cliente: string;
+    }) => {
       if (!perfil?.empresa_id) throw new Error("perfil sem empresa");
       const { error } = await supabase.from("oportunidades").update({ estagio: para }).eq("id", id);
       if (error) throw error;
@@ -140,16 +155,26 @@ function Pagina() {
     return (oportunidadesQuery.data ?? []).filter((o) => {
       if (nota !== "todas" && o.nota !== nota) return false;
       if (!termo) return true;
-      return `${nomeCliente(o)} ${o.cidade ?? ""} ${rotulo(o.servico)}`.toLowerCase().includes(termo);
+      return `${nomeCliente(o)} ${o.cidade ?? ""} ${rotulo(o.servico)}`
+        .toLowerCase()
+        .includes(termo);
     });
   }, [busca, nota, oportunidadesQuery.data]);
 
   if (oportunidadesQuery.isPending) {
-    return <div className="flex justify-center py-16"><Loader2 className="size-10 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="size-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (oportunidadesQuery.error) {
-    return <p className="py-10 text-center text-lg font-semibold text-muted-foreground">Não foi possível carregar o funil. Tente de novo.</p>;
+    return (
+      <p className="py-10 text-center text-lg font-semibold text-muted-foreground">
+        Não foi possível carregar o funil. Tente de novo.
+      </p>
+    );
   }
 
   const interacoes = interacoesQuery.data ?? {};
@@ -162,18 +187,34 @@ function Pagina() {
             <Flame className="size-6 text-primary" strokeWidth={2.5} />
             Funil
           </h1>
-          <p className="text-sm font-semibold text-muted-foreground">{lista.length} oportunidades ativas · arraste ou use mover para</p>
+          <p className="text-sm font-semibold text-muted-foreground">
+            {lista.length} oportunidades ativas · arraste ou use mover para
+          </p>
         </div>
       </header>
 
       <BarraFerramentas>
         <div className="relative min-w-64 flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" strokeWidth={2.5} />
-          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por cliente, cidade ou serviço" className="h-11 rounded-full border pl-11" />
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2.5}
+          />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por cliente, cidade ou serviço"
+            className="h-11 rounded-full border pl-11"
+          />
         </div>
         <div className="seg">
           {[{ valor: "todas", rotulo: "Todas" }, ...NOTAS].map((item) => (
-            <button key={item.valor} type="button" data-ativo={nota === item.valor} onClick={() => setNota(item.valor)} className="seg-item">
+            <button
+              key={item.valor}
+              type="button"
+              data-ativo={nota === item.valor}
+              onClick={() => setNota(item.valor)}
+              className="seg-item"
+            >
               {item.rotulo}
             </button>
           ))}
@@ -199,33 +240,76 @@ function Pagina() {
                 setArrastando(null);
                 const cartao = lista.find((o) => o.id === id);
                 if (!cartao || (cartao.estagio ?? "novo") === estagio.valor) return;
-                mover.mutate({ id, de: cartao.estagio, para: estagio.valor, cliente: nomeCliente(cartao) });
+                mover.mutate({
+                  id,
+                  de: cartao.estagio,
+                  para: estagio.valor,
+                  cliente: nomeCliente(cartao),
+                });
               }}
               className={`w-[85vw] shrink-0 snap-start rounded-lg border p-3 transition-colors duration-200 sm:w-72 ${alvo ? "border-primary bg-primary/10" : "border-border bg-background-light"}`}
             >
               <header className="mb-3 flex items-center justify-between gap-2 px-1">
                 <h2 className="text-sm font-bold uppercase text-foreground">{estagio.rotulo}</h2>
-                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">{cartoes.length}</span>
+                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+                  {cartoes.length}
+                </span>
               </header>
 
               <div className="space-y-3">
                 {cartoes.map((o) => (
-                  <article key={o.id} draggable onDragStart={(e) => { setArrastando(o.id); e.dataTransfer.setData("text/plain", o.id); }} onDragEnd={() => setArrastando(null)} className={`rounded-lg border border-border bg-card p-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 ${arrastando === o.id ? "opacity-50" : ""}`}>
+                  <article
+                    key={o.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setArrastando(o.id);
+                      e.dataTransfer.setData("text/plain", o.id);
+                    }}
+                    onDragEnd={() => setArrastando(null)}
+                    className={`rounded-lg border border-border bg-card p-3 shadow-card transition-all duration-200 hover:-translate-y-0.5 ${arrastando === o.id ? "opacity-50" : ""}`}
+                  >
                     <div className="flex items-start justify-between gap-2">
-                      <Link to="/oportunidades/$id" params={{ id: o.id }} className="min-w-0 flex-1">
+                      <Link
+                        to="/oportunidades/$id"
+                        params={{ id: o.id }}
+                        className="min-w-0 flex-1"
+                      >
                         <div className="flex items-center gap-2">
-                          <span className={`size-3 shrink-0 rounded-full ${classeNota(o.nota)}`} aria-label={`Nota: ${rotulo(o.nota) || "não informada"}`} />
-                          <h3 className="truncate text-base font-extrabold text-foreground">{nomeCliente(o)}</h3>
+                          <span
+                            className={`size-3 shrink-0 rounded-full ${classeNota(o.nota)}`}
+                            aria-label={`Nota: ${rotulo(o.nota) || "não informada"}`}
+                          />
+                          <h3 className="truncate text-base font-extrabold text-foreground">
+                            {nomeCliente(o)}
+                          </h3>
                         </div>
-                        <p className="mt-1 truncate text-sm font-semibold text-muted-foreground">{[o.cidade?.trim() || "cidade não informada", areaHa(o.area_ha)].filter(Boolean).join(" · ")}</p>
+                        <p className="mt-1 truncate text-sm font-semibold text-muted-foreground">
+                          {[o.cidade?.trim() || "cidade não informada", areaHa(o.area_ha)]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
                       </Link>
                       <DropdownMenu>
-                        <DropdownMenuTrigger aria-label="Mover para outro estágio" className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border text-foreground">
+                        <DropdownMenuTrigger
+                          aria-label="Mover para outro estágio"
+                          className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border text-foreground"
+                        >
                           <MoveRight className="size-5" strokeWidth={2.5} />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-lg">
                           {ESTAGIOS.filter((e) => e.valor !== (o.estagio ?? "novo")).map((e) => (
-                            <DropdownMenuItem key={e.valor} className="py-3 text-base font-bold" onClick={() => mover.mutate({ id: o.id, de: o.estagio, para: e.valor, cliente: nomeCliente(o) })}>
+                            <DropdownMenuItem
+                              key={e.valor}
+                              className="py-3 text-base font-bold"
+                              onClick={() =>
+                                mover.mutate({
+                                  id: o.id,
+                                  de: o.estagio,
+                                  para: e.valor,
+                                  cliente: nomeCliente(o),
+                                })
+                              }
+                            >
                               {e.rotulo}
                             </DropdownMenuItem>
                           ))}
@@ -233,16 +317,27 @@ function Pagina() {
                       </DropdownMenu>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                      <Badge variant="outline" className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground">
+                      <Badge
+                        variant="outline"
+                        className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"
+                      >
                         <span className={`size-2 rounded-full ${classeNota(o.nota)}`} aria-hidden />
                         {rotulo(o.nota) || "Sem nota"}
                       </Badge>
-                      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-extrabold text-secondary-foreground">{rotulo(o.servico) || "Sem serviço"}</span>
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-extrabold text-secondary-foreground">
+                        {rotulo(o.servico) || "Sem serviço"}
+                      </span>
                     </div>
-                    <p className="mt-2 text-xs font-bold uppercase text-muted-foreground">última interação {desdeAgora(interacoes[o.id] ?? o.criado_em)}</p>
+                    <p className="mt-2 text-xs font-bold uppercase text-muted-foreground">
+                      última interação {desdeAgora(interacoes[o.id] ?? o.criado_em)}
+                    </p>
                   </article>
                 ))}
-                {cartoes.length === 0 ? <p className="px-1 py-6 text-center text-base font-semibold text-muted-foreground">Nenhum cartão</p> : null}
+                {cartoes.length === 0 ? (
+                  <p className="px-1 py-6 text-center text-base font-semibold text-muted-foreground">
+                    Nenhum cartão
+                  </p>
+                ) : null}
               </div>
             </div>
           );
