@@ -16,6 +16,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
+import { Route as AppProspeccaoRouteImport } from './routes/_app/prospeccao'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.index'
 import { Route as AppClientesIdRouteImport } from './routes/_app/clientes.$id'
 import { Route as AppContratosIndexRouteImport } from './routes/_app/contratos.index'
@@ -62,6 +63,11 @@ const AppFunilRoute = AppFunilRouteImport.update({
 const AppInicioRoute = AppInicioRouteImport.update({
   id: '/inicio',
   path: '/inicio',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppProspeccaoRoute = AppProspeccaoRouteImport.update({
+  id: '/prospeccao',
+  path: '/prospeccao',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppClientesIndexRoute = AppClientesIndexRouteImport.update({
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
+  '/prospeccao': typeof AppProspeccaoRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/contratos/$id': typeof AppContratosIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
+  '/prospeccao': typeof AppProspeccaoRoute
   '/clientes/$id': typeof AppClientesIdRoute
   '/contratos/$id': typeof AppContratosIdRoute
   '/imoveis/$id': typeof AppImoveisIdRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/_app/administracao': typeof AppAdministracaoRoute
   '/_app/funil': typeof AppFunilRoute
   '/_app/inicio': typeof AppInicioRoute
+  '/_app/prospeccao': typeof AppProspeccaoRoute
   '/_app/clientes/$id': typeof AppClientesIdRoute
   '/_app/contratos/$id': typeof AppContratosIdRoute
   '/_app/imoveis/$id': typeof AppImoveisIdRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/administracao'
     | '/funil'
     | '/inicio'
+    | '/prospeccao'
     | '/clientes/$id'
     | '/contratos/$id'
     | '/imoveis/$id'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/administracao'
     | '/funil'
     | '/inicio'
+    | '/prospeccao'
     | '/clientes/$id'
     | '/contratos/$id'
     | '/imoveis/$id'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/_app/administracao'
     | '/_app/funil'
     | '/_app/inicio'
+    | '/_app/prospeccao'
     | '/_app/clientes/$id'
     | '/_app/contratos/$id'
     | '/_app/imoveis/$id'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/inicio'
       fullPath: '/inicio'
       preLoaderRoute: typeof AppInicioRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/prospeccao': {
+      id: '/_app/prospeccao'
+      path: '/prospeccao'
+      fullPath: '/prospeccao'
+      preLoaderRoute: typeof AppProspeccaoRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/clientes/': {
@@ -418,6 +437,7 @@ interface AppRouteRouteChildren {
   AppAdministracaoRoute: typeof AppAdministracaoRoute
   AppFunilRoute: typeof AppFunilRoute
   AppInicioRoute: typeof AppInicioRoute
+  AppProspeccaoRoute: typeof AppProspeccaoRoute
   AppClientesIdRoute: typeof AppClientesIdRoute
   AppContratosIdRoute: typeof AppContratosIdRoute
   AppImoveisIdRoute: typeof AppImoveisIdRoute
@@ -437,6 +457,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdministracaoRoute: AppAdministracaoRoute,
   AppFunilRoute: AppFunilRoute,
   AppInicioRoute: AppInicioRoute,
+  AppProspeccaoRoute: AppProspeccaoRoute,
   AppClientesIdRoute: AppClientesIdRoute,
   AppContratosIdRoute: AppContratosIdRoute,
   AppImoveisIdRoute: AppImoveisIdRoute,
