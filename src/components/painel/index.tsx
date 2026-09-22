@@ -4,7 +4,15 @@ import { cn } from "@/lib/utils";
 
 type Icone = ComponentType<SVGProps<SVGSVGElement>>;
 type Tom = "neutro" | "atencao" | "critico";
-type DestinoIndicador = "/funil" | "/servicos" | "/orcamentos" | "/imoveis";
+type DestinoIndicador =
+  | "/funil"
+  | "/servicos"
+  | "/orcamentos"
+  | "/imoveis"
+  | "/clientes"
+  | "/contratos"
+  | "/medicao"
+  | "/administracao";
 
 const tons: Record<Tom, { icone: string; numero: string }> = {
   neutro: { icone: "bg-secondary text-primary", numero: "text-primary" },

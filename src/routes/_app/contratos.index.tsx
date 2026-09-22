@@ -101,9 +101,9 @@ function Pagina() {
       </BarraFerramentas>
 
       <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <CartaoIndicador icone={FileSignature} valor={filtrados.length} rotulo="Contratos" apoio="na carteira" destino="/servicos" />
-        <CartaoIndicador icone={CalendarClock} valor={aVencer.length} rotulo="Vencem em 30 dias" apoio="renovar ou encerrar" tom={aVencer.length ? "atencao" : "neutro"} destino="/servicos" />
-        <CartaoIndicador icone={FileCheck2} valor={semAssinatura.length} rotulo="Sem assinatura" apoio={reais(valorAtivo)} tom={semAssinatura.length ? "critico" : "neutro"} destino="/servicos" />
+        <CartaoIndicador icone={FileSignature} valor={filtrados.length} rotulo="Contratos" apoio="na carteira" destino="/contratos" />
+        <CartaoIndicador icone={CalendarClock} valor={aVencer.length} rotulo="Vencem em 30 dias" apoio="renovar ou encerrar" tom={aVencer.length ? "atencao" : "neutro"} destino="/contratos" />
+        <CartaoIndicador icone={FileCheck2} valor={semAssinatura.length} rotulo="Sem assinatura" apoio={reais(valorAtivo)} tom={semAssinatura.length ? "critico" : "neutro"} destino="/contratos" />
       </div>
 
       {alerta ? <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-card p-4"><AlertTriangle className="mt-1 size-5 shrink-0 text-destructive" /><p className="text-base font-bold text-foreground">{alerta.numero ? `Contrato ${alerta.numero}` : "Contrato"} · {um(alerta.clientes)?.nome ?? "cliente não informado"} {statusAssinatura(alerta) !== "assinado" ? "está aguardando assinatura." : "está perto do vencimento."}</p></div> : null}
