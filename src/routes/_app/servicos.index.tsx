@@ -39,7 +39,6 @@ type Ordem = {
   responsavel_id: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
   imoveis: { nome: string | null; municipio: string | null; uf: string | null } | { nome: string | null; municipio: string | null; uf: string | null }[] | null;
-  usuarios: { nome: string | null } | { nome: string | null }[] | null;
 };
 
 type Etapa = { id: string; os_id: string; nome: string | null; ordem: number | null; concluida_em: string | null; responsavel_id: string | null };
@@ -79,6 +78,20 @@ function Pagina() {
     },
   });
 
+  const usuariosQuery = useQuery({
+    queryKey: ["usuarios", "responsaveis", perfil?.empresa_id],
+    enabled: !!perfil?.empresa_id,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data, error } = await supabase
+        .from("usuarios")
+        .select("id, nome")
+        .eq("empresa_id", perfil?.empresa_id as string)
+        .order("nome");
+      if (error) throw error;
+      return Object.fromEntries(((data ?? []) as { id: string; nome: string | null }[]).map((u) => [u.id, u.nome ?? "—"]));
+    },
+  });
+
   const etapasQuery = useQuery({
     queryKey: ["os_etapas", "lista"],
     queryFn: async (): Promise<Etapa[]> => {
@@ -102,7 +115,7 @@ function Pagina() {
   const abertas = filtradas.filter((o) => !STATUS_ENCERRADOS.includes(o.status ?? ""));
   const urgentes = abertas.filter((o) => {
     const sem = semaforoPrazo(o.prazo, o.status);
-    return sem.tom === "vermelho";
+    return sem.nivel === "vermelho";
   });
   const concluidas = filtradas.filter((o) => STATUS_ENCERRADOS.includes(o.status ?? "")).length;
   const etapas = etapasQuery.data ?? [];
@@ -131,9 +144,9 @@ function Pagina() {
         <CartaoIndicador icone={CheckCircle2} valor={concluidas} rotulo="Encerradas" apoio="no filtro atual" destino="/servicos" />
       </div>
 
-      {ordensQuery.isPending || etapasQuery.isPending ? (
+      {ordensQuery.isPending || etapasQuery.isPending || usuariosQuery.isPending ? (
         <div className="flex justify-center py-16"><Loader2 className="size-8 animate-spin text-primary" /></div>
-      ) : ordensQuery.error || etapasQuery.error ? (
+      ) : ordensQuery.error || etapasQuery.error || usuariosQuery.error ? (
         <p className="text-lg font-semibold text-destructive">Não foi possível carregar as ordens de serviço.</p>
       ) : filtradas.length === 0 ? (
         <p className="text-lg font-medium text-muted-foreground">Nenhuma ordem de serviço encontrada.</p>
@@ -154,7 +167,7 @@ function Pagina() {
                       <td className="px-3 py-3 text-sm font-semibold text-foreground">{rotulo(o.servico)}</td>
                       <td className="px-3 py-3"><Badge variant="outline" className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"><span className="size-2 rounded-full bg-primary" aria-hidden />{rotulo(o.status) || atual?.nome || "—"}</Badge></td>
                       <td className="px-3 py-3"><div className="min-w-36"><Progress value={p.valor} className="h-2" /><span className="mt-1 block text-xs font-bold text-muted-foreground">{p.feitas}/{p.total} · {p.valor}%</span></div></td>
-                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">{um(o.usuarios)?.nome ?? "—"}</td>
+                      <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">{o.responsavel_id ? (usuariosQuery.data?.[o.responsavel_id] ?? "—") : "—"}</td>
                       <td className="px-3 py-3"><Badge variant="outline" className="gap-1.5 rounded-full border-border bg-card px-2.5 py-1 text-xs text-foreground"><span className={`size-2 rounded-full ${sem.ponto}`} aria-hidden />{sem.texto || (o.prazo ? dataBR(o.prazo) : "—")}</Badge></td>
                     </tr>
                   );
