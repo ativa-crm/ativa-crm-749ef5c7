@@ -3,4 +3,4 @@
 - [x] Implementar e registrar os seis blocos reutilizáveis de painel.
 - [x] Integrar os blocos à tela Início sem alterar consultas ou regras.
 - [x] Validar design system, tipagem, lint e preview em desktop e celular.
-- [ ] Continuar sem mexer em Início, Imóveis, Clientes e Funil; finalizar Serviços, Orçamentos, Medição, Contratos e Administração.
+- [x] Continuar sem mexer em Início, Imóveis, Clientes e Funil; finalizar Serviços, Orçamentos, Medição, Contratos e Administração.
