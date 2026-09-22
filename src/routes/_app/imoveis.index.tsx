@@ -54,6 +54,7 @@ function useImoveis() {
       const { data, error } = await supabase
         .from("imoveis")
         .select("id, nome, tipo, municipio, uf, matricula, area_ha, cliente_id, clientes(nome)")
+        .not("cliente_id", "is", null)
         .order("nome", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as Linha[];
