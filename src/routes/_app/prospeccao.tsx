@@ -851,7 +851,7 @@ function Pagina() {
   );
 }
 
-function DetalheImovel({
+export function DetalheImovel({
   imovel,
   responsavel,
   onFechar,
