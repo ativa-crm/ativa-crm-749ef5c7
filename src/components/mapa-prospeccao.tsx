@@ -40,7 +40,9 @@ function listaMunicipios(uf: string): Promise<MunicipioIbge[]> {
   const busca = fetch(
     `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${chave}/municipios`,
   )
-    .then((r) => (r.ok ? (r.json() as Promise<MunicipioIbge[]>) : Promise.reject(new Error("ibge"))))
+    .then((r) =>
+      r.ok ? (r.json() as Promise<MunicipioIbge[]>) : Promise.reject(new Error("ibge")),
+    )
     .catch(() => [] as MunicipioIbge[]);
   cacheMunicipios.set(chave, busca);
   return busca;

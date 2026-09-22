@@ -893,7 +893,10 @@ function DetalheImovel({
           }
         />
         <Campo rotulo="Situação documental" valor={imovel.observacoes} />
-        <Campo rotulo="Candidato a confirmar" valor={imovel.tem_candidato_pendente ? "Sim" : "Não"} />
+        <Campo
+          rotulo="Candidato a confirmar"
+          valor={imovel.tem_candidato_pendente ? "Sim" : "Não"}
+        />
       </dl>
 
       <div className="mt-5 rounded-lg border border-border bg-muted/30 p-3">
