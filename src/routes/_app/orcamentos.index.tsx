@@ -369,17 +369,15 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
         .select("id")
         .single();
       if (erro) throw erro;
-      const { error: erroItens } = await supabase
-        .from("orcamento_itens")
-        .insert(
-          validos.map((i, indice) => ({
-            orcamento_id: novo.id,
-            descricao: i.descricao.trim() || "Serviço",
-            quantidade: paraNumero(i.quantidade) ?? 1,
-            valor_unitario: paraNumero(i.valor_unitario) ?? 0,
-            ordem: indice + 1,
-          })),
-        );
+      const { error: erroItens } = await supabase.from("orcamento_itens").insert(
+        validos.map((i, indice) => ({
+          orcamento_id: novo.id,
+          descricao: i.descricao.trim() || "Serviço",
+          quantidade: paraNumero(i.quantidade) ?? 1,
+          valor_unitario: paraNumero(i.valor_unitario) ?? 0,
+          ordem: indice + 1,
+        })),
+      );
       if (erroItens) throw erroItens;
       return novo.id as string;
     },

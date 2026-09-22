@@ -465,32 +465,28 @@ function PainelImportacao({ roteiroId, paradas }: { roteiroId: string; paradas: 
     }) => {
       if (!perfil || !escolhida) throw new Error("Escolha a OS.");
       if (escolhida.imovel_id) {
-        await supabase
-          .from("imovel_localizacao")
-          .upsert(
-            {
-              empresa_id: perfil.empresa_id,
-              imovel_id: escolhida.imovel_id,
-              lat,
-              lon,
-              dispersao_km: dispersao,
-              atualizado_em: new Date().toISOString(),
-            },
-            { onConflict: "imovel_id" },
-          );
+        await supabase.from("imovel_localizacao").upsert(
+          {
+            empresa_id: perfil.empresa_id,
+            imovel_id: escolhida.imovel_id,
+            lat,
+            lon,
+            dispersao_km: dispersao,
+            atualizado_em: new Date().toISOString(),
+          },
+          { onConflict: "imovel_id" },
+        );
       }
-      const { error } = await supabase
-        .from("roteiro_paradas")
-        .insert({
-          empresa_id: perfil.empresa_id,
-          roteiro_id: roteiroId,
-          ordem_servico_id: escolhida.id,
-          lat,
-          lon,
-          n_pontos: nPontos,
-          dispersao_km: dispersao,
-          status: "pendente",
-        });
+      const { error } = await supabase.from("roteiro_paradas").insert({
+        empresa_id: perfil.empresa_id,
+        roteiro_id: roteiroId,
+        ordem_servico_id: escolhida.id,
+        lat,
+        lon,
+        n_pontos: nPontos,
+        dispersao_km: dispersao,
+        status: "pendente",
+      });
       if (error) throw error;
     },
     onSuccess: () => {
