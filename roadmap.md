@@ -1,8 +1,5 @@
-- [ ] Reativar geração de documento em Orçamentos com espera por PDF.
-- [ ] Exigir contrato ao criar OS manualmente e por Orçamento.
-- [ ] Criar Eventos, adicionar ao menu e integrar eventos ao semáforo da Início.
-- [ ] Restringir itens de Orçamento ao status rascunho.
-- [ ] Adicionar upload ou link externo em listas de Documentos.
-- [ ] Adicionar busca global por clientes, imóveis e orçamentos.
-- [ ] Adicionar paradas de Medição por KML/KMZ, Google Maps ou coordenadas.
-- [ ] Validar tipagem, lint e preview.
+- [ ] Aplicar a camada HUD Jarvis e tema escuro padrão.
+- [ ] Redesenhar a casca responsiva com lateral retrátil, topo e gaveta móvel.
+- [ ] Implementar e registrar os seis blocos reutilizáveis de painel.
+- [ ] Integrar os blocos à tela Início sem alterar consultas ou regras.
+- [ ] Validar design system, tipagem, lint e preview em desktop e celular.
