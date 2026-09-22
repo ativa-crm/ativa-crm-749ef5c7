@@ -32,14 +32,14 @@ import logoPadraoAsset from "@/assets/ativa-consultoria-logo.png.asset.json";
 
 const ITENS = [
   { to: "/inicio", rotulo: "Início", Icone: Home },
-  { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
-  { to: "/clientes", rotulo: "Clientes", Icone: Users },
-  { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/prospeccao", rotulo: "Prospecção", Icone: Target },
-  { to: "/servicos", rotulo: "Serviços", Icone: Wrench },
+  { to: "/funil", rotulo: "Funil", Icone: Filter },
+  { to: "/clientes", rotulo: "Clientes", Icone: Users },
+  { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
   { to: "/orcamentos", rotulo: "Orçamentos", Icone: FileText },
-  { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
   { to: "/contratos", rotulo: "Contratos", Icone: FileSignature },
+  { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
+  { to: "/servicos", rotulo: "Serviços", Icone: Wrench },
 ] as const;
 
 const ITEM_ADMIN = { to: "/administracao", rotulo: "Administração", Icone: ShieldCheck } as const;
