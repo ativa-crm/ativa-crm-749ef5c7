@@ -87,7 +87,7 @@ type Lead = {
   observacoes: string | null;
 };
 
-export type LinhaImovel = {
+type LinhaImovel = {
   id: string;
   nome: string;
   municipio: string | null;
@@ -852,7 +852,7 @@ function Pagina() {
   );
 }
 
-export function DetalheImovel({
+function DetalheImovel({
   imovel,
   responsavel,
   onFechar,
