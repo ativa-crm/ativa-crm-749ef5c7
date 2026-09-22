@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -867,7 +868,11 @@ function DetalheImovel({
   onEstagio: (estagio: Estagio) => void;
 }) {
   const lead = um(imovel.prospeccao);
-  return (
+  // O tema HUD aplica backdrop-filter nas seções do conteúdo, o que as torna a
+  // referência de posicionamento de filhos "fixed". Renderizamos o painel via
+  // portal no corpo da página para que ele ocupe a tela inteira de verdade.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <aside className="fixed right-0 top-0 z-[600] flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-border bg-card p-4 shadow-2xl">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -970,7 +975,8 @@ function DetalheImovel({
           </>
         )}
       </div>
-    </aside>
+    </aside>,
+    document.body,
   );
 }
 
