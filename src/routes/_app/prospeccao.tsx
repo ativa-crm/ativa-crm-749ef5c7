@@ -142,6 +142,7 @@ function aplicarFiltros<T>(consulta: T, f: Filtros): T {
     );
   }
   return c as T;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 /** Municípios distintos: busca em lotes para não parar no limite padrão do PostgREST. */
