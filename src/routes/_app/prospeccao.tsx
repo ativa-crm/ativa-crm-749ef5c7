@@ -290,7 +290,7 @@ function Pagina() {
   const resumoQuery = useResumoFiltro(filtros);
   const paginaQuery = usePaginaImoveis(filtros, pagina);
 
-  const linhas = paginaQuery.data?.linhas ?? [];
+  const linhas = useMemo(() => paginaQuery.data?.linhas ?? [], [paginaQuery.data]);
   const total = paginaQuery.data?.total ?? resumoQuery.data?.total ?? 0;
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
