@@ -11,13 +11,16 @@ import {
   Loader2,
   MapPinned,
   Settings2,
+  TrendingUp,
   TriangleAlert,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { areaHa, rotulo } from "@/lib/formato";
+import { areaHa, numero, reais, rotulo } from "@/lib/formato";
 import { desdeAgora } from "@/lib/tempo";
 import { STATUS_OS, STATUS_ENCERRADOS, semaforoPrazo, diasAtePrazo } from "@/lib/prazo";
-import { CartaoIndicador, Painel } from "@/components/painel";
+import { AnelMeta, CartaoIndicador, Painel } from "@/components/painel";
+import { usePerfil } from "@/lib/perfil";
 
 export const Route = createFileRoute("/_app/inicio")({
   head: () => ({
@@ -26,7 +29,7 @@ export const Route = createFileRoute("/_app/inicio")({
       {
         name: "description",
         content:
-          "Painel diário: leads quentes sem contato, prazos de ordens de serviço e números do mês.",
+          "Painel diário: leads quentes sem contato, prazos de ordens de serviço, faturamento e resposta rápida.",
       },
       { property: "og:title", content: "Início | CRM de Topografia" },
       {
@@ -64,6 +67,19 @@ type OS = {
     | null;
 };
 
+type EmpresaMetricas = {
+  meta_mensal_receita: number | null;
+  pontos_por_resposta_rapida: number | null;
+};
+
+type RespostaRapida = {
+  leads_periodo: number | null;
+  leads_respondidos_24h: number | null;
+  pontos_semana: number | null;
+  pontos_total: number | null;
+  sequencia_dias: number | null;
+};
+
 function um<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
@@ -84,6 +100,8 @@ const ICONES_STATUS = {
 } as const;
 
 function Pagina() {
+  const { perfil } = usePerfil();
+
   const leadsQuery = useQuery({
     queryKey: ["inicio", "leads-quentes"],
     queryFn: async (): Promise<{ leads: Lead[]; ultima: Record<string, string> }> => {
@@ -106,8 +124,7 @@ function Pagina() {
 
       const ultima: Record<string, string> = {};
       for (const m of (msgs ?? []) as { oportunidade_id: string | null; criado_em: string }[]) {
-        if (m.oportunidade_id && !ultima[m.oportunidade_id])
-          ultima[m.oportunidade_id] = m.criado_em;
+        if (m.oportunidade_id && !ultima[m.oportunidade_id]) ultima[m.oportunidade_id] = m.criado_em;
       }
       return { leads, ultima };
     },
@@ -127,37 +144,66 @@ function Pagina() {
   });
 
   const mesQuery = useQuery({
-    queryKey: ["inicio", "mes"],
+    queryKey: ["inicio", "mes", perfil?.empresa_id],
+    enabled: !!perfil?.empresa_id,
     queryFn: async () => {
       const desde = inicioDoMes();
-      const [leads, enviados, aprovados] = await Promise.all([
-        supabase
-          .from("oportunidades")
-          .select("id", { count: "exact", head: true })
-          .gte("criado_em", desde),
-        supabase
-          .from("orcamentos")
-          .select("id", { count: "exact", head: true })
-          .gte("enviado_em", desde),
+      const [leads, enviados, aprovados, empresa, contratos, resposta] = await Promise.all([
+        supabase.from("oportunidades").select("id", { count: "exact", head: true }).gte("criado_em", desde),
+        supabase.from("orcamentos").select("id", { count: "exact", head: true }).gte("enviado_em", desde),
         supabase
           .from("orcamentos")
           .select("id", { count: "exact", head: true })
           .eq("status", "aprovado")
           .gte("criado_em", desde),
+        supabase
+          .from("empresas")
+          .select("meta_mensal_receita, pontos_por_resposta_rapida")
+          .eq("id", perfil?.empresa_id as string)
+          .maybeSingle(),
+        supabase.from("contratos").select("valor").eq("status", "fechado").gte("criado_em", desde),
+        supabase.rpc("metricas_resposta_rapida", { p_empresa: perfil?.empresa_id as string }),
       ]);
       if (leads.error) throw leads.error;
       if (enviados.error) throw enviados.error;
       if (aprovados.error) throw aprovados.error;
+      if (empresa.error) throw empresa.error;
+      if (contratos.error) throw contratos.error;
+      if (resposta.error) throw resposta.error;
+
+      const empresaDados = (empresa.data ?? {}) as EmpresaMetricas;
+      const respostaDados = Array.isArray(resposta.data)
+        ? ((resposta.data[0] ?? {}) as RespostaRapida)
+        : ((resposta.data ?? {}) as RespostaRapida);
+      const faturamento = ((contratos.data ?? []) as { valor: number | null }[]).reduce(
+        (soma, item) => soma + Number(item.valor ?? 0),
+        0,
+      );
+      const meta = Number(empresaDados.meta_mensal_receita ?? 0);
+      const leadsPeriodo = Number(respostaDados.leads_periodo ?? 0);
+      const respondidos = Number(respostaDados.leads_respondidos_24h ?? 0);
+
       return {
         leads: leads.count ?? 0,
         enviados: enviados.count ?? 0,
         aprovados: aprovados.count ?? 0,
+        faturamento,
+        meta,
+        progressoMeta: meta > 0 ? Math.round((faturamento / meta) * 100) : 0,
+        resposta: {
+          leadsPeriodo,
+          respondidos,
+          progresso: leadsPeriodo > 0 ? Math.round((respondidos / leadsPeriodo) * 100) : 0,
+          pontosSemana: Number(respostaDados.pontos_semana ?? 0),
+          pontosTotal: Number(respostaDados.pontos_total ?? 0),
+          sequenciaDias: Number(respostaDados.sequencia_dias ?? 0),
+          pontosPorResposta: Number(empresaDados.pontos_por_resposta_rapida ?? 0),
+        },
       };
     },
   });
 
   const carregando = leadsQuery.isPending || osQuery.isPending;
-
   const agora = Date.now();
   const semContato = (leadsQuery.data?.leads ?? []).filter((l) => {
     const ultima = leadsQuery.data?.ultima[l.id] ?? l.criado_em;
@@ -177,6 +223,7 @@ function Pagina() {
     ...s,
     total: (osQuery.data ?? []).filter((o) => o.status === s.valor).length,
   }));
+  const resposta = mesQuery.data?.resposta;
 
   return (
     <div className="space-y-6">
@@ -208,7 +255,6 @@ function Pagina() {
         />
       </div>
 
-      {/* 1. Precisam de você agora */}
       <Painel titulo="Precisam de você agora" icone={AlertTriangle}>
         {carregando ? (
           <div className="flex justify-center py-10">
@@ -235,9 +281,7 @@ function Pagina() {
                         {um(l.clientes)?.nome?.trim() || "Sem cliente"}
                       </span>
                       <span className="block truncate text-base font-semibold text-muted-foreground">
-                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)]
-                          .filter(Boolean)
-                          .join(" · ")}
+                        {[rotulo(l.servico), l.cidade, areaHa(l.area_ha)].filter(Boolean).join(" · ")}
                       </span>
                       <span className="block text-base font-bold text-destructive">
                         sem contato {desdeAgora(ultima)}
@@ -277,7 +321,6 @@ function Pagina() {
         )}
       </Painel>
 
-      {/* 2. Em andamento */}
       <Painel titulo="Em andamento" icone={Settings2}>
         <div className="grade-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {porStatus.map((s) => {
@@ -292,54 +335,83 @@ function Pagina() {
                   <Icone className="size-4" aria-hidden />
                   {s.total}
                 </span>
-                <span className="text-sm font-bold uppercase leading-tight text-foreground">
-                  {s.rotulo}
-                </span>
+                <span className="text-sm font-bold uppercase leading-tight text-foreground">{s.rotulo}</span>
               </Link>
             );
           })}
         </div>
       </Painel>
 
-      {/* 3. Este mês */}
       <Painel titulo="Este mês" icone={Clock3}>
-        <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Link
-            to="/funil"
-            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
-          >
-            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
-              <Flame className="size-4" aria-hidden />
-              {mesQuery.data?.leads ?? 0}
-            </span>
-            <span className="text-sm font-bold uppercase text-foreground">
-              Oportunidades recebidas
-            </span>
-          </Link>
-          <Link
-            to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
-          >
-            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
-              <FileText className="size-4" aria-hidden />
-              {mesQuery.data?.enviados ?? 0}
-            </span>
-            <span className="text-sm font-bold uppercase text-foreground">Orçamentos enviados</span>
-          </Link>
-          <Link
-            to="/orcamentos"
-            className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
-          >
-            <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
-              <FileCheck2 className="size-4" aria-hidden />
-              {mesQuery.data?.aprovados ?? 0}
-            </span>
-            <span className="text-sm font-bold uppercase text-foreground">
-              Orçamentos aprovados
-            </span>
-          </Link>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div className="rounded-lg border border-border bg-background-light p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold uppercase text-muted-foreground">Faturamento do mês</p>
+                <p className="mt-1 text-3xl font-extrabold text-foreground">
+                  {reais(mesQuery.data?.faturamento ?? 0)}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                  meta {reais(mesQuery.data?.meta ?? 0)}
+                </p>
+              </div>
+              <AnelMeta valor={mesQuery.data?.progressoMeta ?? 0} rotulo="meta" />
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-background-light p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold uppercase text-muted-foreground">Resposta rápida</p>
+                <p className="mt-1 text-3xl font-extrabold text-foreground">
+                  {resposta?.respondidos ?? 0}/{resposta?.leadsPeriodo ?? 0}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                  {resposta?.pontosSemana ?? 0} pontos na semana · sequência de {resposta?.sequenciaDias ?? 0} dias
+                </p>
+              </div>
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-sm bg-secondary text-primary">
+                <Zap className="size-6" aria-hidden />
+              </span>
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, resposta?.progresso ?? 0)}%` }} />
+            </div>
+            <p className="mt-2 text-xs font-bold uppercase text-muted-foreground">
+              {resposta?.progresso ?? 0}% respondidos em até 24h · {resposta?.pontosPorResposta ?? 0} pontos por resposta
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 lg:col-span-2">
+            <ResumoMes to="/funil" icone={Flame} valor={mesQuery.data?.leads ?? 0} rotulo="Oportunidades recebidas" />
+            <ResumoMes to="/orcamentos" icone={FileText} valor={mesQuery.data?.enviados ?? 0} rotulo="Orçamentos enviados" />
+            <ResumoMes to="/orcamentos" icone={TrendingUp} valor={mesQuery.data?.aprovados ?? 0} rotulo="Orçamentos aprovados" />
+          </div>
         </div>
       </Painel>
     </div>
+  );
+}
+
+function ResumoMes({
+  to,
+  icone: Icone,
+  valor,
+  rotulo: texto,
+}: {
+  to: "/funil" | "/orcamentos";
+  icone: typeof Flame;
+  valor: number;
+  rotulo: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-24 flex-col justify-between rounded-lg border border-border bg-card px-4 py-3 shadow-card transition-all duration-200 hover:-translate-y-px hover:bg-accent"
+    >
+      <span className="flex items-center gap-2 text-3xl font-extrabold text-primary">
+        <Icone className="size-4" aria-hidden />
+        {numero(valor, 0)}
+      </span>
+      <span className="text-sm font-bold uppercase text-foreground">{texto}</span>
+    </Link>
   );
 }
