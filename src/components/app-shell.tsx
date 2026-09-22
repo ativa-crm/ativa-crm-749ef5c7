@@ -20,7 +20,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  X,
 } from "lucide-react";
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
@@ -336,7 +335,7 @@ function BarraTopo({
         {rotuloPerfil(papel)}
         <ChevronDown className="size-4 text-muted-foreground" />
       </span>
-      <BotaoTema className="size-11 px-0 [&>svg]:size-4.5 [&]:text-[0]" />
+      <BotaoTema mostrarRotulo={false} className="size-11 px-0 [&>svg]:size-4.5" />
       <Avatar className="size-11 border border-border">
         <AvatarFallback className="bg-secondary text-xs font-extrabold text-foreground">{iniciais}</AvatarFallback>
       </Avatar>
@@ -357,7 +356,7 @@ function Marca({ nome, logo, aberta }: { nome: string; logo: string | null; aber
 
   return (
     <div className="flex min-h-12 min-w-0 items-center gap-3">
-      <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xs bg-card p-1 ring-1 ring-sidebar-border">
+      <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-logo bg-card p-1 ring-1 ring-sidebar-border">
         <img
           src={logoExibido}
           alt={`Logo ${nome || "Ativa Consultoria"}`}

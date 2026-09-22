@@ -14,7 +14,13 @@ function temaAtual(): Tema {
   return document.documentElement.classList.contains("dark") ? "escuro" : "claro";
 }
 
-export function BotaoTema({ className }: { className?: string }) {
+export function BotaoTema({
+  className,
+  mostrarRotulo = true,
+}: {
+  className?: string;
+  mostrarRotulo?: boolean;
+}) {
   const [tema, setTema] = useState<Tema>("escuro");
 
   useEffect(() => {
@@ -44,7 +50,7 @@ export function BotaoTema({ className }: { className?: string }) {
       ) : (
         <Moon className="size-4.5" strokeWidth={2.5} />
       )}
-      {tema === "escuro" ? "Tema claro" : "Tema escuro"}
+      {mostrarRotulo && (tema === "escuro" ? "Tema claro" : "Tema escuro")}
     </Button>
   );
 }

@@ -9,6 +9,7 @@
   --radius-3xl: calc(var(--radius) + 12px);  /* 26px — diálogo */
   --radius-4xl: calc(var(--radius) + 16px);  /* 30px */
   --radius-pill: 999px;                      /* botões, tabs, busca */
+  --radius-logo: 0.5rem;                     /* 8px — caixa branca do logotipo */
 
   /* Site institucional */
   --site-radius: 4px;
