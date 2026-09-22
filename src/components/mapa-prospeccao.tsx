@@ -20,20 +20,64 @@ function token(nome: string, alternativa: string): string {
   return v || alternativa;
 }
 
+function semAcento(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+type MunicipioIbge = { id: number; nome: string };
+
+const cacheMunicipios = new Map<string, Promise<MunicipioIbge[]>>();
+const cacheMalhas = new Map<number, Promise<unknown>>();
+
+function listaMunicipios(uf: string): Promise<MunicipioIbge[]> {
+  const chave = uf.toUpperCase();
+  const existente = cacheMunicipios.get(chave);
+  if (existente) return existente;
+  const busca = fetch(
+    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${chave}/municipios`,
+  )
+    .then((r) => (r.ok ? (r.json() as Promise<MunicipioIbge[]>) : Promise.reject(new Error("ibge"))))
+    .catch(() => [] as MunicipioIbge[]);
+  cacheMunicipios.set(chave, busca);
+  return busca;
+}
+
+function malhaMunicipio(codigo: number): Promise<unknown> {
+  const existente = cacheMalhas.get(codigo);
+  if (existente) return existente;
+  const busca = fetch(
+    `https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${codigo}?formato=application/vnd.geo+json`,
+  )
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("malha"))))
+    .catch(() => null);
+  cacheMalhas.set(codigo, busca);
+  return busca;
+}
+
 export function MapaProspeccao({
   pontos,
   selecionado,
   onSelecionar,
+  municipio = null,
+  uf = "SP",
   altura = 420,
 }: {
   pontos: PontoImovel[];
   selecionado?: string | null;
   onSelecionar: (imovelId: string) => void;
+  /** Nome do município selecionado; null = todos (sem contorno). */
+  municipio?: string | null;
+  uf?: string;
   altura?: number;
 }) {
   const caixa = useRef<HTMLDivElement | null>(null);
   const mapa = useRef<L.Map | null>(null);
   const camada = useRef<L.LayerGroup | null>(null);
+  const contorno = useRef<L.GeoJSON | null>(null);
   const ruas = useRef<L.TileLayer | null>(null);
   const satelite = useRef<L.TileLayer | null>(null);
   const [vista, setVista] = useState<"ruas" | "satelite">("ruas");
@@ -82,6 +126,20 @@ export function MapaProspeccao({
     if (!m.hasLayer(ativa)) ativa.addTo(m);
   }, [vista]);
 
+  function enquadrar(leaflet: typeof L) {
+    const m = mapa.current;
+    if (!m) return;
+    if (contorno.current) {
+      const limites = contorno.current.getBounds();
+      if (limites.isValid()) {
+        m.fitBounds(limites.pad(0.05));
+        return;
+      }
+    }
+    const coords = pontos.map((p) => [p.lat, p.lon] as [number, number]);
+    if (coords.length > 0) m.fitBounds(leaflet.latLngBounds(coords).pad(0.2));
+  }
+
   function desenhar(leaflet: typeof L) {
     const m = mapa.current;
     const grupo = camada.current;
@@ -89,29 +147,33 @@ export function MapaProspeccao({
     grupo.clearLayers();
 
     const cor = token("--primary", "#9ab137");
-    const coords: [number, number][] = [];
 
     for (const p of pontos) {
-      coords.push([p.lat, p.lon]);
       const destaque = selecionado === p.id;
-      const fundo = p.comContato ? cor : token("--muted-foreground", "#6b7280");
-      leaflet
+      const fundo = destaque
+        ? token("--destructive", "#b3261e")
+        : p.comContato
+          ? cor
+          : token("--muted-foreground", "#6b7280");
+      const tamanho = destaque ? 26 : 12;
+      const marcador = leaflet
         .marker([p.lat, p.lon], {
+          zIndexOffset: destaque ? 1000 : 0,
           icon: leaflet.divIcon({
             className: "",
-            html:
-              `<span style="display:block;width:${destaque ? 18 : 12}px;height:${destaque ? 18 : 12}px;` +
-              `border-radius:9999px;background:${fundo};border:2px solid #fff;box-shadow:0 0 0 ${destaque ? 4 : 0}px ${cor}66"></span>`,
-            iconSize: [destaque ? 18 : 12, destaque ? 18 : 12],
-            iconAnchor: [destaque ? 9 : 6, destaque ? 9 : 6],
+            html: destaque
+              ? `<span class="prosp-pulso" style="background:${fundo}"></span>`
+              : `<span style="display:block;width:${tamanho}px;height:${tamanho}px;border-radius:9999px;background:${fundo};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)"></span>`,
+            iconSize: [tamanho, tamanho],
+            iconAnchor: [tamanho / 2, tamanho / 2],
           }),
         })
         .bindTooltip(`${p.nome} · ${p.municipio}<br/>${p.servico}`)
-        .on("click", () => onSelecionar(p.id))
-        .addTo(grupo);
+        .on("click", () => onSelecionar(p.id));
+      marcador.addTo(grupo);
     }
 
-    if (coords.length > 0) m.fitBounds(leaflet.latLngBounds(coords).pad(0.2));
+    enquadrar(leaflet);
   }
 
   useEffect(() => {
@@ -119,6 +181,51 @@ export function MapaProspeccao({
     void import("leaflet").then((leaflet) => desenhar(leaflet));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pontos, selecionado]);
+
+  // Contorno administrativo do município (IBGE). Falhas são silenciosas.
+  useEffect(() => {
+    let cancelado = false;
+
+    async function aplicar() {
+      const m = mapa.current;
+      if (!m) return;
+      const leaflet = await import("leaflet");
+      if (cancelado) return;
+
+      if (contorno.current) {
+        m.removeLayer(contorno.current);
+        contorno.current = null;
+      }
+      if (!municipio) {
+        enquadrar(leaflet);
+        return;
+      }
+
+      const lista = await listaMunicipios(uf);
+      if (cancelado) return;
+      const alvo = lista.find((mu) => semAcento(mu.nome) === semAcento(municipio));
+      if (!alvo) return;
+      const geo = await malhaMunicipio(alvo.id);
+      if (cancelado || !geo || !mapa.current) return;
+      const camadaGeo = leaflet.geoJSON(geo as never, {
+        style: {
+          color: token("--primary", "#9ab137"),
+          weight: 3,
+          opacity: 0.95,
+          fillOpacity: 0.05,
+        },
+      });
+      camadaGeo.addTo(mapa.current);
+      contorno.current = camadaGeo;
+      enquadrar(leaflet);
+    }
+
+    void aplicar();
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [municipio, uf]);
 
   if (falhou) {
     return (
@@ -134,6 +241,10 @@ export function MapaProspeccao({
 
   return (
     <div className="relative">
+      <style>{`
+        .prosp-pulso{display:block;width:26px;height:26px;border-radius:9999px;border:3px solid #fff;box-shadow:0 0 0 4px rgba(0,0,0,.12);animation:prospPulso 1.4s ease-out infinite}
+        @keyframes prospPulso{0%{box-shadow:0 0 0 0 rgba(179,38,30,.55)}70%{box-shadow:0 0 0 16px rgba(179,38,30,0)}100%{box-shadow:0 0 0 0 rgba(179,38,30,0)}}
+      `}</style>
       <div className="absolute right-3 top-3 z-[500] flex gap-1 rounded-full bg-card p-1 shadow-card">
         <Button
           type="button"
@@ -163,7 +274,7 @@ export function MapaProspeccao({
       />
       <p className="mt-2 text-xs font-medium text-muted-foreground">
         {pontos.length} imóveis com localização no filtro. Verde = contato disponível; cinza = sem
-        contato.
+        contato; vermelho pulsante = imóvel selecionado.
       </p>
     </div>
   );
