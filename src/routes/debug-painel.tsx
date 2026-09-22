@@ -33,16 +33,25 @@ const imovelFalso: LinhaImovel = {
 
 function DebugPainel() {
   return (
-    <div className="min-h-screen bg-background p-8">
-      <p className="text-foreground">Página de teste — painel deve ficar fixo à direita.</p>
-      <DetalheImovel
-        imovel={imovelFalso}
-        responsavel="Teste"
-        onFechar={() => {}}
-        onWhats={() => {}}
-        onEmail={() => {}}
-        onEstagio={() => {}}
-      />
+    <div className="jarvis relative flex min-h-screen overflow-hidden bg-background-light">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="app-content mx-auto w-full max-w-7xl px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">
+            <section className="space-y-4">
+              <p className="text-foreground">Conteúdo da página atrás do painel.</p>
+              <div className="h-96 rounded-2xl bg-card" />
+              <DetalheImovel
+                imovel={imovelFalso}
+                responsavel="Teste"
+                onFechar={() => {}}
+                onWhats={() => {}}
+                onEmail={() => {}}
+                onEstagio={() => {}}
+              />
+            </section>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
