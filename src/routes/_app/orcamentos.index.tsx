@@ -293,21 +293,24 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [imovelId, setImovelId] = useState<string | null>(null);
   const [buscaCliente, setBuscaCliente] = useState("");
-  const [itens, setItens] = useState<ItemNovo[]>([
-    { descricao: "", quantidade: "1", valor_unitario: "" },
-  ]);
+  const [itens, setItens] = useState<ItemNovo[]>(ITENS_MODELO());
   const [desconto, setDesconto] = useState("");
   const [validade, setValidade] = useState("15");
   const [prazo, setPrazo] = useState("");
-  const [condicoes, setCondicoes] = useState("");
+  const [condicoes, setCondicoes] = useState("50% na assinatura e 50% na entrega");
+  const [titulo, setTitulo] = useState("GEORREFERENCIAMENTO DE IMÓVEL RURAL");
+  const [descricao, setDescricao] = useState("Georreferenciamento");
+  const [finalidade, setFinalidade] = useState("certificação no SIGEF/INCRA");
+  const [alqueires, setAlqueires] = useState("");
+  const [documentoCli, setDocumentoCli] = useState("");
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "resumo"],
+    queryKey: ["clientes", "resumo-completo"],
     enabled: aberto,
     queryFn: async () => {
-      const { data, error } = await supabase.from("clientes").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("clientes").select("*").order("nome");
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string }[];
+      return (data ?? []) as ({ id: string; nome: string } & Record<string, unknown>)[];
     },
   });
   const imoveisQuery = useQuery({
