@@ -27,7 +27,9 @@ export function mascaraDocumento(v: string, tipo: string): string {
 }
 
 export function mascaraTelefone(v: string): string {
-  const d = soDigitos(v).slice(0, 11);
+  let d = soDigitos(v);
+  if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+  d = d.slice(0, 11);
   if (d.length <= 10) {
     return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/^\((\d{2})\) (\d{4})(\d)/, "($1) $2-$3");
   }

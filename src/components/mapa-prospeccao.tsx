@@ -102,7 +102,7 @@ export function MapaProspeccao({
           "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
           { attribution: "Esri World Imagery", maxZoom: 19 },
         );
-        ruas.current.addTo(m);
+        satelite.current.addTo(m);
         m.setView([-23.98, -48.87], 8);
         camada.current = leaflet.layerGroup().addTo(m);
         mapa.current = m;
