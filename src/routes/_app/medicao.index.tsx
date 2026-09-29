@@ -28,6 +28,8 @@ import {
   type Parada,
   type Roteiro,
 } from "@/lib/medicao";
+import { NovoRoteiroLocal } from "@/components/novo-roteiro-local";
+import { BASE_ESCRITORIO, extrairLatLon as extrairDoLink } from "@/lib/rota";
 import { ImportarKml } from "@/components/importar-kml";
 import { MapaRoteiro, type ParadaMapa } from "@/components/mapa-roteiro";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +134,7 @@ function extrairLatLon(link: string): Ponto | null {
 
 function Pagina() {
   const [novoAberto, setNovoAberto] = useState(false);
+  const [localAberto, setLocalAberto] = useState(false);
   const [busca, setBusca] = useState("");
   const [responsavel, setResponsavel] = useState("todos");
   const [roteiroId, setRoteiroId] = useState<string | null>(null);
@@ -196,10 +199,16 @@ function Pagina() {
           <RotaIcone className="size-6 text-primary" strokeWidth={2.5} />
           Medição
         </h1>
-        <Button onClick={() => setNovoAberto(true)} className="h-11 px-4 text-base">
-          <Plus className="size-5" strokeWidth={3} />
-          Novo roteiro
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setLocalAberto(true)} className="h-11 border-2 px-4 text-base">
+            <MapPinned className="size-5" strokeWidth={2.5} />
+            Por localização ou KML
+          </Button>
+          <Button onClick={() => setNovoAberto(true)} className="h-11 px-4 text-base">
+            <Plus className="size-5" strokeWidth={3} />
+            Novo roteiro
+          </Button>
+        </div>
       </header>
       <BarraFerramentas>
         <div className="relative min-w-64 flex-1">
@@ -409,6 +418,7 @@ function Pagina() {
         </div>
       )}
       <NovoRoteiro aberta={novoAberto} onFechar={() => setNovoAberto(false)} />
+      <NovoRoteiroLocal aberta={localAberto} onFechar={() => setLocalAberto(false)} />
     </section>
   );
 }
@@ -502,7 +512,7 @@ function PainelImportacao({ roteiroId, paradas }: { roteiroId: string; paradas: 
   });
 
   function adicionarPorMaps() {
-    const ponto = extrairLatLon(maps);
+    const ponto = extrairDoLink(maps) ?? extrairLatLon(maps);
     if (!ponto) {
       toast.error("Cole um link do Google Maps com latitude e longitude.");
       return;
@@ -581,16 +591,16 @@ function NovoRoteiro({ aberta, onFechar }: { aberta: boolean; onFechar: () => vo
   const queryClient = useQueryClient();
   const [nome, setNome] = useState("");
   const [dataPrevista, setDataPrevista] = useState("");
-  const [endereco, setEndereco] = useState("");
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
+  const [endereco, setEndereco] = useState(BASE_ESCRITORIO.endereco);
+  const [lat, setLat] = useState(String(BASE_ESCRITORIO.lat));
+  const [lon, setLon] = useState(String(BASE_ESCRITORIO.lon));
   useEffect(() => {
     if (!aberta) {
       setNome("");
       setDataPrevista("");
-      setEndereco("");
-      setLat("");
-      setLon("");
+      setEndereco(BASE_ESCRITORIO.endereco);
+      setLat(String(BASE_ESCRITORIO.lat));
+      setLon(String(BASE_ESCRITORIO.lon));
     }
   }, [aberta]);
   const criar = useMutation({

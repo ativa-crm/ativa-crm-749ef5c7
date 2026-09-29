@@ -36,7 +36,11 @@ export function MapaRoteiro({
   paradas,
   radarUrl,
   altura = 380,
+  trajeto,
+  poligono,
 }: {
+  trajeto?: [number, number][] | null;
+  poligono?: [number, number][] | null;
   base: Ponto | null;
   paradas: ParadaMapa[];
   radarUrl?: string | null;
@@ -161,6 +165,14 @@ export function MapaRoteiro({
     }
 
     const cor = token("--primary", "#9ab137");
+    if (poligono && poligono.length > 2) {
+      leaflet.polygon(poligono, { color: token("--destructive", "#b3261e"), weight: 2, fillOpacity: 0.1 }).addTo(grupo);
+      pontos.push(...poligono);
+    }
+    if (trajeto && trajeto.length > 1) {
+      leaflet.polyline(trajeto, { color: cor, weight: 5 }).addTo(grupo);
+      pontos.push(...trajeto);
+    }
     if (base && feitas.length > 0) {
       leaflet
         .polyline(
@@ -170,7 +182,7 @@ export function MapaRoteiro({
         .addTo(grupo);
     }
     const inicioPendentes = feitas[feitas.length - 1] ?? base;
-    if (inicioPendentes && abertas.length > 0) {
+    if (inicioPendentes && abertas.length > 0 && !(trajeto && trajeto.length > 1)) {
       leaflet
         .polyline(
           [
@@ -191,7 +203,7 @@ export function MapaRoteiro({
     if (!mapa.current) return;
     void import("leaflet").then((leaflet) => desenhar(leaflet));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paradas, base]);
+  }, [paradas, base, trajeto, poligono]);
 
   if (falhou.current) {
     return (
