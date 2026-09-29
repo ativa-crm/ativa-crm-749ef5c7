@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { dataHora, rotulo } from "@/lib/formato";
 import { Bloco } from "@/components/campos";
 import { Button } from "@/components/ui/button";
+import { IDENTIDADE_DOCUMENTOS, MODELOS_DOCUMENTO } from "@/lib/modelos-documento";
 
 export const Route = createFileRoute("/_app/contratos/$id")({
   head: () => ({
@@ -160,6 +161,38 @@ function Pagina() {
               Ainda processando, atualize a página em instantes.
             </p>
           ) : null}
+        </div>
+      </Bloco>
+      <Bloco titulo="Modelo padrão do contrato">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-center">
+          <div>
+            <p className="text-base font-semibold text-foreground">
+              O documento segue o modelo oficial de prestação de serviços técnicos da Ativa
+              Consultoria, com cláusulas de objeto, honorários, pagamento, obrigações, foro e
+              assinaturas.
+            </p>
+            <Button asChild variant="outline" className="mt-4 h-12">
+              <a
+                href={MODELOS_DOCUMENTO.contrato.url}
+                download={MODELOS_DOCUMENTO.contrato.arquivo}
+              >
+                <Download className="size-5" />
+                Baixar modelo padrão
+              </a>
+            </Button>
+          </div>
+          <div className="relative overflow-hidden rounded-lg border border-border bg-card p-3 pt-14">
+            <img
+              src={IDENTIDADE_DOCUMENTOS.cantoUrl}
+              alt="Acabamento azul do modelo"
+              className="absolute right-0 top-0 h-14 w-20 object-cover object-left-bottom"
+            />
+            <img
+              src={IDENTIDADE_DOCUMENTOS.logoUrl}
+              alt="Ativa Consultoria"
+              className="w-full object-contain"
+            />
+          </div>
         </div>
       </Bloco>
     </section>

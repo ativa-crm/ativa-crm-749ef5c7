@@ -12,3 +12,7 @@
 ## Design system
 
 Leia `DESIGN.md` antes de alterar UI. Use os componentes de `design-system/components/` e os tokens de `design-system/tokens/`; registre componentes novos em `design-system/catalog.ts` e valide a rota `/design-system`. Referências HTML ficam em `design-system/referencia/`. Não crie cores, fontes, espaçamentos ou raios hardcoded.
+
+## Modelos de documentos
+
+Os modelos oficiais de proposta e contrato, a logo e o acabamento azul são ativos CDN referenciados por `src/lib/modelos-documento.ts`; isso mantém uma única fonte para Administração e fichas.
