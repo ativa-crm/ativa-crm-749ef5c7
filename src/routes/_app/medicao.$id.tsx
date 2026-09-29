@@ -79,7 +79,7 @@ export const Route = createFileRoute("/_app/medicao/$id")({
 });
 
 const SELECT_PARADA =
-  "id, roteiro_id, ordem_servico_id, ordem, lat, lon, n_pontos, dispersao_km, status, sequencia_baixa, km_previsto, horas_previsto, custo_previsto, km_real, horas_real, custo_real, data_execucao, observacoes_campo, ordens_servico(id, numero, servico, status, clientes(nome), imoveis(nome, municipio, uf))";
+  "id, roteiro_id, ordem_servico_id, ordem, lat, lon, n_pontos, dispersao_km, status, sequencia_baixa, km_previsto, horas_previsto, custo_previsto, km_real, horas_real, custo_real, data_execucao, observacoes_campo, ordens_servico(id, numero, servico, status, clientes(id, nome, telefone, email), imoveis(id, nome, municipio, uf))";
 
 function nomeCliente(p: Parada): string {
   return um(um(p.ordens_servico)?.clientes)?.nome ?? "sem cliente";
