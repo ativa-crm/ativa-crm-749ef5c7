@@ -188,7 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onAbrirMenu={() => setGaveta(true)}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="app-content mx-auto w-full max-w-7xl px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">
+          <div className="app-content w-full px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">
             {children}
           </div>
         </main>

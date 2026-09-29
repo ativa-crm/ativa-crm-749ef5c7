@@ -82,7 +82,7 @@ export function MapaProspeccao({
   const contorno = useRef<L.GeoJSON | null>(null);
   const ruas = useRef<L.TileLayer | null>(null);
   const satelite = useRef<L.TileLayer | null>(null);
-  const [vista, setVista] = useState<"ruas" | "satelite">("ruas");
+  const [vista, setVista] = useState<"ruas" | "satelite">("satelite");
   const [falhou, setFalhou] = useState(false);
 
   useEffect(() => {
