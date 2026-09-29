@@ -8,18 +8,22 @@ import {
   CloudSun,
   ClipboardCheck,
   Loader2,
+  Mail,
+  MapPin,
   MapPinned,
+  MessageCircle,
   Navigation,
   Plus,
   RotateCcw,
   Settings2,
   Table2,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { Bloco, Campo, CampoLongo } from "@/components/campos";
-import { data as dataBR, numero, paraNumero, reais, rotulo } from "@/lib/formato";
+import { data as dataBR, mascaraTelefone, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { linkRota, type Ponto } from "@/lib/geo";
 import {
   AJUDA_PARAMETROS,
@@ -79,7 +83,7 @@ export const Route = createFileRoute("/_app/medicao/$id")({
 });
 
 const SELECT_PARADA =
-  "id, roteiro_id, ordem_servico_id, ordem, lat, lon, n_pontos, dispersao_km, status, sequencia_baixa, km_previsto, horas_previsto, custo_previsto, km_real, horas_real, custo_real, data_execucao, observacoes_campo, ordens_servico(id, numero, servico, status, clientes(nome), imoveis(nome, municipio, uf))";
+  "id, roteiro_id, ordem_servico_id, ordem, lat, lon, n_pontos, dispersao_km, status, sequencia_baixa, km_previsto, horas_previsto, custo_previsto, km_real, horas_real, custo_real, data_execucao, observacoes_campo, ordens_servico(id, numero, servico, status, clientes(id, nome, telefone, email), imoveis(id, nome, municipio, uf))";
 
 function nomeCliente(p: Parada): string {
   return um(um(p.ordens_servico)?.clientes)?.nome ?? "sem cliente";
@@ -281,6 +285,14 @@ function Pagina() {
             <CloudSun className="mr-1 size-5" strokeWidth={2.5} />
             Clima
           </TabsTrigger>
+          <TabsTrigger value="clientes" className="h-12 flex-1 text-base font-extrabold">
+            <Users className="mr-1 size-5" strokeWidth={2.5} />
+            Clientes
+          </TabsTrigger>
+          <TabsTrigger value="pontos" className="h-12 flex-1 text-base font-extrabold">
+            <MapPin className="mr-1 size-5" strokeWidth={2.5} />
+            Pontos
+          </TabsTrigger>
           <TabsTrigger value="parametros" className="h-12 flex-1 text-base font-extrabold">
             <Settings2 className="mr-1 size-5" strokeWidth={2.5} />
             Parâmetros
@@ -359,6 +371,14 @@ function Pagina() {
 
         <TabsContent value="clima" className="mt-4 space-y-4">
           <AbaClima roteiro={roteiro} abertas={circuito.abertas} />
+        </TabsContent>
+
+        <TabsContent value="clientes" className="mt-4 space-y-4">
+          <AbaClientes paradas={[...circuito.feitas, ...circuito.abertas]} />
+        </TabsContent>
+
+        <TabsContent value="pontos" className="mt-4 space-y-4">
+          <AbaPontos paradas={[...circuito.feitas, ...circuito.abertas]} roteiroId={id} />
         </TabsContent>
 
         <TabsContent value="parametros" className="mt-4 space-y-4">
@@ -1318,6 +1338,247 @@ function AbaClima({ roteiro, abertas }: { roteiro: Roteiro; abertas: ParadaCalcu
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+type PontoImovel = {
+  id: string;
+  imovel_id: string;
+  codigo: string | null;
+  lat: number;
+  lon: number;
+  lat_gms: string | null;
+  lon_gms: string | null;
+  utm_e: number | null;
+  utm_n: number | null;
+  utm_zona: string | null;
+};
+
+function imovelDaParada(p: Parada) {
+  return um(um(p.ordens_servico)?.imoveis);
+}
+
+function AbaClientes({ paradas }: { paradas: ParadaCalculada[] }) {
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, { nome: string; telefone: string | null; email: string | null; paradas: ParadaCalculada[] }>();
+    for (const p of paradas) {
+      const cli = um(um(p.ordens_servico)?.clientes);
+      const chave = cli?.id ?? "sem-cliente";
+      const grupo = mapa.get(chave) ?? {
+        nome: cli?.nome ?? "Sem cliente",
+        telefone: cli?.telefone ?? null,
+        email: cli?.email ?? null,
+        paradas: [],
+      };
+      grupo.paradas.push(p);
+      mapa.set(chave, grupo);
+    }
+    return [...mapa.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [paradas]);
+
+  if (grupos.length === 0) {
+    return (
+      <Bloco titulo="Clientes do roteiro" Icone={Users}>
+        <p className="text-lg font-medium text-muted-foreground">
+          Nenhuma parada no roteiro ainda.
+        </p>
+      </Bloco>
+    );
+  }
+
+  return (
+    <Bloco titulo="Clientes do roteiro" Icone={Users}>
+      <div className="space-y-3">
+        {grupos.map((g) => {
+          const digitos = (g.telefone ?? "").replace(/\D+/g, "");
+          return (
+            <div key={g.nome} className="rounded-2xl border-2 border-border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-extrabold text-foreground">{g.nome}</p>
+                  <p className="text-base font-semibold text-muted-foreground">
+                    {g.telefone ? mascaraTelefone(g.telefone) : "sem telefone"}
+                    {g.email ? ` · ${g.email}` : ""}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {digitos ? (
+                    <Button asChild variant="outline" className="h-12 rounded-xl border-2 px-4 text-base font-extrabold">
+                      <a href={`https://wa.me/55${digitos}`} target="_blank" rel="noreferrer">
+                        <MessageCircle className="size-5" strokeWidth={2.5} />
+                        WhatsApp
+                      </a>
+                    </Button>
+                  ) : null}
+                  {g.email ? (
+                    <Button asChild variant="outline" className="h-12 rounded-xl border-2 px-4 text-base font-extrabold">
+                      <a href={`mailto:${g.email}`}>
+                        <Mail className="size-5" strokeWidth={2.5} />
+                        E-mail
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {g.paradas.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-border bg-background-light px-3 py-2"
+                  >
+                    <span className="min-w-0 text-base font-semibold text-foreground">
+                      {p.posicao}. {processo(p)}
+                      {cidade(p) ? ` · ${cidade(p)}` : ""}
+                    </span>
+                    <Badge
+                      className={`rounded-lg text-sm font-extrabold ${
+                        p.status === "baixado" ? "" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {p.status === "baixado" ? "Baixado" : "Pendente"}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </Bloco>
+  );
+}
+
+function AbaPontos({ paradas, roteiroId }: { paradas: ParadaCalculada[]; roteiroId: string }) {
+  const queryClient = useQueryClient();
+  const imovelIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of paradas) {
+      const im = imovelDaParada(p);
+      if (im?.id) set.add(im.id);
+    }
+    return [...set];
+  }, [paradas]);
+
+  const pontosQuery = useQuery({
+    queryKey: ["imovel_pontos", "roteiro", roteiroId, imovelIds.join(",")],
+    enabled: imovelIds.length > 0,
+    queryFn: async (): Promise<PontoImovel[]> => {
+      const { data, error } = await supabase
+        .from("imovel_pontos")
+        .select("id, imovel_id, codigo, lat, lon, lat_gms, lon_gms, utm_e, utm_n, utm_zona")
+        .in("imovel_id", imovelIds)
+        .order("codigo", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as PontoImovel[];
+    },
+  });
+
+  const pontosPorImovel = useMemo(() => {
+    const mapa = new Map<string, PontoImovel[]>();
+    for (const pt of pontosQuery.data ?? []) {
+      const lista = mapa.get(pt.imovel_id) ?? [];
+      lista.push(pt);
+      mapa.set(pt.imovel_id, lista);
+    }
+    return mapa;
+  }, [pontosQuery.data]);
+
+  if (paradas.length === 0) {
+    return (
+      <Bloco titulo="Pontos levantados" Icone={MapPin}>
+        <p className="text-lg font-medium text-muted-foreground">
+          Nenhuma parada no roteiro ainda.
+        </p>
+      </Bloco>
+    );
+  }
+
+  return (
+    <>
+      {paradas.map((p) => {
+        const im = imovelDaParada(p);
+        const pontos = im?.id ? (pontosPorImovel.get(im.id) ?? []) : [];
+        return (
+          <Bloco
+            key={p.id}
+            titulo={`${p.posicao}. ${im?.nome ?? nomeCliente(p)}`}
+            Icone={MapPin}
+            acao={
+              im?.id ? (
+                <ImportarKml
+                  imovelId={im.id}
+                  rotulo={pontos.length > 0 ? "Substituir KML/KMZ" : "Importar KML/KMZ"}
+                  onPronto={() => {
+                    void queryClient.invalidateQueries({ queryKey: ["imovel_pontos"] });
+                    void queryClient.invalidateQueries({ queryKey: ["roteiro", roteiroId] });
+                  }}
+                />
+              ) : undefined
+            }
+          >
+            <p className="text-base font-semibold text-muted-foreground">
+              {nomeCliente(p)} · {processo(p)}
+              {cidade(p) ? ` · ${cidade(p)}` : ""}
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <Medidor titulo="pontos" valor={String(pontos.length || p.n_pontos || 0)} />
+              <Medidor
+                titulo="dispersão"
+                valor={p.dispersao_km !== null ? `${numero(p.dispersao_km, 2)} km` : "—"}
+              />
+              <Medidor
+                titulo="centróide"
+                valor={`${numero(Number(p.lat), 5)}, ${numero(Number(p.lon), 5)}`}
+              />
+            </div>
+            {pontosQuery.isPending ? (
+              <div className="mt-3 flex justify-center py-4">
+                <Loader2 className="size-6 animate-spin text-primary" />
+              </div>
+            ) : pontos.length === 0 ? (
+              <p className="mt-3 text-base font-semibold text-muted-foreground">
+                Nenhum ponto importado para este imóvel. Envie o KML/KMZ do levantamento.
+              </p>
+            ) : (
+              <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border-2 border-border">
+                <table className="w-full min-w-[640px] border-collapse text-left">
+                  <thead className="sticky top-0 bg-card">
+                    <tr className="text-sm font-extrabold uppercase text-muted-foreground">
+                      <th className="p-2">Ponto</th>
+                      <th className="p-2">Lat / Lon</th>
+                      <th className="p-2">GMS</th>
+                      <th className="p-2">UTM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pontos.map((pt, i) => (
+                      <tr key={pt.id} className="border-t-2 border-border text-sm font-semibold">
+                        <td className="p-2 font-extrabold text-primary">
+                          {pt.codigo ?? `P${i + 1}`}
+                        </td>
+                        <td className="p-2">
+                          {numero(pt.lat, 6)}, {numero(pt.lon, 6)}
+                        </td>
+                        <td className="p-2">
+                          {pt.lat_gms ?? "—"}
+                          <br />
+                          {pt.lon_gms ?? ""}
+                        </td>
+                        <td className="p-2">
+                          {pt.utm_e !== null && pt.utm_n !== null
+                            ? `${numero(pt.utm_e, 0)} E · ${numero(pt.utm_n, 0)} N${pt.utm_zona ? ` · ${pt.utm_zona}` : ""}`
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Bloco>
+        );
+      })}
     </>
   );
 }

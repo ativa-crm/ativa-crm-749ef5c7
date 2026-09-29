@@ -43,16 +43,27 @@ export type Parada = {
   ordens_servico: OrdemResumo | OrdemResumo[] | null;
 };
 
+export type ClienteResumo = {
+  id: string;
+  nome: string | null;
+  telefone: string | null;
+  email: string | null;
+};
+
+export type ImovelResumo = {
+  id: string;
+  nome: string | null;
+  municipio: string | null;
+  uf: string | null;
+};
+
 export type OrdemResumo = {
   id: string;
   numero: string | null;
   servico: string | null;
   status: string | null;
-  clientes: { nome: string | null } | { nome: string | null }[] | null;
-  imoveis:
-    | { nome: string | null; municipio: string | null; uf: string | null }
-    | { nome: string | null; municipio: string | null; uf: string | null }[]
-    | null;
+  clientes: ClienteResumo | ClienteResumo[] | null;
+  imoveis: ImovelResumo | ImovelResumo[] | null;
 };
 
 export function um<T>(v: T | T[] | null | undefined): T | null {
