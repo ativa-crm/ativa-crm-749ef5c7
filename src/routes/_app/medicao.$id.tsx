@@ -8,18 +8,22 @@ import {
   CloudSun,
   ClipboardCheck,
   Loader2,
+  Mail,
+  MapPin,
   MapPinned,
+  MessageCircle,
   Navigation,
   Plus,
   RotateCcw,
   Settings2,
   Table2,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { Bloco, Campo, CampoLongo } from "@/components/campos";
-import { data as dataBR, numero, paraNumero, reais, rotulo } from "@/lib/formato";
+import { data as dataBR, mascaraTelefone, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { linkRota, type Ponto } from "@/lib/geo";
 import {
   AJUDA_PARAMETROS,
