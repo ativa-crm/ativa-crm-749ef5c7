@@ -293,21 +293,24 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [imovelId, setImovelId] = useState<string | null>(null);
   const [buscaCliente, setBuscaCliente] = useState("");
-  const [itens, setItens] = useState<ItemNovo[]>([
-    { descricao: "", quantidade: "1", valor_unitario: "" },
-  ]);
+  const [itens, setItens] = useState<ItemNovo[]>(ITENS_MODELO());
   const [desconto, setDesconto] = useState("");
   const [validade, setValidade] = useState("15");
   const [prazo, setPrazo] = useState("");
-  const [condicoes, setCondicoes] = useState("");
+  const [condicoes, setCondicoes] = useState("50% na assinatura e 50% na entrega");
+  const [titulo, setTitulo] = useState("GEORREFERENCIAMENTO DE IMÓVEL RURAL");
+  const [descricao, setDescricao] = useState("Georreferenciamento");
+  const [finalidade, setFinalidade] = useState("certificação no SIGEF/INCRA");
+  const [alqueires, setAlqueires] = useState("");
+  const [documentoCli, setDocumentoCli] = useState("");
 
   const clientesQuery = useQuery({
-    queryKey: ["clientes", "resumo"],
+    queryKey: ["clientes", "resumo-completo"],
     enabled: aberto,
     queryFn: async () => {
-      const { data, error } = await supabase.from("clientes").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("clientes").select("*").order("nome");
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string }[];
+      return (data ?? []) as ({ id: string; nome: string } & Record<string, unknown>)[];
     },
   });
   const imoveisQuery = useQuery({
@@ -339,20 +342,22 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
     setClienteId(null);
     setImovelId(null);
     setBuscaCliente("");
-    setItens([{ descricao: "", quantidade: "1", valor_unitario: "" }]);
+    setItens(ITENS_MODELO());
     setDesconto("");
     setValidade("15");
     setPrazo("");
-    setCondicoes("");
+    setCondicoes("50% na assinatura e 50% na entrega");
+    setAlqueires("");
+    setDocumentoCli("");
   }
 
   const criar = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (janela: Window | null) => {
       if (!perfil) throw new Error("Perfil não carregado.");
       const validos = itens.filter(
-        (i) => i.descricao.trim() !== "" || (paraNumero(i.valor_unitario) ?? 0) > 0,
+        (i) => i.descricao.trim() !== "" && (paraNumero(i.valor_unitario) ?? 0) > 0,
       );
-      if (validos.length === 0) throw new Error("Inclua ao menos um item.");
+      if (validos.length === 0) throw new Error("Informe o valor de ao menos um item.");
       const { data: novo, error: erro } = await supabase
         .from("orcamentos")
         .insert({
@@ -379,6 +384,25 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
         })),
       );
       if (erroItens) throw erroItens;
+      if (janela) {
+        const cli = (clientesQuery.data ?? []).find((c) => c.id === clienteId);
+        escreverDocumento(
+          janela,
+          htmlProposta({
+            titulo,
+            contratante: cli?.nome ?? "",
+            documento: documentoCli,
+            finalidade,
+            descricao,
+            alqueires,
+            desconto: paraNumero(desconto) ?? 0,
+            itens: validos.map((i) => ({
+              descricao: i.descricao,
+              valor: (paraNumero(i.quantidade) ?? 1) * (paraNumero(i.valor_unitario) ?? 0),
+            })),
+          }),
+        );
+      }
       return novo.id as string;
     },
     onSuccess: (id) => {
@@ -386,7 +410,10 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
       limpar();
       navigate({ to: "/orcamentos/$id", params: { id } });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível criar."),
+    onError: (e, janela) => {
+      janela?.close();
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar.");
+    },
   });
 
   const clientesFiltrados = (clientesQuery.data ?? []).filter((c) =>
