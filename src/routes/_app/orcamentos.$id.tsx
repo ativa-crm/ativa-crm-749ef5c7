@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { IDENTIDADE_DOCUMENTOS, MODELOS_DOCUMENTO } from "@/lib/modelos-documento";
 
 export const Route = createFileRoute("/_app/orcamentos/$id")({
   head: () => ({
@@ -481,6 +482,38 @@ function Pagina() {
             Gerar documento
           </Button>
           <p className="mt-1 text-base font-semibold text-muted-foreground">em breve</p>
+        </div>
+      </Bloco>
+
+      <Bloco titulo="Modelo da proposta comercial">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-center">
+          <div>
+            <p className="text-base font-semibold text-foreground">
+              Este orçamento seguirá o modelo oficial da Ativa Consultoria, com objeto, escopo,
+              investimento, despesas não inclusas e assinaturas.
+            </p>
+            <Button asChild variant="outline" className="mt-4 h-12">
+              <a
+                href={MODELOS_DOCUMENTO.proposta.url}
+                download={MODELOS_DOCUMENTO.proposta.arquivo}
+              >
+                <Download className="size-5" />
+                Baixar modelo padrão
+              </a>
+            </Button>
+          </div>
+          <div className="relative overflow-hidden rounded-lg border border-border bg-card p-3 pt-14">
+            <img
+              src={IDENTIDADE_DOCUMENTOS.cantoUrl}
+              alt="Acabamento azul do modelo"
+              className="absolute right-0 top-0 h-14 w-20 object-cover object-left-bottom"
+            />
+            <img
+              src={IDENTIDADE_DOCUMENTOS.logoUrl}
+              alt="Ativa Consultoria"
+              className="w-full object-contain"
+            />
+          </div>
         </div>
       </Bloco>
 

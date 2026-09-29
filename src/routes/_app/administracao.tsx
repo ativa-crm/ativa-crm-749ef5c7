@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Loader2, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Building2, Download, FileText, Loader2, ShieldCheck, Users, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Painel, Tabela } from "@/components/painel";
+import { Button } from "@/components/ui/button";
+import { IDENTIDADE_DOCUMENTOS, MODELOS_DOCUMENTO } from "@/lib/modelos-documento";
 
 export const Route = createFileRoute("/_app/administracao")({
   beforeLoad: async () => {
@@ -211,6 +213,10 @@ function Pagina() {
           <TabsTrigger value="empresa">
             <Building2 className="size-4" />
             Empresa
+          </TabsTrigger>
+          <TabsTrigger value="modelos">
+            <FileText className="size-4" />
+            Modelos
           </TabsTrigger>
         </TabsList>
         <TabsContent value="usuarios">
@@ -558,6 +564,51 @@ function Pagina() {
           ) : (
             <Vazio />
           )}
+        </TabsContent>
+
+        <TabsContent value="modelos">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <Painel titulo="Modelos oficiais" icone={FileText}>
+              <div className="space-y-3">
+                {Object.values(MODELOS_DOCUMENTO).map((modelo) => (
+                  <div
+                    key={modelo.arquivo}
+                    className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-foreground">{modelo.titulo}</h3>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">
+                        {modelo.descricao}
+                      </p>
+                    </div>
+                    <Button asChild variant="outline" className="shrink-0">
+                      <a href={modelo.url} download={modelo.arquivo}>
+                        <Download className="size-4" />
+                        Baixar modelo
+                      </a>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Painel>
+            <Painel titulo="Identidade dos documentos" icone={FileText}>
+              <div className="relative overflow-hidden rounded-lg border border-border bg-card p-4 pt-20">
+                <img
+                  src={IDENTIDADE_DOCUMENTOS.cantoUrl}
+                  alt="Acabamento azul do cabeçalho"
+                  className="absolute right-0 top-0 h-20 w-28 object-cover object-left-bottom"
+                />
+                <img
+                  src={IDENTIDADE_DOCUMENTOS.logoUrl}
+                  alt="Ativa Consultoria — Monitoramento Agrícola"
+                  className="w-full object-contain"
+                />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-muted-foreground">
+                A logo, o acabamento azul e o número da página formam o cabeçalho padrão dos dois documentos.
+              </p>
+            </Painel>
+          </div>
         </TabsContent>
       </Tabs>
     </section>
