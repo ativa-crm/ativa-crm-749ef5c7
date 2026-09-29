@@ -342,20 +342,22 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
     setClienteId(null);
     setImovelId(null);
     setBuscaCliente("");
-    setItens([{ descricao: "", quantidade: "1", valor_unitario: "" }]);
+    setItens(ITENS_MODELO());
     setDesconto("");
     setValidade("15");
     setPrazo("");
-    setCondicoes("");
+    setCondicoes("50% na assinatura e 50% na entrega");
+    setAlqueires("");
+    setDocumentoCli("");
   }
 
   const criar = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (janela: Window | null) => {
       if (!perfil) throw new Error("Perfil não carregado.");
       const validos = itens.filter(
-        (i) => i.descricao.trim() !== "" || (paraNumero(i.valor_unitario) ?? 0) > 0,
+        (i) => i.descricao.trim() !== "" && (paraNumero(i.valor_unitario) ?? 0) > 0,
       );
-      if (validos.length === 0) throw new Error("Inclua ao menos um item.");
+      if (validos.length === 0) throw new Error("Informe o valor de ao menos um item.");
       const { data: novo, error: erro } = await supabase
         .from("orcamentos")
         .insert({
@@ -382,6 +384,25 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
         })),
       );
       if (erroItens) throw erroItens;
+      if (janela) {
+        const cli = (clientesQuery.data ?? []).find((c) => c.id === clienteId);
+        escreverDocumento(
+          janela,
+          htmlProposta({
+            titulo,
+            contratante: cli?.nome ?? "",
+            documento: documentoCli,
+            finalidade,
+            descricao,
+            alqueires,
+            desconto: paraNumero(desconto) ?? 0,
+            itens: validos.map((i) => ({
+              descricao: i.descricao,
+              valor: (paraNumero(i.quantidade) ?? 1) * (paraNumero(i.valor_unitario) ?? 0),
+            })),
+          }),
+        );
+      }
       return novo.id as string;
     },
     onSuccess: (id) => {
@@ -389,7 +410,10 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
       limpar();
       navigate({ to: "/orcamentos/$id", params: { id } });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível criar."),
+    onError: (e, janela) => {
+      janela?.close();
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar.");
+    },
   });
 
   const clientesFiltrados = (clientesQuery.data ?? []).filter((c) =>
