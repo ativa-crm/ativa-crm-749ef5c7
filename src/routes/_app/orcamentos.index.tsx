@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { data as dataBR, numero, paraNumero, reais, rotulo } from "@/lib/formato";
+import { abrirJanelaDocumento, escreverDocumento, htmlProposta } from "@/lib/documento-impressao";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,10 @@ type Linha = {
 };
 
 type ItemNovo = { descricao: string; quantidade: string; valor_unitario: string };
+const ITENS_MODELO = (): ItemNovo[] =>
+  ["Peças técnicas (georreferenciamento, planta, memorial e SIGEF)", "CAR", "CCIR", "ITR"].map(
+    (descricao) => ({ descricao, quantidade: "1", valor_unitario: "" }),
+  );
 
 function um<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
