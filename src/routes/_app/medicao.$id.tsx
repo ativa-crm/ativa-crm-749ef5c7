@@ -285,6 +285,14 @@ function Pagina() {
             <CloudSun className="mr-1 size-5" strokeWidth={2.5} />
             Clima
           </TabsTrigger>
+          <TabsTrigger value="clientes" className="h-12 flex-1 text-base font-extrabold">
+            <Users className="mr-1 size-5" strokeWidth={2.5} />
+            Clientes
+          </TabsTrigger>
+          <TabsTrigger value="pontos" className="h-12 flex-1 text-base font-extrabold">
+            <MapPin className="mr-1 size-5" strokeWidth={2.5} />
+            Pontos
+          </TabsTrigger>
           <TabsTrigger value="parametros" className="h-12 flex-1 text-base font-extrabold">
             <Settings2 className="mr-1 size-5" strokeWidth={2.5} />
             Parâmetros
@@ -363,6 +371,14 @@ function Pagina() {
 
         <TabsContent value="clima" className="mt-4 space-y-4">
           <AbaClima roteiro={roteiro} abertas={circuito.abertas} />
+        </TabsContent>
+
+        <TabsContent value="clientes" className="mt-4 space-y-4">
+          <AbaClientes paradas={[...circuito.feitas, ...circuito.abertas]} />
+        </TabsContent>
+
+        <TabsContent value="pontos" className="mt-4 space-y-4">
+          <AbaPontos paradas={[...circuito.feitas, ...circuito.abertas]} roteiroId={id} />
         </TabsContent>
 
         <TabsContent value="parametros" className="mt-4 space-y-4">
