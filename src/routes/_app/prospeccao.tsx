@@ -96,6 +96,9 @@ type LinhaImovel = {
   servico_sugerido: string | null;
   titular_ccir: string | null;
   titular_tipo: string | null;
+  car: string | null;
+  ccir: string | null;
+  sigef: string | null;
   observacoes: string | null;
   tem_candidato_pendente: boolean | null;
   prospeccao_id: string | null;
@@ -110,7 +113,7 @@ const LOTE = 1000;
 const TETO_MAPA = 20000;
 
 const COLUNAS_LINHA =
-  "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, observacoes, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
+  "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, car, ccir, sigef, observacoes, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
 
 type Filtros = {
   municipio: string;
@@ -335,6 +338,14 @@ function Pagina() {
   }, [linhas]);
 
   const imovelAberto = linhas.find((i) => i.id === selecionado) ?? null;
+  const coordPorId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of localizacoesQuery.data ?? []) {
+      if (l.lat === null || l.lon === null) continue;
+      m.set(l.imovel_id, `${Number(l.lat).toFixed(6)}, ${Number(l.lon).toFixed(6)}`);
+    }
+    return m;
+  }, [localizacoesQuery.data]);
 
   const mudarEstagio = useMutation({
     mutationFn: async ({ leadId, estagio }: { leadId: string; estagio: Estagio }) => {
@@ -704,6 +715,13 @@ function Pagina() {
                     <th className="px-3 py-2">Situação documental</th>
                     <th className="px-3 py-2">Contato</th>
                     <th className="px-3 py-2">Etapa do lead</th>
+                    <th className="px-3 py-2">CAR</th>
+                    <th className="px-3 py-2">CCIR</th>
+                    <th className="px-3 py-2">SIGEF</th>
+                    <th className="px-3 py-2">Coordenadas</th>
+                    <th className="px-3 py-2">Telefone</th>
+                    <th className="px-3 py-2">WhatsApp</th>
+                    <th className="px-3 py-2">E-mail</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -755,6 +773,29 @@ function Pagina() {
                         <td className="px-3 py-3 text-sm font-bold text-foreground">
                           {lead ? rotuloEstagio(lead.estagio) : "—"}
                         </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.car || "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.ccir || "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.sigef || "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{coordPorId.get(i.id) ?? "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {lead?.telefone ? telefoneVisivel(lead.telefone) : "—"}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {lead?.telefone ? (
+                            <a
+                              href={linkWhats(lead.telefone, "")}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-bold text-primary underline"
+                            >
+                              {telefoneVisivel(lead.telefone)}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{lead?.email || "—"}</td>
                       </tr>
                     );
                   })}
@@ -794,6 +835,7 @@ function Pagina() {
       {imovelAberto && (
         <DetalheImovel
           imovel={imovelAberto}
+          coordenadas={coordPorId.get(imovelAberto.id) ?? null}
           responsavel={perfil?.nome ?? ""}
           onFechar={() => setSelecionado(null)}
           onWhats={() => abrirWhats(imovelAberto)}
@@ -854,6 +896,7 @@ function Pagina() {
 
 function DetalheImovel({
   imovel,
+  coordenadas,
   responsavel,
   onFechar,
   onWhats,
@@ -861,6 +904,7 @@ function DetalheImovel({
   onEstagio,
 }: {
   imovel: LinhaImovel;
+  coordenadas: string | null;
   responsavel: string;
   onFechar: () => void;
   onWhats: () => void;
@@ -887,6 +931,13 @@ function DetalheImovel({
         </Button>
       </header>
 
+      <div className="mt-4 rounded-lg border border-primary/40 bg-primary/5 p-3">
+        <p className="text-xs font-bold uppercase text-muted-foreground">Resumo do serviço a oferecer</p>
+        <p className="mt-1 text-sm font-semibold text-foreground">
+          {resumoServico(imovel)}
+        </p>
+      </div>
+
       <dl className="mt-4 space-y-2 text-sm">
         <Campo rotulo="Serviço sugerido" valor={imovel.servico_sugerido} />
         <Campo
@@ -898,6 +949,15 @@ function DetalheImovel({
           }
         />
         <Campo rotulo="Situação documental" valor={imovel.observacoes} />
+        <Campo rotulo="CAR" valor={imovel.car} />
+        <Campo rotulo="CCIR" valor={imovel.ccir} />
+        <Campo rotulo="SIGEF" valor={imovel.sigef} />
+        <Campo rotulo="Coordenadas" valor={coordenadas} />
+        <Campo
+          rotulo="Telefone / WhatsApp"
+          valor={lead?.telefone ? telefoneVisivel(lead.telefone) : null}
+        />
+        <Campo rotulo="E-mail" valor={lead?.email ?? null} />
         <Campo
           rotulo="Candidato a confirmar"
           valor={imovel.tem_candidato_pendente ? "Sim" : "Não"}
@@ -987,4 +1047,16 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: string | null | undef
       <dd className="text-sm font-semibold text-foreground">{valor || "—"}</dd>
     </div>
   );
+}
+
+function resumoServico(i: LinhaImovel): string {
+  const servico = i.servico_sugerido || "regularização do imóvel";
+  const area = i.area_ha !== null ? ` de ${areaHa(i.area_ha)}` : "";
+  const faltas = [!i.car && "CAR", !i.ccir && "CCIR", !i.sigef && "certificação SIGEF"].filter(
+    Boolean,
+  ) as string[];
+  const pendencia = faltas.length
+    ? ` Sem registro de ${faltas.join(", ")} no cadastro, o que reforça a necessidade.`
+    : " Documentos principais cadastrados; oferecer atualização e conferência.";
+  return `Oferecer ${servico} para o imóvel ${i.nome}${area}${i.municipio ? ` em ${i.municipio}` : ""}.${pendencia}`;
 }

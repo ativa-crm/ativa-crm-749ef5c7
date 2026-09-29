@@ -4,3 +4,6 @@
 - [x] Integrar os blocos à tela Início sem alterar consultas ou regras.
 - [x] Validar design system, tipagem, lint e preview em desktop e celular.
 - [x] Continuar sem mexer em Início, Imóveis, Clientes e Funil; finalizar Serviços, Orçamentos, Medição, Contratos e Administração.
+- [x] Páginas em largura total; Prospecção abre em satélite, com colunas CAR/CCIR/SIGEF/coordenadas/telefone/WhatsApp/e-mail e resumo do serviço no painel; telefone do Funil/Clientes corrigido.
+- [ ] Orçamentos e contratos padrão da Ativa — aguardando os textos/valores do usuário.
+- [ ] Medição: subpáginas Painel, Rota, Clima, Clientes, Pontos, Parâmetros — próxima etapa.
