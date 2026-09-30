@@ -619,7 +619,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
           {passo === 3 ? (
             <Button
               type="button"
-              onClick={() => criar.mutate()}
+              onClick={() => criar.mutate(abrirJanelaDocumento())}
               disabled={criar.isPending}
               className="h-12 text-base font-extrabold"
             >
