@@ -503,6 +503,27 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
           </div>
         ) : (
           <div className="space-y-4">
+            <p className="text-lg font-bold text-foreground">Dados da proposta</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["Título do serviço", titulo, setTitulo],
+                  ["CPF/CNPJ do contratante", documentoCli, setDocumentoCli],
+                  ["Serviço (objeto)", descricao, setDescricao],
+                  ["Finalidade", finalidade, setFinalidade],
+                  ["Área (alqueires)", alqueires, setAlqueires],
+                ] as const
+              ).map(([r, v, set]) => (
+                <label key={r} className="block text-sm font-bold text-foreground">
+                  {r}
+                  <Input
+                    value={v}
+                    onChange={(e) => set(e.target.value)}
+                    className="mt-1 h-12 rounded-lg border text-base font-semibold"
+                  />
+                </label>
+              ))}
+            </div>
             <p className="text-lg font-bold text-foreground">Itens do orçamento</p>
             {itens.map((item, indice) => (
               <div key={indice} className="rounded-lg border border-border p-3">
