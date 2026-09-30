@@ -15,6 +15,9 @@ import { data as dataBR, reais, rotulo } from "@/lib/formato";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { BarraFerramentas, CartaoIndicador, Painel, Tabela } from "@/components/painel";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { NovoContrato } from "@/components/novo-contrato";
 
 export const Route = createFileRoute("/_app/contratos/")({
   head: () => ({
@@ -89,6 +92,7 @@ function BadgeContrato({ contrato }: { contrato: Contrato }) {
 
 function Pagina() {
   const [busca, setBusca] = useState("");
+  const [novo, setNovo] = useState(false);
   const query = useQuery({
     queryKey: ["contratos"],
     queryFn: async (): Promise<Contrato[]> => {
@@ -129,10 +133,14 @@ function Pagina() {
 
   return (
     <section className="space-y-4">
-      <header className="flex items-center gap-2">
+      <header className="flex flex-wrap items-center gap-2">
         <FileSignature className="size-7 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Contratos</h1>
+        <h1 className="flex-1 text-2xl font-bold text-foreground">Contratos</h1>
+        <Button type="button" onClick={() => setNovo(true)} className="h-12 text-base font-extrabold">
+          <Plus className="size-5" /> Novo contrato
+        </Button>
       </header>
+      <NovoContrato aberto={novo} onFechar={() => setNovo(false)} />
 
       <BarraFerramentas>
         <div className="relative min-w-64 flex-1">
