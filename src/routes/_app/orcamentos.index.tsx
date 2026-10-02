@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { data as dataBR, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { abrirJanelaDocumento, escreverDocumento, htmlProposta } from "@/lib/documento-impressao";
+import { PreviaDocumento } from "@/components/previa-documento";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -342,6 +343,24 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
     0,
   );
   const totalGeral = Math.max(0, totalItens - (paraNumero(desconto) ?? 0));
+  const htmlPrevia = htmlProposta(
+    {
+      titulo,
+      contratante: (clientesQuery.data ?? []).find((c) => c.id === clienteId)?.nome ?? "",
+      documento: documentoCli,
+      finalidade,
+      descricao,
+      alqueires,
+      desconto: paraNumero(desconto) ?? 0,
+      itens: itens
+        .filter((i) => i.descricao.trim())
+        .map((i) => ({
+          descricao: i.descricao,
+          valor: (paraNumero(i.quantidade) ?? 1) * (paraNumero(i.valor_unitario) ?? 0),
+        })),
+    },
+    true,
+  );
   function limpar() {
     setPasso(1);
     setClienteId(null);
@@ -435,7 +454,9 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
         }
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-lg border-2 sm:max-w-2xl">
+      <DialogContent
+        className={`max-h-[92vh] overflow-y-auto rounded-lg border-2 ${passo === 3 ? "sm:max-w-[95vw]" : "sm:max-w-2xl"}`}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold">
             Novo orçamento — passo {passo} de 3
@@ -502,9 +523,11 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
+          <PreviaDocumento html={htmlPrevia} titulo="Prévia da proposta" />
+          <div className="space-y-4 lg:h-[78vh] lg:overflow-y-auto lg:pr-1">
             <p className="text-lg font-bold text-foreground">Dados da proposta</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               {(
                 [
                   ["Título do serviço", titulo, setTitulo],
@@ -624,6 +647,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
               </p>
               <p className="text-2xl font-extrabold text-foreground">Total {reais(totalGeral)}</p>
             </div>
+          </div>
           </div>
         )}
         <DialogFooter className="gap-2">
