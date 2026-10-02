@@ -12,6 +12,7 @@ import {
   escreverDocumento,
   htmlContrato,
 } from "@/lib/documento-impressao";
+import { PreviaDocumento } from "@/components/previa-documento";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -114,17 +115,32 @@ export function NovoContrato({ aberto, onFechar }: { aberto: boolean; onFechar: 
     },
   });
 
+  const htmlPrevia = htmlContrato(
+    {
+      contratante: (clientes.data ?? []).find((c) => c.id === clienteId)?.nome ?? "",
+      documento,
+      endereco,
+      objeto,
+      valor: paraNumero(valor) ?? 0,
+      valorExtenso: extenso,
+    },
+    true,
+  );
+
   const campo = "mt-1 h-12 rounded-lg border text-base font-semibold";
   const select =
     "mt-1 h-12 w-full rounded-lg border border-input bg-card px-3 text-base font-semibold text-foreground";
 
   return (
     <Dialog open={aberto} onOpenChange={(a) => !a && onFechar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-lg border-2 sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-lg border-2 sm:max-w-[95vw]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold">Novo contrato</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <PreviaDocumento html={htmlPrevia} titulo="Prévia do contrato" />
+        <div className="space-y-3 lg:h-[78vh] lg:overflow-y-auto lg:pr-1">
+        <div className="grid gap-3">
           <label className="block text-sm font-bold text-foreground">
             Cliente (contratante)
             <select className={select} value={clienteId} onChange={(e) => escolherCliente(e.target.value)}>
@@ -156,7 +172,7 @@ export function NovoContrato({ aberto, onFechar }: { aberto: boolean; onFechar: 
             Endereço completo
             <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} className={campo} />
           </label>
-          <label className="block text-sm font-bold text-foreground sm:col-span-2">
+          <label className="block text-sm font-bold text-foreground ">
             Objeto (Cláusula 1ª)
             <Textarea
               value={objeto}
@@ -183,6 +199,8 @@ export function NovoContrato({ aberto, onFechar }: { aberto: boolean; onFechar: 
         <p className="text-sm font-semibold text-muted-foreground">
           Pagamento: 50% na assinatura e 50% na entrega · Foro: Comarca de Itapeva/SP.
         </p>
+        </div>
+        </div>
         <DialogFooter>
           <Button
             type="button"
