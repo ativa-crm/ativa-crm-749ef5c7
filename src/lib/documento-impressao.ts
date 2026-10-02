@@ -16,7 +16,7 @@ function dataExtenso(d = new Date()): string {
   return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-function pagina(titulo: string, corpo: string): string {
+function pagina(titulo: string, corpo: string, previa = false): string {
   const { logoUrl, cantoUrl } = IDENTIDADE_DOCUMENTOS;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title>
 <style>
@@ -37,7 +37,7 @@ tr.total td{font-weight:bold}
 <img class="canto" src="${cantoUrl}" alt="">
 <header><img src="${logoUrl}" alt="Ativa Consultoria"></header>
 ${corpo}
-<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
+${previa ? "<style>body{padding:18mm;position:relative;overflow-x:hidden}.canto{position:absolute;top:0;right:0}</style>" : "<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>"}
 </body></html>`;
 }
 
@@ -66,7 +66,7 @@ export type DadosProposta = {
   desconto: number;
 };
 
-export function htmlProposta(d: DadosProposta): string {
+export function htmlProposta(d: DadosProposta, previa = false): string {
   const total = Math.max(0, d.itens.reduce((s, i) => s + i.valor, 0) - d.desconto);
   const linhas = d.itens
     .map((i) => `<tr><td>${esc(i.descricao)}</td><td class="v">${reais(i.valor)}</td></tr>`)
@@ -86,6 +86,7 @@ export function htmlProposta(d: DadosProposta): string {
 <h2>Despesas não inclusas</h2>
 <p>Custas de cartório, prefeitura, Receita Federal, emolumentos e demais taxas de órgãos públicos.</p>
 <div class="ass"><div>${esc(d.contratante)}<br>Contratante</div><div>ATIVA CONSULTORIA AGRÍCOLA LTDA<br>Renato Muzel Morimoto</div></div>`,
+    previa,
   );
 }
 
@@ -98,7 +99,7 @@ export type DadosContrato = {
   valorExtenso: string;
 };
 
-export function htmlContrato(d: DadosContrato): string {
+export function htmlContrato(d: DadosContrato, previa = false): string {
   return pagina(
     "Contrato de prestação de serviços técnicos",
     `<h1>Contrato de prestação de serviços técnicos</h1>
@@ -113,6 +114,7 @@ export function htmlContrato(d: DadosContrato): string {
 <h2>Cláusula 7ª — Do foro</h2><p>Fica eleito o foro da Comarca de Itapeva/SP para dirimir quaisquer dúvidas oriundas deste contrato.</p>
 <p>Itapeva/SP, ${dataExtenso()}.</p>
 <div class="ass"><div>${esc(d.contratante)}<br>Contratante</div><div>ATIVA CONSULTORIA AGRÍCOLA LTDA<br>Renato Muzel Lopes Morimoto</div></div>`,
+    previa,
   );
 }
 
