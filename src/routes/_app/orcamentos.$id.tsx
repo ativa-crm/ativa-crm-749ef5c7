@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { abrirJanelaDocumento, escreverDocumento, htmlProposta } from "@/lib/documento-impressao";
 import { IDENTIDADE_DOCUMENTOS, MODELOS_DOCUMENTO } from "@/lib/modelos-documento";
 
 export const Route = createFileRoute("/_app/orcamentos/$id")({
@@ -53,6 +54,11 @@ type Orcamento = {
   condicoes: string | null;
   criado_em: string | null;
   enviado_em: string | null;
+  titulo: string | null;
+  objeto: string | null;
+  finalidade: string | null;
+  area_alqueires: number | null;
+  documento_contratante: string | null;
 };
 
 type Item = {
@@ -131,6 +137,27 @@ function Pagina() {
       } | null;
     },
   });
+
+  function gerarProposta() {
+    if (!orcamento) return;
+    const janela = abrirJanelaDocumento();
+    escreverDocumento(
+      janela,
+      htmlProposta({
+        titulo: orcamento.titulo ?? "",
+        contratante: clienteQuery.data?.nome ?? "",
+        documento: orcamento.documento_contratante ?? "",
+        descricao: orcamento.objeto ?? "",
+        finalidade: orcamento.finalidade ?? "",
+        alqueires: orcamento.area_alqueires == null ? "" : String(orcamento.area_alqueires).replace(".", ","),
+        desconto: Number(orcamento.desconto ?? 0),
+        itens: (itensQuery.data ?? []).map((i) => ({
+          descricao: i.descricao ?? "",
+          valor: Number(i.quantidade ?? 1) * Number(i.valor_unitario ?? 0),
+        })),
+      }),
+    );
+  }
 
   function recarregar() {
     void queryClient.invalidateQueries({ queryKey: ["orcamento", id] });
@@ -330,6 +357,18 @@ function Pagina() {
           )}
         </div>
       </Bloco>
+
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          onClick={gerarProposta}
+          disabled={!orcamento || itensQuery.isPending}
+          className="h-12 text-base font-extrabold"
+        >
+          <FileDown className="size-5" />
+          Gerar proposta
+        </Button>
+      </div>
 
       <Bloco
         titulo="Itens"
