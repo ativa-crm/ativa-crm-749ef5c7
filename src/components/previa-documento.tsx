@@ -5,7 +5,8 @@ export function PreviaDocumento({ html, titulo }: { html: string; titulo: string
       <iframe
         title={titulo}
         srcDoc={html}
-        className="aspect-[210/297] w-full max-w-[794px] shrink-0 rounded-sm bg-card shadow-lg lg:h-[1123px] lg:w-[794px]"
+        style={{ colorScheme: "light" }}
+        className="aspect-[210/297] w-full max-w-[794px] shrink-0 rounded-sm bg-white shadow-lg lg:h-[1123px] lg:w-[794px]"
       />
     </div>
   );

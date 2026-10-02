@@ -72,9 +72,10 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.875rem;
   --logo-radius: 0.5rem;
-  --background: #000000;
+  --background: #ffffff;
   --background-secondary: #0d181c;
   --background-light: #f7f8f5;
   --foreground: #333333;
@@ -90,7 +91,7 @@
   --secondary: #f7f8f5;
   --secondary-foreground: #333333;
   --muted: #999999;
-  --muted-foreground: #999999;
+  --muted-foreground: #5f6368;
   --accent: #f7f8f5;
   --accent-foreground: #333333;
   --destructive: oklch(0.52 0.21 27.325);
@@ -120,6 +121,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #000000;
   --background-secondary: #0d181c;
   --background-light: #101414;

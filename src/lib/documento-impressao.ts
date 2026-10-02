@@ -21,6 +21,7 @@ function pagina(titulo: string, corpo: string, previa = false): string {
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title>
 <style>
 @page{size:A4;margin:18mm 18mm 20mm}
+html,body{background:#ffffff;color:#1f2937}
 body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:11.5pt;line-height:1.5;margin:0}
 .canto{position:fixed;top:-18mm;right:-18mm;width:70mm}
 header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
