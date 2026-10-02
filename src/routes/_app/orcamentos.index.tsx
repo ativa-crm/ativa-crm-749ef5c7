@@ -484,7 +484,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
                     onClick={() => {
                       setClienteId(c.id);
                       setImovelId(null);
-                      setDocumentoCli(typeof c.documento === "string" && c.documento ? c.documento : "");
+                      setDocumentoCli(typeof c["documento"] === "string" && c["documento"] ? c["documento"] : "");
                       setPasso(2);
                     }}
                     className={`flex w-full items-center justify-between rounded-lg border p-4 text-left text-base font-bold ${clienteId === c.id ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-accent"}`}
