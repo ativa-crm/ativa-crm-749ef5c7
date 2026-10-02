@@ -393,6 +393,11 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
           validade_dias: paraNumero(validade) ?? null,
           prazo_execucao: prazo.trim() || null,
           condicoes: condicoes.trim() || null,
+          titulo: titulo.trim() || null,
+          objeto: descricao.trim() || null,
+          finalidade: finalidade.trim() || null,
+          area_alqueires: paraNumero(alqueires) ?? null,
+          documento_contratante: documentoCli.trim() || null,
           criado_por: perfil.id,
         })
         .select("id")
@@ -479,6 +484,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
                     onClick={() => {
                       setClienteId(c.id);
                       setImovelId(null);
+                      setDocumentoCli(typeof c.documento === "string" && c.documento ? c.documento : "");
                       setPasso(2);
                     }}
                     className={`flex w-full items-center justify-between rounded-lg border p-4 text-left text-base font-bold ${clienteId === c.id ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-accent"}`}
@@ -521,6 +527,22 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
                 ))}
               </ul>
             )}
+            {!imoveisQuery.isPending && (imoveisQuery.data ?? []).length === 0 ? (
+              <p className="mt-4 text-base font-semibold text-muted-foreground">
+                Este cliente não tem imóvel cadastrado
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setImovelId(null);
+                setPasso(3);
+              }}
+              className="mt-3 h-12 w-full text-base font-extrabold"
+            >
+              Continuar sem imóvel
+            </Button>
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
@@ -668,7 +690,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
               disabled={criar.isPending}
               className="h-12 text-base font-extrabold"
             >
-              {criar.isPending ? <Loader2 className="size-5 animate-spin" /> : null}Salvar rascunho
+              {criar.isPending ? <Loader2 className="size-5 animate-spin" /> : null}Salvar e gerar proposta
             </Button>
           ) : (
             <Button
