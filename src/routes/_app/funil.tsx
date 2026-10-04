@@ -88,7 +88,7 @@ function Pagina() {
       const { data, error } = await supabase
         .from("oportunidades")
         .select(
-          "id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, clientes(nome)",
+          "id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, origem, historico, clientes(nome)",
         )
         .eq("arquivada", false)
         .order("criado_em", { ascending: false });
