@@ -49,12 +49,23 @@ type Oportunidade = {
   estagio: string | null;
   nota: string | null;
   criado_em: string | null;
+  origem: string | null;
+  historico: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
 };
 
 function nomeCliente(o: Oportunidade): string {
   const c = Array.isArray(o.clientes) ? o.clientes[0] : o.clientes;
-  return c?.nome?.trim() || "Sem cliente";
+  const nome = c?.nome?.trim();
+  if (nome) return nome;
+
+  // Oportunidades criadas a partir de leads de prospecção guardam o nome
+  // do lead no campo `historico`: "...lead de prospecção (id XXX): NOME (TELEFONE)..."
+  if (o.origem === "prospeccao" && o.historico) {
+    const extraido = o.historico.match(/lead de prospecção \(id [^)]*\): (.+?) \(/);
+    if (extraido?.[1]?.trim()) return extraido[1].trim();
+  }
+  return "Sem cliente";
 }
 
 function classeNota(nota: string | null | undefined): string {
@@ -77,7 +88,7 @@ function Pagina() {
       const { data, error } = await supabase
         .from("oportunidades")
         .select(
-          "id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, clientes(nome)",
+          "id, cliente_id, imovel_id, servico, cidade, area_ha, estagio, nota, criado_em, origem, historico, clientes(nome)",
         )
         .eq("arquivada", false)
         .order("criado_em", { ascending: false });
