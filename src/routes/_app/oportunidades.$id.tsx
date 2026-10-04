@@ -129,9 +129,45 @@ function Pagina() {
     },
   });
 
+  // Oportunidades vindas da prospecção têm as mensagens gravadas com
+  // prospeccao_id (campanha de WhatsApp), não oportunidade_id. Descobrimos o
+  // id do lead pelo imóvel vinculado ou pelo histórico (indicações).
+  const imovelLeadQuery = useQuery({
+    queryKey: ["imovel", "prospeccao-id", oportunidade?.imovel_id ?? null],
+    enabled: oportunidade?.origem === "prospeccao" && !!oportunidade?.imovel_id,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from("imoveis")
+        .select("prospeccao_id")
+        .eq("id", oportunidade!.imovel_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as { prospeccao_id: string | null } | null)?.prospeccao_id ?? null;
+    },
+  });
+
+  const prospeccaoId =
+    oportunidade?.origem === "prospeccao"
+      ? (oportunidade.imovel_id
+          ? (imovelLeadQuery.data ?? null)
+          : (oportunidade.historico?.match(/lead de prospecção \(id ([^)]+)\)/)?.[1] ?? null))
+      : null;
+
   const mensagensQuery = useQuery({
-    queryKey: ["oportunidade", id, "mensagens"],
+    queryKey: ["oportunidade", id, "mensagens", prospeccaoId ?? "oportunidade"],
+    enabled: oportunidade?.origem === "prospeccao" ? prospeccaoId != null : true,
     queryFn: async (): Promise<Mensagem[]> => {
+      if (oportunidade?.origem === "prospeccao") {
+        const pid = prospeccaoId;
+        if (!pid) return [];
+        const { data, error } = await supabase
+          .from("mensagens")
+          .select("id, direcao, tipo, conteudo, criado_em")
+          .eq("prospeccao_id", pid)
+          .order("criado_em", { ascending: true });
+        if (error) throw error;
+        return (data ?? []) as Mensagem[];
+      }
       const { data, error } = await supabase
         .from("mensagens")
         .select("id, direcao, tipo, conteudo, criado_em")
@@ -139,6 +175,21 @@ function Pagina() {
         .order("criado_em", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Mensagem[];
+    },
+  });
+
+  // Sem cliente vinculado (indicação), o telefone do lead serve pro WhatsApp.
+  const telefoneLeadQuery = useQuery({
+    queryKey: ["prospeccao", "telefone", prospeccaoId ?? null],
+    enabled: oportunidade?.origem === "prospeccao" && prospeccaoId != null,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from("prospeccao")
+        .select("telefone")
+        .eq("id", prospeccaoId!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as { telefone: string | null } | null)?.telefone ?? null;
     },
   });
 
