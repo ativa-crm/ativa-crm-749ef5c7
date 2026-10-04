@@ -49,12 +49,23 @@ type Oportunidade = {
   estagio: string | null;
   nota: string | null;
   criado_em: string | null;
+  origem: string | null;
+  historico: string | null;
   clientes: { nome: string | null } | { nome: string | null }[] | null;
 };
 
 function nomeCliente(o: Oportunidade): string {
   const c = Array.isArray(o.clientes) ? o.clientes[0] : o.clientes;
-  return c?.nome?.trim() || "Sem cliente";
+  const nome = c?.nome?.trim();
+  if (nome) return nome;
+
+  // Oportunidades criadas a partir de leads de prospecção guardam o nome
+  // do lead no campo `historico`: "...lead de prospecção (id XXX): NOME (TELEFONE)..."
+  if (o.origem === "prospeccao" && o.historico) {
+    const extraido = o.historico.match(/lead de prospecção \(id [^)]*\): (.+?) \(/);
+    if (extraido?.[1]?.trim()) return extraido[1].trim();
+  }
+  return "Sem cliente";
 }
 
 function classeNota(nota: string | null | undefined): string {
