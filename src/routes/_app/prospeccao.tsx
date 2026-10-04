@@ -923,10 +923,12 @@ function DetalheImovel({
   const mensagensQuery = useQuery({
     queryKey: ["mensagens", "prospeccao", lead?.id],
     queryFn: async (): Promise<MensagemChat[]> => {
+      const id = lead?.id;
+      if (!id) return [];
       const { data, error } = await supabase
         .from("mensagens")
         .select("id, direcao, conteudo, criado_em")
-        .eq("prospeccao_id", lead.id)
+        .eq("prospeccao_id", id)
         .order("criado_em", { ascending: true });
       if (error) throw error;
       return (data ?? []) as MensagemChat[];
