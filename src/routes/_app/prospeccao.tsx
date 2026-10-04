@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
-import { areaHa } from "@/lib/formato";
+import { areaHa, dataHora } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -912,6 +912,20 @@ function DetalheImovel({
   onEstagio: (estagio: Estagio) => void;
 }) {
   const lead = um(imovel.prospeccao);
+
+  const mensagensQuery = useQuery({
+    queryKey: ["mensagens", "prospeccao", lead?.id],
+    queryFn: async (): Promise<MensagemChat[]> => {
+      const { data, error } = await supabase
+        .from("mensagens")
+        .select("id, direcao, conteudo, criado_em")
+        .eq("prospeccao_id", lead.id)
+        .order("criado_em", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as MensagemChat[];
+    },
+    enabled: Boolean(lead?.id),
+  });
   // O tema HUD aplica backdrop-filter nas seções do conteúdo, o que as torna a
   // referência de posicionamento de filhos "fixed". Renderizamos o painel via
   // portal no corpo da página para que ele ocupe a tela inteira de verdade.
@@ -1023,6 +1037,48 @@ function DetalheImovel({
                 Abordagem por {responsavel}.
               </p>
             )}
+
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase text-muted-foreground">
+                Histórico da conversa
+              </p>
+              {mensagensQuery.isPending ? (
+                <div className="mt-2 flex justify-center">
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                </div>
+              ) : (mensagensQuery.data ?? []).length === 0 ? (
+                <p className="mt-2 text-sm font-medium text-muted-foreground">
+                  Nenhuma mensagem trocada ainda.
+                </p>
+              ) : (
+                <div className="mt-2 flex max-h-80 flex-col gap-2 overflow-y-auto">
+                  {(mensagensQuery.data ?? []).map((m) => {
+                    const recebida = m.direcao === "recebida";
+                    return (
+                      <div
+                        key={m.id}
+                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                          recebida
+                            ? "self-start border border-border bg-secondary text-secondary-foreground"
+                            : "self-end bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap break-words text-sm font-medium">
+                          {m.conteudo || "—"}
+                        </p>
+                        <p
+                          className={`mt-1 text-[10px] font-bold uppercase ${
+                            recebida ? "text-muted-foreground" : "text-primary-foreground/70"
+                          }`}
+                        >
+                          {recebida ? "Lead" : "Ativa"} · {dataHora(m.criado_em)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>
