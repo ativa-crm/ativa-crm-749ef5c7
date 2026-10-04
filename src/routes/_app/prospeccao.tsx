@@ -108,6 +108,13 @@ type LinhaImovel = {
 
 type Localizacao = { imovel_id: string; lat: number | null; lon: number | null };
 
+type MensagemChat = {
+  id: string;
+  direcao: string | null;
+  conteudo: string | null;
+  criado_em: string | null;
+};
+
 const POR_PAGINA = 100;
 const LOTE = 1000;
 const TETO_MAPA = 20000;
