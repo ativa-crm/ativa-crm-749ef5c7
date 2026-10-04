@@ -3,6 +3,7 @@
 export type Estagio = { valor: string; rotulo: string };
 
 export const ESTAGIOS: Estagio[] = [
+  { valor: "mensagem_enviada", rotulo: "Mensagem enviada" },
   { valor: "novo", rotulo: "Novo" },
   { valor: "qualificando", rotulo: "Qualificando" },
   { valor: "quente", rotulo: "Quente" },
