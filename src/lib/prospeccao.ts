@@ -6,6 +6,7 @@ export const ESTAGIOS = [
   "respondeu",
   "qualificado",
   "sem_resposta",
+  "sem_whatsapp",
   "descartado",
   "convertido_cliente",
 ] as const;
@@ -18,6 +19,7 @@ export const ROTULO_ESTAGIO: Record<Estagio, string> = {
   respondeu: "Respondeu",
   qualificado: "Qualificado",
   sem_resposta: "Sem resposta",
+  sem_whatsapp: "Sem WhatsApp",
   descartado: "Descartado",
   convertido_cliente: "Virou cliente",
 };
