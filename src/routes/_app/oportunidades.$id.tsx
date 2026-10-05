@@ -149,9 +149,9 @@ function Pagina() {
 
   const prospeccaoId =
     oportunidade?.origem === "prospeccao"
-      ? (oportunidade.imovel_id
-          ? (imovelLeadQuery.data ?? null)
-          : (oportunidade.historico?.match(/lead de prospecção \(id ([^)]+)\)/)?.[1] ?? null))
+      ? oportunidade.imovel_id
+        ? (imovelLeadQuery.data ?? null)
+        : (oportunidade.historico?.match(/lead de prospecção \(id ([^)]+)\)/)?.[1] ?? null)
       : null;
 
   const mensagensQuery = useQuery({
@@ -312,7 +312,7 @@ function Pagina() {
   }
 
   const cliente = clienteQuery.data ?? null;
-  const telefone = soDigitos(cliente?.telefone ?? "");
+  const telefone = soDigitos(cliente?.telefone ?? telefoneLeadQuery.data ?? "");
   const whatsapp = telefone
     ? `https://wa.me/${telefone.length <= 11 ? `55${telefone}` : telefone}`
     : null;
@@ -343,231 +343,241 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {whatsapp ? (
-          <Button asChild className="h-14 flex-1 rounded-xl text-lg font-extrabold">
-            <a href={whatsapp} target="_blank" rel="noreferrer">
-              <MessageCircle className="size-5" strokeWidth={2.5} />
-              Abrir no WhatsApp
-            </a>
-          </Button>
-        ) : null}
-
-        <Dialog open={abrirArquivar} onOpenChange={setAbrirArquivar}>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-14 flex-1 rounded-xl border-2 text-lg font-extrabold"
-            >
-              <Archive className="size-5" strokeWidth={2.5} />
-              Arquivar
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="rounded-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-extrabold">Arquivar oportunidade</DialogTitle>
-              <DialogDescription className="text-base font-semibold">
-                Escolha o motivo da perda. Ela sai do funil, mas o histórico continua salvo.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              {MOTIVOS_PERDA.map((m) => (
-                <button
-                  key={m.valor}
-                  type="button"
-                  onClick={() => setMotivo(m.valor)}
-                  className={`h-14 w-full rounded-xl border-2 text-lg font-extrabold transition-colors ${
-                    motivo === m.valor
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-foreground hover:bg-accent"
-                  }`}
-                >
-                  {m.rotulo}
-                </button>
-              ))}
-            </div>
-            <Button
-              disabled={!motivo || arquivar.isPending}
-              onClick={() => arquivar.mutate(motivo)}
-              className="h-14 rounded-xl text-lg font-extrabold"
-            >
-              {arquivar.isPending ? <Loader2 className="size-5 animate-spin" /> : "Confirmar"}
-            </Button>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Bloco titulo="Qualificação" Icone={ClipboardList}>
-        <div className="mb-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <span className="text-base font-bold text-foreground">Serviço</span>
-            <select
-              value={oportunidade.servico ?? ""}
-              onChange={(e) => salvar.mutate({ servico: e.target.value || null })}
-              className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
-            >
-              <option value="">não informado</option>
-              {SERVICOS.map((s) => (
-                <option key={s.valor} value={s.valor}>
-                  {s.rotulo}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <span className="text-base font-bold text-foreground">Estágio</span>
-            <select
-              value={oportunidade.estagio ?? "novo"}
-              onChange={(e) => salvar.mutate({ estagio: e.target.value })}
-              className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
-            >
-              {ESTAGIOS.map((s) => (
-                <option key={s.valor} value={s.valor}>
-                  {s.rotulo}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <span className="text-base font-bold text-foreground">Nota</span>
-            <select
-              value={oportunidade.nota ?? "morno"}
-              onChange={(e) => salvar.mutate({ nota: e.target.value })}
-              className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
-            >
-              {NOTAS.map((n) => (
-                <option key={n.valor} value={n.valor}>
-                  {n.rotulo}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <Grade>
-          <Campo rotulo="Cidade" valor={oportunidade.cidade ?? ""} onSalvar={troca("cidade")} />
-          <Campo
-            rotulo="Área (ha)"
-            valor={oportunidade.area_ha !== null ? numero(oportunidade.area_ha, 4) : ""}
-            inputMode="decimal"
-            onSalvar={(v) => salvar.mutate({ area_ha: paraNumero(v) })}
-          />
-        </Grade>
-
-        <div className="mt-4 space-y-4">
-          <CampoLongo
-            rotulo="Situação documental"
-            valor={oportunidade.situacao_documental ?? ""}
-            onSalvar={troca("situacao_documental")}
-            placeholder="Tem matrícula? CCIR e ITR em dia? Inventário pendente?"
-          />
-          <CampoLongo
-            rotulo="Motivo e prazo"
-            valor={oportunidade.motivo_prazo ?? ""}
-            onSalvar={troca("motivo_prazo")}
-            placeholder="Por que precisa do serviço e para quando"
-          />
-          <CampoLongo
-            rotulo="Histórico"
-            valor={oportunidade.historico ?? ""}
-            onSalvar={troca("historico")}
-            placeholder="Já tentou antes? Com quem? O que travou?"
-          />
-        </div>
-      </Bloco>
-
-      <Bloco titulo="Cliente e imóvel" Icone={MapPinned}>
-        <div className="space-y-4">
-          <div>
-            <span className="text-base font-bold text-foreground">Cliente</span>
-            <p className="mt-1.5 text-lg font-extrabold text-foreground">
-              {cliente?.nome?.trim() || "Sem cliente vinculado"}
-            </p>
-            {cliente?.telefone ? (
-              <p className="text-base font-semibold text-muted-foreground">
-                {mascaraTelefone(cliente.telefone)}
-              </p>
-            ) : null}
-            {oportunidade.cliente_id ? (
-              <Link
-                to="/clientes/$id"
-                params={{ id: oportunidade.cliente_id }}
-                className="mt-2 inline-flex items-center gap-2 text-base font-extrabold text-primary underline"
-              >
-                <User className="size-5" strokeWidth={2.5} />
-                Abrir ficha do cliente
-              </Link>
-            ) : null}
-          </div>
-
-          <div>
-            <span className="text-base font-bold text-foreground">Imóvel vinculado</span>
-            <select
-              value={oportunidade.imovel_id ?? ""}
-              onChange={(e) => salvar.mutate({ imovel_id: e.target.value || null })}
-              className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
-            >
-              <option value="">Sem imóvel vinculado</option>
-              {(imoveisQuery.data ?? []).map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.nome}
-                  {i.municipio ? ` — ${i.municipio}` : ""}
-                </option>
-              ))}
-            </select>
-
-            {imovel ? (
-              <Link
-                to="/imoveis/$id"
-                params={{ id: imovel.id }}
-                className="mt-2 inline-flex items-center gap-2 text-base font-extrabold text-primary underline"
-              >
-                <MapPinned className="size-5" strokeWidth={2.5} />
-                Abrir ficha do imóvel
-                {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}
-              </Link>
-            ) : (
-              <Button
-                variant="outline"
-                disabled={criarImovel.isPending}
-                onClick={() => criarImovel.mutate()}
-                className="mt-3 h-14 w-full rounded-xl border-2 text-lg font-extrabold"
-              >
-                {criarImovel.isPending ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="size-5" strokeWidth={2.5} />
-                    Criar imóvel com os dados da qualificação
-                  </>
-                )}
+      {/* Duas colunas no desktop: conversa à esquerda (fixa), informações à direita. */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="order-1 space-y-4 lg:order-2">
+          <div className="flex flex-wrap gap-2">
+            {whatsapp ? (
+              <Button asChild className="h-14 flex-1 rounded-xl text-lg font-extrabold">
+                <a href={whatsapp} target="_blank" rel="noreferrer">
+                  <MessageCircle className="size-5" strokeWidth={2.5} />
+                  Abrir no WhatsApp
+                </a>
               </Button>
-            )}
-          </div>
-        </div>
-      </Bloco>
+            ) : null}
 
-      <Bloco titulo="Conversa" Icone={MessageCircle}>
-        {mensagensQuery.isPending ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="size-8 animate-spin text-primary" />
+            <Dialog open={abrirArquivar} onOpenChange={setAbrirArquivar}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-14 flex-1 rounded-xl border-2 text-lg font-extrabold"
+                >
+                  <Archive className="size-5" strokeWidth={2.5} />
+                  Arquivar
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-extrabold">
+                    Arquivar oportunidade
+                  </DialogTitle>
+                  <DialogDescription className="text-base font-semibold">
+                    Escolha o motivo da perda. Ela sai do funil, mas o histórico continua salvo.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                  {MOTIVOS_PERDA.map((m) => (
+                    <button
+                      key={m.valor}
+                      type="button"
+                      onClick={() => setMotivo(m.valor)}
+                      className={`h-14 w-full rounded-xl border-2 text-lg font-extrabold transition-colors ${
+                        motivo === m.valor
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {m.rotulo}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  disabled={!motivo || arquivar.isPending}
+                  onClick={() => arquivar.mutate(motivo)}
+                  className="h-14 rounded-xl text-lg font-extrabold"
+                >
+                  {arquivar.isPending ? <Loader2 className="size-5 animate-spin" /> : "Confirmar"}
+                </Button>
+              </DialogContent>
+            </Dialog>
           </div>
-        ) : mensagens.length === 0 ? (
-          <p className="py-6 text-center text-base font-semibold text-muted-foreground">
-            Nenhuma mensagem registrada ainda.
-          </p>
-        ) : (
-          <ConversaWhatsapp
-            titulo={cliente?.nome?.trim() || "Conversa"}
-            mensagens={mensagens.map((m) => ({
-              id: m.id,
-              direcao: m.direcao,
-              conteudo: m.conteudo?.trim() || (m.tipo ? `[${m.tipo}]` : null),
-              criado_em: m.criado_em,
-            }))}
-          />
-        )}
-      </Bloco>
+
+          <Bloco titulo="Qualificação" Icone={ClipboardList}>
+            <div className="mb-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <span className="text-base font-bold text-foreground">Serviço</span>
+                <select
+                  value={oportunidade.servico ?? ""}
+                  onChange={(e) => salvar.mutate({ servico: e.target.value || null })}
+                  className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+                >
+                  <option value="">não informado</option>
+                  {SERVICOS.map((s) => (
+                    <option key={s.valor} value={s.valor}>
+                      {s.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <span className="text-base font-bold text-foreground">Estágio</span>
+                <select
+                  value={oportunidade.estagio ?? "novo"}
+                  onChange={(e) => salvar.mutate({ estagio: e.target.value })}
+                  className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+                >
+                  {ESTAGIOS.map((s) => (
+                    <option key={s.valor} value={s.valor}>
+                      {s.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <span className="text-base font-bold text-foreground">Nota</span>
+                <select
+                  value={oportunidade.nota ?? "morno"}
+                  onChange={(e) => salvar.mutate({ nota: e.target.value })}
+                  className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+                >
+                  {NOTAS.map((n) => (
+                    <option key={n.valor} value={n.valor}>
+                      {n.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <Grade>
+              <Campo rotulo="Cidade" valor={oportunidade.cidade ?? ""} onSalvar={troca("cidade")} />
+              <Campo
+                rotulo="Área (ha)"
+                valor={oportunidade.area_ha !== null ? numero(oportunidade.area_ha, 4) : ""}
+                inputMode="decimal"
+                onSalvar={(v) => salvar.mutate({ area_ha: paraNumero(v) })}
+              />
+            </Grade>
+
+            <div className="mt-4 space-y-4">
+              <CampoLongo
+                rotulo="Situação documental"
+                valor={oportunidade.situacao_documental ?? ""}
+                onSalvar={troca("situacao_documental")}
+                placeholder="Tem matrícula? CCIR e ITR em dia? Inventário pendente?"
+              />
+              <CampoLongo
+                rotulo="Motivo e prazo"
+                valor={oportunidade.motivo_prazo ?? ""}
+                onSalvar={troca("motivo_prazo")}
+                placeholder="Por que precisa do serviço e para quando"
+              />
+              <CampoLongo
+                rotulo="Histórico"
+                valor={oportunidade.historico ?? ""}
+                onSalvar={troca("historico")}
+                placeholder="Já tentou antes? Com quem? O que travou?"
+              />
+            </div>
+          </Bloco>
+
+          <Bloco titulo="Cliente e imóvel" Icone={MapPinned}>
+            <div className="space-y-4">
+              <div>
+                <span className="text-base font-bold text-foreground">Cliente</span>
+                <p className="mt-1.5 text-lg font-extrabold text-foreground">
+                  {cliente?.nome?.trim() || "Sem cliente vinculado"}
+                </p>
+                {cliente?.telefone ? (
+                  <p className="text-base font-semibold text-muted-foreground">
+                    {mascaraTelefone(cliente.telefone)}
+                  </p>
+                ) : null}
+                {oportunidade.cliente_id ? (
+                  <Link
+                    to="/clientes/$id"
+                    params={{ id: oportunidade.cliente_id }}
+                    className="mt-2 inline-flex items-center gap-2 text-base font-extrabold text-primary underline"
+                  >
+                    <User className="size-5" strokeWidth={2.5} />
+                    Abrir ficha do cliente
+                  </Link>
+                ) : null}
+              </div>
+
+              <div>
+                <span className="text-base font-bold text-foreground">Imóvel vinculado</span>
+                <select
+                  value={oportunidade.imovel_id ?? ""}
+                  onChange={(e) => salvar.mutate({ imovel_id: e.target.value || null })}
+                  className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
+                >
+                  <option value="">Sem imóvel vinculado</option>
+                  {(imoveisQuery.data ?? []).map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.nome}
+                      {i.municipio ? ` — ${i.municipio}` : ""}
+                    </option>
+                  ))}
+                </select>
+
+                {imovel ? (
+                  <Link
+                    to="/imoveis/$id"
+                    params={{ id: imovel.id }}
+                    className="mt-2 inline-flex items-center gap-2 text-base font-extrabold text-primary underline"
+                  >
+                    <MapPinned className="size-5" strokeWidth={2.5} />
+                    Abrir ficha do imóvel
+                    {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}
+                  </Link>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={criarImovel.isPending}
+                    onClick={() => criarImovel.mutate()}
+                    className="mt-3 h-14 w-full rounded-xl border-2 text-lg font-extrabold"
+                  >
+                    {criarImovel.isPending ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Plus className="size-5" strokeWidth={2.5} />
+                        Criar imóvel com os dados da qualificação
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Bloco>
+        </div>
+
+        <aside className="order-2 lg:order-1 lg:sticky lg:top-4">
+          <Bloco titulo="Conversa" Icone={MessageCircle}>
+            {mensagensQuery.isPending ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="size-8 animate-spin text-primary" />
+              </div>
+            ) : mensagens.length === 0 ? (
+              <p className="py-6 text-center text-base font-semibold text-muted-foreground">
+                Nenhuma mensagem registrada ainda.
+              </p>
+            ) : (
+              <ConversaWhatsapp
+                titulo={cliente?.nome?.trim() || "Conversa"}
+                className="lg:max-h-[70dvh]"
+                mensagens={mensagens.map((m) => ({
+                  id: m.id,
+                  direcao: m.direcao,
+                  conteudo: m.conteudo?.trim() || (m.tipo ? `[${m.tipo}]` : null),
+                  criado_em: m.criado_em,
+                }))}
+              />
+            )}
+          </Bloco>
+        </aside>
+      </div>
     </section>
   );
 }
