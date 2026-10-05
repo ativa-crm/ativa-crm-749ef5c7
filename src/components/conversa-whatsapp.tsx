@@ -20,9 +20,12 @@ function rotuloAutor(direcao: string | null): string {
 export function ConversaWhatsapp({
   titulo,
   mensagens,
+  className,
 }: {
   titulo: string;
   mensagens: MensagemConversa[];
+  /** Classe extra para a lista de mensagens (ex.: altura maior na ficha da oportunidade). */
+  className?: string;
 }) {
   return (
     <div
@@ -45,7 +48,9 @@ export function ConversaWhatsapp({
         <Video className="size-4 shrink-0 text-chat-cabecalho-foreground/75" />
       </header>
 
-      <div className="flex max-h-80 flex-col gap-2 overflow-y-auto px-3 py-3">
+      <div
+        className={`flex max-h-80 flex-col gap-2 overflow-y-auto px-3 py-3 ${className ?? ""}`}
+      >
         {mensagens.map((m) => {
           const recebida = m.direcao === "recebida";
           return (

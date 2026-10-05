@@ -312,7 +312,7 @@ function Pagina() {
   }
 
   const cliente = clienteQuery.data ?? null;
-  const telefone = soDigitos(cliente?.telefone ?? "");
+  const telefone = soDigitos(cliente?.telefone ?? telefoneLeadQuery.data ?? "");
   const whatsapp = telefone
     ? `https://wa.me/${telefone.length <= 11 ? `55${telefone}` : telefone}`
     : null;
@@ -343,6 +343,9 @@ function Pagina() {
         </div>
       </div>
 
+      {/* Duas colunas no desktop: conversa à esquerda (fixa), informações à direita. */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="order-1 space-y-4 lg:order-2">
       <div className="flex flex-wrap gap-2">
         {whatsapp ? (
           <Button asChild className="h-14 flex-1 rounded-xl text-lg font-extrabold">
@@ -546,8 +549,10 @@ function Pagina() {
           </div>
         </div>
       </Bloco>
+        </div>
 
-      <Bloco titulo="Conversa" Icone={MessageCircle}>
+        <aside className="order-2 lg:order-1 lg:sticky lg:top-4">
+          <Bloco titulo="Conversa" Icone={MessageCircle}>
         {mensagensQuery.isPending ? (
           <div className="flex justify-center py-8">
             <Loader2 className="size-8 animate-spin text-primary" />
@@ -559,6 +564,7 @@ function Pagina() {
         ) : (
           <ConversaWhatsapp
             titulo={cliente?.nome?.trim() || "Conversa"}
+            className="lg:max-h-[70dvh]"
             mensagens={mensagens.map((m) => ({
               id: m.id,
               direcao: m.direcao,
@@ -567,7 +573,10 @@ function Pagina() {
             }))}
           />
         )}
-      </Bloco>
+          </Bloco>
+        </aside>
+      </div>
+    </section>
     </section>
   );
 }
