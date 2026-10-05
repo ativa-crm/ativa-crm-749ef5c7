@@ -145,7 +145,10 @@ function aplicarFiltros<T>(consulta: T, f: Filtros): T {
   let c = consulta as any;
   if (f.municipio !== "todos") c = c.eq("municipio", f.municipio);
   if (f.servico !== "todos") c = c.eq("servico_sugerido", f.servico);
-  if (f.soContato) c = c.not("prospeccao_id", "is", null);
+  if (f.soContato) {
+    // "Só com WhatsApp": tem prospecção vinculada e o lead não está marcado como sem WhatsApp.
+    c = c.not("prospeccao_id", "is", null).not("prospeccao.estagio", "eq", "sem_whatsapp");
+  }
   if (f.soCandidato) c = c.is("prospeccao_id", null).eq("tem_candidato_pendente", true);
   const termo = escaparTermo(f.busca);
   if (termo) {
@@ -202,7 +205,7 @@ function useResumoFiltro(f: Filtros) {
       for (let inicio = 0; inicio < TETO_MAPA; inicio += LOTE) {
         const base = supabase
           .from("imoveis")
-          .select("id, area_ha, prospeccao_id, tem_candidato_pendente")
+          .select("id, area_ha, prospeccao_id, tem_candidato_pendente, prospeccao(estagio)")
           .order("id", { ascending: true })
           .range(inicio, inicio + LOTE - 1);
         const { data, error } = await aplicarFiltros(base, f);
@@ -271,7 +274,7 @@ function Pagina() {
 
   const [municipio, setMunicipio] = useState("todos");
   const [servico, setServico] = useState("todos");
-  const [soContato, setSoContato] = useState(false);
+  const [soContato, setSoContato] = useState(true);
   const [soCandidato, setSoCandidato] = useState(false);
   const [busca, setBusca] = useState("");
   const [buscaAplicada, setBuscaAplicada] = useState("");
@@ -552,7 +555,7 @@ function Pagina() {
             }}
           />
           <Label htmlFor="so-contato" className="text-sm font-bold">
-            Só com contato
+            Só com WhatsApp
           </Label>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2">
