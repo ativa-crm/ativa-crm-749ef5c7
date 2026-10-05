@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
-import { areaHa, dataHora } from "@/lib/formato";
+import { areaHa } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

@@ -16,7 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { Bloco, Campo, CampoLongo, Grade } from "@/components/campos";
 import { areaHa, mascaraTelefone, numero, paraNumero, rotulo, soDigitos } from "@/lib/formato";
-import { desdeAgora, hora } from "@/lib/tempo";
+import { desdeAgora } from "@/lib/tempo";
 import { ESTAGIOS, MOTIVOS_PERDA, NOTAS, SERVICOS, corDaNota } from "@/lib/funil";
 import { ConversaWhatsapp } from "@/components/conversa-whatsapp";
 import { Button } from "@/components/ui/button";
