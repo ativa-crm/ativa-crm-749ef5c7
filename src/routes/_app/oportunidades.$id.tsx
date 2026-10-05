@@ -18,6 +18,7 @@ import { Bloco, Campo, CampoLongo, Grade } from "@/components/campos";
 import { areaHa, mascaraTelefone, numero, paraNumero, rotulo, soDigitos } from "@/lib/formato";
 import { desdeAgora, hora } from "@/lib/tempo";
 import { ESTAGIOS, MOTIVOS_PERDA, NOTAS, SERVICOS, corDaNota } from "@/lib/funil";
+import { ConversaWhatsapp } from "@/components/conversa-whatsapp";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -556,33 +557,15 @@ function Pagina() {
             Nenhuma mensagem registrada ainda.
           </p>
         ) : (
-          <ol className="space-y-2">
-            {mensagens.map((m) => {
-              const recebida = m.direcao === "recebida";
-              const humano = m.direcao === "enviada_humano";
-              return (
-                <li key={m.id} className={`flex ${recebida ? "justify-start" : "justify-end"}`}>
-                  <div
-                    className={`max-w-[85%] rounded-2xl border-2 px-3 py-2 ${
-                      recebida
-                        ? "border-border bg-muted text-foreground"
-                        : humano
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-secondary bg-secondary text-secondary-foreground"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap text-base font-semibold">
-                      {m.conteudo?.trim() || (m.tipo ? `[${m.tipo}]` : "[sem conteúdo]")}
-                    </p>
-                    <p className="mt-1 text-right text-xs font-bold opacity-75">
-                      {humano ? "você · " : recebida ? "" : "agente · "}
-                      {hora(m.criado_em)}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          <ConversaWhatsapp
+            titulo={cliente?.nome?.trim() || "Conversa"}
+            mensagens={mensagens.map((m) => ({
+              id: m.id,
+              direcao: m.direcao,
+              conteudo: m.conteudo?.trim() || (m.tipo ? `[${m.tipo}]` : null),
+              criado_em: m.criado_em,
+            }))}
+          />
         )}
       </Bloco>
     </section>
