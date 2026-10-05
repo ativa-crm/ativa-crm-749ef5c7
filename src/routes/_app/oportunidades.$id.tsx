@@ -577,6 +577,5 @@ function Pagina() {
         </aside>
       </div>
     </section>
-    </section>
   );
 }
