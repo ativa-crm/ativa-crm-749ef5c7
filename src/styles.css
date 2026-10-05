@@ -69,6 +69,13 @@
   --shadow-card: var(--card-shadow);
   --color-warning: var(--ambar);
   --color-warning-ink: var(--ambar-tinta);
+  --color-chat-fundo: var(--chat-fundo);
+  --color-chat-enviada: var(--chat-enviada);
+  --color-chat-recebida: var(--chat-recebida);
+  --color-chat-texto: var(--chat-texto);
+  --color-chat-moldura: var(--chat-moldura);
+  --color-chat-cabecalho: var(--chat-cabecalho);
+  --color-chat-cabecalho-foreground: var(--chat-cabecalho-foreground);
 }
 
 :root {
@@ -103,6 +110,14 @@
   --verde-tinta: #5c6b1f;
   --ambar: #f59e0b;
   --ambar-tinta: #8a5200;
+  /* Aparência de conversa do WhatsApp (igual nos dois temas) */
+  --chat-fundo: #e5ddd5;
+  --chat-enviada: #dcf8c6;
+  --chat-recebida: #ffffff;
+  --chat-texto: #303030;
+  --chat-moldura: #3b4043;
+  --chat-cabecalho: #075e54;
+  --chat-cabecalho-foreground: #ffffff;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);

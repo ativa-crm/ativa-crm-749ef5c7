@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { BarraFerramentas, CartaoIndicador, Painel, Tabela } from "@/components/painel";
 import { MapaProspeccao, type PontoImovel } from "@/components/mapa-prospeccao";
+import { ConversaWhatsapp } from "@/components/conversa-whatsapp";
 import {
   aplicarModelo,
   baixarCsv,
@@ -1060,32 +1061,10 @@ function DetalheImovel({
                   Nenhuma mensagem trocada ainda.
                 </p>
               ) : (
-                <div className="mt-2 flex max-h-80 flex-col gap-2 overflow-y-auto">
-                  {(mensagensQuery.data ?? []).map((m) => {
-                    const recebida = m.direcao === "recebida";
-                    return (
-                      <div
-                        key={m.id}
-                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
-                          recebida
-                            ? "self-start border border-border bg-secondary text-secondary-foreground"
-                            : "self-end bg-primary text-primary-foreground"
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap break-words text-sm font-medium">
-                          {m.conteudo || "—"}
-                        </p>
-                        <p
-                          className={`mt-1 text-[10px] font-bold uppercase ${
-                            recebida ? "text-muted-foreground" : "text-primary-foreground/70"
-                          }`}
-                        >
-                          {recebida ? "Lead" : "Ativa"} · {dataHora(m.criado_em)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ConversaWhatsapp
+                  titulo={lead.nome || "Lead sem nome"}
+                  mensagens={mensagensQuery.data ?? []}
+                />
               )}
             </div>
           </>
