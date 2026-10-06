@@ -3,6 +3,7 @@ import { MapPinOff, Satellite, Map as MapaIcone } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import type * as L from "leaflet";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export type PontoImovel = {
   id: string;
@@ -82,6 +83,8 @@ export function MapaProspeccao({
   const contorno = useRef<L.GeoJSON | null>(null);
   const ruas = useRef<L.TileLayer | null>(null);
   const satelite = useRef<L.TileLayer | null>(null);
+  const poligono = useRef<L.Layer | null>(null);
+  const [infoArea, setInfoArea] = useState<string | null>(null);
   const [vista, setVista] = useState<"ruas" | "satelite">("satelite");
   const [falhou, setFalhou] = useState(false);
 
@@ -131,6 +134,11 @@ export function MapaProspeccao({
   function enquadrar(leaflet: typeof L) {
     const m = mapa.current;
     if (!m) return;
+    const alvo = selecionado ? pontos.find((p) => p.id === selecionado) : null;
+    if (alvo) {
+      m.flyTo([alvo.lat, alvo.lon], Math.max(m.getZoom(), 15), { duration: 0.8 });
+      return;
+    }
     if (contorno.current) {
       const limites = contorno.current.getBounds();
       if (limites.isValid()) {
@@ -229,6 +237,51 @@ export function MapaProspeccao({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipio, uf]);
 
+  // Polígono do imóvel selecionado a partir dos vértices gravados (KML/CAR/SIGEF).
+  useEffect(() => {
+    let cancelado = false;
+    async function aplicar() {
+      const m = mapa.current;
+      if (!m) return;
+      const leaflet = await import("leaflet");
+      if (poligono.current) {
+        m.removeLayer(poligono.current);
+        poligono.current = null;
+      }
+      setInfoArea(null);
+      if (!selecionado) return;
+      const { data, error } = await supabase
+        .from("imovel_pontos")
+        .select("lat, lon, criado_em")
+        .eq("imovel_id", selecionado)
+        .order("criado_em", { ascending: true })
+        .limit(5000);
+      if (cancelado || !mapa.current) return;
+      const vertices = (error ? [] : (data ?? []))
+        .map((v) => [Number(v.lat), Number(v.lon)] as [number, number])
+        .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+      if (vertices.length < 3) {
+        setInfoArea("Sem polígono cadastrado — mostrando só a localização.");
+        return;
+      }
+      const cor = token("--destructive", "#b3261e");
+      const camadaPol = leaflet.polygon(vertices, {
+        color: cor,
+        weight: 3,
+        fillColor: cor,
+        fillOpacity: 0.18,
+      });
+      camadaPol.addTo(mapa.current);
+      poligono.current = camadaPol;
+      mapa.current.flyToBounds(camadaPol.getBounds().pad(0.3), { duration: 0.8 });
+      setInfoArea(`Área do imóvel desenhada com ${vertices.length} vértices.`);
+    }
+    void aplicar();
+    return () => {
+      cancelado = true;
+    };
+  }, [selecionado]);
+
   if (falhou) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border bg-muted/30 p-8 text-center">
@@ -278,6 +331,7 @@ export function MapaProspeccao({
         {pontos.length} imóveis com localização no filtro. Verde = contato disponível; cinza = sem
         contato; vermelho pulsante = imóvel selecionado.
       </p>
+      {infoArea && <p className="mt-1 text-xs font-semibold text-foreground">{infoArea}</p>}
     </div>
   );
 }
