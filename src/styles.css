@@ -76,6 +76,9 @@
   --color-chat-moldura: var(--chat-moldura);
   --color-chat-cabecalho: var(--chat-cabecalho);
   --color-chat-cabecalho-foreground: var(--chat-cabecalho-foreground);
+  --color-celular-titanio: var(--celular-titanio);
+  --color-celular-titanio-claro: var(--celular-titanio-claro);
+  --color-celular-bezel: var(--celular-bezel);
 }
 
 :root {
@@ -118,6 +121,10 @@
   --chat-moldura: #3b4043;
   --chat-cabecalho: #075e54;
   --chat-cabecalho-foreground: #ffffff;
+  /* Moldura de celular (titânio grafite) */
+  --celular-titanio: #3a3c3f;
+  --celular-titanio-claro: #6e7176;
+  --celular-bezel: #050505;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
