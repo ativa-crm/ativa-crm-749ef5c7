@@ -784,10 +784,18 @@ function Pagina() {
                         <td className="px-3 py-3 text-sm font-bold text-foreground">
                           {lead ? rotuloEstagio(lead.estagio) : "—"}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.car || "—"}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.ccir || "—"}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{i.sigef || "—"}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{coordPorId.get(i.id) ?? "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {i.car || "—"}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {i.ccir || "—"}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {i.sigef || "—"}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {coordPorId.get(i.id) ?? "—"}
+                        </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
                           {lead?.telefone ? telefoneVisivel(lead.telefone) : "—"}
                         </td>
@@ -806,7 +814,9 @@ function Pagina() {
                             "—"
                           )}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">{lead?.email || "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {lead?.email || "—"}
+                        </td>
                       </tr>
                     );
                   })}
@@ -959,10 +969,10 @@ function DetalheImovel({
       </header>
 
       <div className="mt-4 rounded-lg border border-primary/40 bg-primary/5 p-3">
-        <p className="text-xs font-bold uppercase text-muted-foreground">Resumo do serviço a oferecer</p>
-        <p className="mt-1 text-sm font-semibold text-foreground">
-          {resumoServico(imovel)}
+        <p className="text-xs font-bold uppercase text-muted-foreground">
+          Resumo do serviço a oferecer
         </p>
+        <p className="mt-1 text-sm font-semibold text-foreground">{resumoServico(imovel)}</p>
       </div>
 
       <dl className="mt-4 space-y-2 text-sm">
@@ -1065,6 +1075,7 @@ function DetalheImovel({
                 </p>
               ) : (
                 <ConversaWhatsapp
+                  compacto
                   titulo={lead.nome || "Lead sem nome"}
                   mensagens={mensagensQuery.data ?? []}
                 />

@@ -319,6 +319,15 @@ function Pagina() {
   const imovel = (imoveisQuery.data ?? []).find((i) => i.id === oportunidade.imovel_id) ?? null;
   const mensagens = mensagensQuery.data ?? [];
 
+  // Sem cliente vinculado: nome do lead guardado no histórico
+  // ("...lead de prospecção (id XXX): NOME (TELEFONE)..."), igual ao funil.
+  const nomeExibido =
+    cliente?.nome?.trim() ||
+    (oportunidade.origem === "prospeccao"
+      ? oportunidade.historico?.match(/lead de prospecção \(id [^)]*\): (.+?) \(/)?.[1]?.trim()
+      : undefined) ||
+    "";
+
   const troca = (campo: string) => (v: string) => salvar.mutate({ [campo]: v === "" ? null : v });
 
   return (
@@ -333,7 +342,7 @@ function Pagina() {
         </Link>
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-extrabold text-foreground md:text-3xl">
-            {cliente?.nome?.trim() || "Sem cliente"}
+            {nomeExibido || "Sem cliente"}
           </h1>
           <p className="flex items-center gap-2 truncate text-base font-semibold text-muted-foreground">
             <span className={`size-3 shrink-0 rounded-full ${corDaNota(oportunidade.nota)}`} />
@@ -343,8 +352,8 @@ function Pagina() {
         </div>
       </div>
 
-      {/* Duas colunas no desktop: conversa à esquerda (fixa), informações à direita. */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start xl:grid-cols-[420px_minmax(0,1fr)]">
+      {/* Duas colunas iguais no desktop: conversa à esquerda (fixa), informações à direita. */}
+      <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
         <div className="order-1 space-y-4 lg:order-2">
           <div className="flex flex-wrap gap-2">
             {whatsapp ? (
@@ -565,8 +574,8 @@ function Pagina() {
               </p>
             ) : (
               <ConversaWhatsapp
-                titulo={cliente?.nome?.trim() || "Conversa"}
-                className="lg:max-h-[70dvh]"
+                titulo={nomeExibido || "Conversa"}
+                className="lg:max-h-[85dvh]"
                 mensagens={mensagens.map((m) => ({
                   id: m.id,
                   direcao: m.direcao,
