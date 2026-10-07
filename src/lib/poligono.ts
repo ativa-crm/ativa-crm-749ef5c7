@@ -56,17 +56,8 @@ export function areaHaVertices(vertices: [number, number][]): number {
   if (vertices.length < 3) return 0;
   const R = 6378137;
   const rad = (g: number) => (g * Math.PI) / 180;
-  let total = 0;
   const n = vertices.length;
-  for (let i = 0; i < n; i++) {
-    const [lat1, lon1] = vertices[i]!;
-    const [, lon2] = vertices[(i + 1) % n]!;
-    const [lat3] = vertices[(i + 2) % n]!;
-    void lat1;
-    total += (rad(lon2) - rad(lon1)) * Math.sin(rad(lat3));
-  }
-  // fórmula do turf: soma (λ3-λ1)·sin(φ2); reescrita equivalente abaixo
-  total = 0;
+  let total = 0;
   for (let i = 0; i < n; i++) {
     const p1 = vertices[i]!;
     const p2 = vertices[(i + 1) % n]!;
