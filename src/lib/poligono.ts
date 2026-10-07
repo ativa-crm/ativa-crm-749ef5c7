@@ -102,7 +102,9 @@ export function baixarKml(nome: string, geo: GeoPoligono) {
     .join("");
   const geom = poligonos.length > 1 ? `<MultiGeometry>${corpo}</MultiGeometry>` : corpo;
   const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${escaparXml(nome)}</name><Placemark><name>${escaparXml(nome)}</name>${geom}</Placemark></Document></kml>`;
-  const url = URL.createObjectURL(new Blob([kml], { type: "application/vnd.google-earth.kml+xml" }));
+  const url = URL.createObjectURL(
+    new Blob([kml], { type: "application/vnd.google-earth.kml+xml" }),
+  );
   const a = document.createElement("a");
   a.href = url;
   a.download = `${nome.replace(/[^\p{L}\p{N}\- ]/gu, "").trim() || "imovel"}.kml`;

@@ -40,6 +40,7 @@ import {
 import { BarraFerramentas, CartaoIndicador, Painel, Tabela } from "@/components/painel";
 import { MapaProspeccao, type PontoImovel } from "@/components/mapa-prospeccao";
 import { ConversaWhatsapp } from "@/components/conversa-whatsapp";
+import { usePoligonoImovel } from "@/lib/poligono";
 import {
   aplicarModelo,
   baixarCsv,
@@ -620,16 +621,16 @@ function Pagina() {
         <TabsContent value="mapa" className="mt-3">
           <Painel titulo="Localização dos imóveis" icone={MapPinned}>
             <div ref={mapaRef} className="scroll-mt-4">
-            <MapaProspeccao
-              pontos={pontos}
-              foco={foco}
-              nomeSelecionado={imovelAberto?.nome ?? ""}
-              areaCadastroHa={imovelAberto?.area_ha ?? null}
-              selecionado={selecionado}
-              onSelecionar={setSelecionado}
-              municipio={municipio === "todos" ? null : municipio}
-              uf={ufDoFiltro}
-            />
+              <MapaProspeccao
+                pontos={pontos}
+                foco={foco}
+                nomeSelecionado={imovelAberto?.nome ?? ""}
+                areaCadastroHa={imovelAberto?.area_ha ?? null}
+                selecionado={selecionado}
+                onSelecionar={setSelecionado}
+                municipio={municipio === "todos" ? null : municipio}
+                uf={ufDoFiltro}
+              />
             </div>
             {localizacoesQuery.isPending && (resumoQuery.data?.ids.length ?? 0) > 0 && (
               <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -948,6 +949,7 @@ function DetalheImovel({
   onEstagio: (estagio: Estagio) => void;
 }) {
   const lead = um(imovel.prospeccao);
+  const poligonoQuery = usePoligonoImovel(imovel.id);
 
   const mensagensQuery = useQuery({
     queryKey: ["mensagens", "prospeccao", lead?.id],
@@ -973,6 +975,11 @@ function DetalheImovel({
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-xl font-extrabold text-foreground">{imovel.nome}</h2>
+          <p className="text-xs font-semibold text-muted-foreground">
+            Área do polígono (ha):{" "}
+            {poligonoQuery.data ? areaHa(poligonoQuery.data.area_ha_calculada) : "—"} · Área do
+            cadastro (ha): {imovel.area_ha !== null ? areaHa(imovel.area_ha) : "—"}
+          </p>
           <p className="text-sm font-semibold text-muted-foreground">
             {[imovel.municipio, imovel.uf].filter(Boolean).join("/") || "Sem município"}
             {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}

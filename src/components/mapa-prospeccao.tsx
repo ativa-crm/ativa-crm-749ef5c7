@@ -377,7 +377,8 @@ export function MapaProspeccao({
 
   const salvoGeo = poligonoQuery.data?.geojson ?? null;
   const verticesSalvos = salvoGeo ? verticesDe(salvoGeo) : null;
-  const verticesExibidos = verticesSalvos && verticesSalvos.length >= 3 ? verticesSalvos : verticesKml;
+  const verticesExibidos =
+    verticesSalvos && verticesSalvos.length >= 3 ? verticesSalvos : verticesKml;
 
   // Desenha o polígono salvo (fora dos modos de desenho/edição).
   useEffect(() => {
@@ -445,7 +446,13 @@ export function MapaProspeccao({
     const cor = token("--primary", "#9ab137");
     if (vertices.length >= 2) {
       leaflet
-        .polygon(vertices, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.2, interactive: false })
+        .polygon(vertices, {
+          color: cor,
+          weight: 3,
+          fillColor: cor,
+          fillOpacity: 0.2,
+          interactive: false,
+        })
         .addTo(grupo);
     }
     vertices.forEach((v, idx) => {
@@ -527,8 +534,7 @@ export function MapaProspeccao({
   };
 
   const areaDesenho = areaHaVertices(vertices);
-  const areaAtual =
-    modo !== "nada" ? areaDesenho : (poligonoQuery.data?.area_ha_calculada ?? null);
+  const areaAtual = modo !== "nada" ? areaDesenho : (poligonoQuery.data?.area_ha_calculada ?? null);
   const diferenca =
     areaAtual && areaCadastroHa ? ((areaAtual - areaCadastroHa) / areaCadastroHa) * 100 : null;
 
