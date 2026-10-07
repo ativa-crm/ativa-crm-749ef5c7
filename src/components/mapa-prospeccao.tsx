@@ -1,9 +1,34 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPinOff, Satellite, Map as MapaIcone } from "lucide-react";
+import {
+  MapPinOff,
+  Satellite,
+  Map as MapaIcone,
+  PenLine,
+  Undo2,
+  Check,
+  X,
+  Pencil,
+  Trash2,
+  Download,
+  Loader2,
+} from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 import type * as L from "leaflet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { areaHa } from "@/lib/formato";
+import {
+  areaHaVertices,
+  baixarKml,
+  chavePoligono,
+  chavePoligonosTodos,
+  paraGeoJson,
+  usePoligonoImovel,
+  usePoligonosTodos,
+  verticesDe,
+} from "@/lib/poligono";
 
 export type PontoImovel = {
   id: string;
@@ -68,6 +93,9 @@ export function MapaProspeccao({
   municipio = null,
   uf = "SP",
   altura = 420,
+  foco = 0,
+  nomeSelecionado = "",
+  areaCadastroHa = null,
 }: {
   pontos: PontoImovel[];
   selecionado?: string | null;
@@ -76,7 +104,26 @@ export function MapaProspeccao({
   municipio?: string | null;
   uf?: string;
   altura?: number;
+  /** Muda a cada pedido de "ir até o lead" (ex.: clique na tabela). */
+  foco?: number;
+  nomeSelecionado?: string;
+  areaCadastroHa?: number | null;
 }) {
+  const queryClient = useQueryClient();
+  const poligonoQuery = usePoligonoImovel(selecionado ?? null);
+  const todosQuery = usePoligonosTodos();
+  const leafletRef = useRef<typeof L | null>(null);
+  const contornosTodos = useRef<L.LayerGroup | null>(null);
+  const desenhoCamada = useRef<L.LayerGroup | null>(null);
+  const linhaCursor = useRef<L.Polyline | null>(null);
+  const [modo, setModo] = useState<"nada" | "desenho" | "edicao">("nada");
+  const modoRef = useRef(modo);
+  modoRef.current = modo;
+  const [vertices, setVertices] = useState<[number, number][]>([]);
+  const verticesRef = useRef(vertices);
+  verticesRef.current = vertices;
+  const concluirRef = useRef<() => void>(() => {});
+  const poligonoRef = useRef<[number, number][] | null>(null);
   const caixa = useRef<HTMLDivElement | null>(null);
   const mapa = useRef<L.Map | null>(null);
   const camada = useRef<L.LayerGroup | null>(null);
@@ -96,6 +143,7 @@ export function MapaProspeccao({
       try {
         const leaflet = await import("leaflet");
         if (cancelado || !caixa.current) return;
+        leafletRef.current = leaflet;
         const m = leaflet.map(caixa.current, { scrollWheelZoom: true });
         ruas.current = leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap",
@@ -108,6 +156,30 @@ export function MapaProspeccao({
         satelite.current.addTo(m);
         m.setView([-23.98, -48.87], 8);
         camada.current = leaflet.layerGroup().addTo(m);
+        contornosTodos.current = leaflet.layerGroup();
+        desenhoCamada.current = leaflet.layerGroup().addTo(m);
+        linhaCursor.current = leaflet
+          .polyline([], { color: token("--primary", "#9ab137"), weight: 2, dashArray: "6 6" })
+          .addTo(m);
+        m.on("click", (e: L.LeafletMouseEvent) => {
+          if (modoRef.current !== "desenho") return;
+          const ultimo = verticesRef.current[verticesRef.current.length - 1];
+          if (ultimo) {
+            const a = m.latLngToContainerPoint(ultimo);
+            const b = m.latLngToContainerPoint(e.latlng);
+            if (a.distanceTo(b) < 4) return;
+          }
+          setVertices((v) => [...v, [e.latlng.lat, e.latlng.lng]]);
+        });
+        m.on("mousemove", (e: L.LeafletMouseEvent) => {
+          const ultimo = verticesRef.current[verticesRef.current.length - 1];
+          if (modoRef.current !== "desenho" || !ultimo) return;
+          linhaCursor.current?.setLatLngs([ultimo, e.latlng]);
+        });
+        m.on("dblclick", () => {
+          if (modoRef.current === "desenho") concluirRef.current();
+        });
+        m.on("zoomend", () => atualizarContornosRef.current());
         mapa.current = m;
         desenhar(leaflet);
       } catch {
@@ -131,10 +203,49 @@ export function MapaProspeccao({
     if (!m.hasLayer(ativa)) ativa.addTo(m);
   }, [vista]);
 
+  const atualizarContornosRef = useRef<() => void>(() => {});
+  atualizarContornosRef.current = () => {
+    const m = mapa.current;
+    const grupo = contornosTodos.current;
+    const leaflet = leafletRef.current;
+    if (!m || !grupo || !leaflet) return;
+    grupo.clearLayers();
+    if (m.getZoom() < 12) {
+      if (m.hasLayer(grupo)) m.removeLayer(grupo);
+      return;
+    }
+    for (const r of todosQuery.data ?? []) {
+      if (r.imovel_id === selecionado) continue;
+      try {
+        leaflet
+          .geoJSON(r.geojson as never, {
+            style: { color: token("--primary", "#9ab137"), weight: 2, fillOpacity: 0.08 },
+          })
+          .on("click", () => onSelecionar(r.imovel_id))
+          .addTo(grupo);
+      } catch {
+        /* geometria inválida: ignora */
+      }
+    }
+    if (!m.hasLayer(grupo)) grupo.addTo(m);
+  };
+
+  useEffect(() => {
+    atualizarContornosRef.current();
+  }, [todosQuery.data, selecionado]);
+
   function enquadrar(leaflet: typeof L) {
     const m = mapa.current;
     if (!m) return;
     const alvo = selecionado ? pontos.find((p) => p.id === selecionado) : null;
+    const pol = selecionado ? poligonoRef.current : null;
+    if (pol) {
+      const lim = leaflet.latLngBounds(pol);
+      if (lim.isValid()) {
+        m.flyToBounds(lim.pad(0.3), { duration: 0.8 });
+        return;
+      }
+    }
     if (alvo) {
       m.flyTo([alvo.lat, alvo.lon], Math.max(m.getZoom(), 15), { duration: 0.8 });
       return;
@@ -237,50 +348,195 @@ export function MapaProspeccao({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipio, uf]);
 
-  // Polígono do imóvel selecionado a partir dos vértices gravados (KML/CAR/SIGEF).
+  // Polígono do imóvel selecionado: RPC obter_poligono_imovel; se não houver,
+  // usa os vértices importados por KML (imovel_pontos) só para exibir.
+  const [verticesKml, setVerticesKml] = useState<[number, number][] | null>(null);
   useEffect(() => {
     let cancelado = false;
-    async function aplicar() {
-      const m = mapa.current;
-      if (!m) return;
-      const leaflet = await import("leaflet");
-      if (poligono.current) {
-        m.removeLayer(poligono.current);
-        poligono.current = null;
-      }
-      setInfoArea(null);
-      if (!selecionado) return;
-      const { data, error } = await supabase
-        .from("imovel_pontos")
-        .select("lat, lon, criado_em")
-        .eq("imovel_id", selecionado)
-        .order("criado_em", { ascending: true })
-        .limit(5000);
-      if (cancelado || !mapa.current) return;
-      const vertices = (error ? [] : (data ?? []))
-        .map((v) => [Number(v.lat), Number(v.lon)] as [number, number])
-        .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
-      if (vertices.length < 3) {
-        setInfoArea("Sem polígono cadastrado — mostrando só a localização.");
-        return;
-      }
-      const cor = token("--destructive", "#b3261e");
-      const camadaPol = leaflet.polygon(vertices, {
-        color: cor,
-        weight: 3,
-        fillColor: cor,
-        fillOpacity: 0.18,
+    setVerticesKml(null);
+    setModo("nada");
+    setVertices([]);
+    if (!selecionado) return;
+    void supabase
+      .from("imovel_pontos")
+      .select("lat, lon, criado_em")
+      .eq("imovel_id", selecionado)
+      .order("criado_em", { ascending: true })
+      .limit(5000)
+      .then(({ data, error }) => {
+        if (cancelado || error) return;
+        const v = (data ?? [])
+          .map((p) => [Number(p.lat), Number(p.lon)] as [number, number])
+          .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+        setVerticesKml(v.length >= 3 ? v : null);
       });
-      camadaPol.addTo(mapa.current);
-      poligono.current = camadaPol;
-      mapa.current.flyToBounds(camadaPol.getBounds().pad(0.3), { duration: 0.8 });
-      setInfoArea(`Área do imóvel desenhada com ${vertices.length} vértices.`);
-    }
-    void aplicar();
     return () => {
       cancelado = true;
     };
   }, [selecionado]);
+
+  const salvoGeo = poligonoQuery.data?.geojson ?? null;
+  const verticesSalvos = salvoGeo ? verticesDe(salvoGeo) : null;
+  const verticesExibidos =
+    verticesSalvos && verticesSalvos.length >= 3 ? verticesSalvos : verticesKml;
+
+  // Desenha o polígono salvo (fora dos modos de desenho/edição).
+  useEffect(() => {
+    const m = mapa.current;
+    const leaflet = leafletRef.current;
+    if (!m || !leaflet) return;
+    if (poligono.current) {
+      m.removeLayer(poligono.current);
+      poligono.current = null;
+    }
+    poligonoRef.current = verticesExibidos;
+    if (!selecionado || modo !== "nada" || !verticesExibidos) {
+      setInfoArea(
+        selecionado && modo === "nada" && !poligonoQuery.isPending
+          ? "Sem polígono cadastrado — mostrando só a localização."
+          : null,
+      );
+      return;
+    }
+    const cor = token("--destructive", "#b3261e");
+    const camadaPol = leaflet.polygon(verticesExibidos, {
+      color: cor,
+      weight: 3,
+      fillColor: cor,
+      fillOpacity: 0.18,
+    });
+    camadaPol.addTo(m);
+    poligono.current = camadaPol;
+    setInfoArea(
+      salvoGeo
+        ? `Polígono salvo: ${areaHa(poligonoQuery.data?.area_ha_calculada ?? 0)}.`
+        : `Área importada do KML com ${verticesExibidos.length} vértices.`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selecionado, modo, poligonoQuery.data, poligonoQuery.isPending, verticesKml]);
+
+  // Ir até o lead: ao trocar a seleção, ao pedir foco ou quando o polígono carrega.
+  useEffect(() => {
+    const leaflet = leafletRef.current;
+    if (!leaflet || !selecionado || modo !== "nada") return;
+    enquadrar(leaflet);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foco, selecionado, poligonoQuery.data, verticesKml]);
+
+  // Camada de desenho/edição.
+  useEffect(() => {
+    const m = mapa.current;
+    const leaflet = leafletRef.current;
+    const grupo = desenhoCamada.current;
+    if (!m || !leaflet || !grupo) return;
+    grupo.clearLayers();
+    if (modo === "nada") {
+      linhaCursor.current?.setLatLngs([]);
+      m.doubleClickZoom.enable();
+      m.getContainer().style.cursor = "";
+      return;
+    }
+    if (modo === "desenho") {
+      m.doubleClickZoom.disable();
+      m.getContainer().style.cursor = "crosshair";
+    } else {
+      linhaCursor.current?.setLatLngs([]);
+      m.getContainer().style.cursor = "";
+    }
+    const cor = token("--primary", "#9ab137");
+    if (vertices.length >= 2) {
+      leaflet
+        .polygon(vertices, {
+          color: cor,
+          weight: 3,
+          fillColor: cor,
+          fillOpacity: 0.2,
+          interactive: false,
+        })
+        .addTo(grupo);
+    }
+    vertices.forEach((v, idx) => {
+      const mk = leaflet.marker(v, {
+        draggable: modo === "edicao",
+        icon: leaflet.divIcon({
+          className: "",
+          html: `<span style="display:block;width:14px;height:14px;border-radius:9999px;background:#fff;border:3px solid ${cor};box-shadow:0 1px 3px rgba(0,0,0,.4)"></span>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        }),
+      });
+      if (modo === "edicao") {
+        mk.on("dragend", () => {
+          const p = mk.getLatLng();
+          setVertices((atual) => atual.map((x, j) => (j === idx ? [p.lat, p.lng] : x)));
+        });
+      } else if (idx === 0) {
+        mk.on("click", () => concluirRef.current());
+      }
+      mk.addTo(grupo);
+    });
+  }, [modo, vertices]);
+
+  const salvar = useMutation({
+    mutationFn: async (v: [number, number][]) => {
+      const { data, error } = await supabase.rpc("salvar_poligono_imovel", {
+        p_imovel: selecionado,
+        p_geojson: paraGeoJson(v),
+      });
+      if (error) throw error;
+      const d = (typeof data === "string" ? JSON.parse(data) : data) as {
+        ok?: boolean;
+        area_ha_calculada?: number;
+      } | null;
+      if (d && d.ok === false) throw new Error("recusado");
+      return Number(d?.area_ha_calculada ?? areaHaVertices(v));
+    },
+    onSuccess: async (area) => {
+      toast.success(`Polígono salvo: ${areaHa(area)}.`);
+      setModo("nada");
+      setVertices([]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: chavePoligono(selecionado ?? "") }),
+        queryClient.invalidateQueries({ queryKey: chavePoligonosTodos }),
+        queryClient.invalidateQueries({ queryKey: ["prospeccao"] }),
+      ]);
+    },
+    onError: () => toast.error("Não foi possível salvar o polígono."),
+  });
+
+  const remover = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("remover_poligono_imovel", {
+        p_imovel: selecionado,
+      });
+      if (error) throw error;
+      const d = (typeof data === "string" ? JSON.parse(data) : data) as { ok?: boolean } | null;
+      if (d && d.ok === false) throw new Error("nada");
+    },
+    onSuccess: async () => {
+      toast.success("Polígono removido.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: chavePoligono(selecionado ?? "") }),
+        queryClient.invalidateQueries({ queryKey: chavePoligonosTodos }),
+        queryClient.invalidateQueries({ queryKey: ["prospeccao"] }),
+      ]);
+    },
+    onError: () => toast.error("Não foi possível remover o polígono."),
+  });
+
+  concluirRef.current = () => {
+    const v = verticesRef.current;
+    if (v.length < 3) {
+      toast.error("Marque pelo menos 3 pontos para fechar a área.");
+      return;
+    }
+    salvar.mutate(v);
+  };
+
+  const areaDesenho = areaHaVertices(vertices);
+  const areaAtual = modo !== "nada" ? areaDesenho : (poligonoQuery.data?.area_ha_calculada ?? null);
+  const diferenca =
+    areaAtual && areaCadastroHa ? ((areaAtual - areaCadastroHa) / areaCadastroHa) * 100 : null;
 
   if (falhou) {
     return (
@@ -322,6 +578,124 @@ export function MapaProspeccao({
           Satélite
         </Button>
       </div>
+      {selecionado && (
+        <div className="absolute bottom-10 left-3 z-[500] flex max-w-[calc(100%-1.5rem)] flex-col gap-2 rounded-lg border border-border bg-card p-2 text-card-foreground shadow-card">
+          {modo === "nada" ? (
+            <div className="flex flex-wrap gap-1">
+              {!salvoGeo ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 text-xs font-bold"
+                  onClick={() => {
+                    setVertices([]);
+                    setModo("desenho");
+                  }}
+                >
+                  <PenLine className="size-4" aria-hidden /> Traçar polígono
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs font-bold"
+                    onClick={() => {
+                      setVertices(verticesSalvos ?? []);
+                      setModo("edicao");
+                    }}
+                  >
+                    <Pencil className="size-4" aria-hidden /> Editar polígono
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs font-bold"
+                    onClick={() => baixarKml(nomeSelecionado || "Imóvel", salvoGeo)}
+                  >
+                    <Download className="size-4" aria-hidden /> Baixar KML
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs font-bold text-destructive"
+                    disabled={remover.isPending}
+                    onClick={() => {
+                      if (window.confirm("Remover o polígono deste imóvel?")) remover.mutate();
+                    }}
+                  >
+                    <Trash2 className="size-4" aria-hidden /> Remover
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {modo === "desenho"
+                  ? "Clique no mapa para marcar os vértices. Duplo clique ou clique no 1º ponto para concluir."
+                  : "Arraste os vértices para ajustar a área."}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {modo === "desenho" && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs font-bold"
+                    disabled={vertices.length === 0}
+                    onClick={() => setVertices((v) => v.slice(0, -1))}
+                  >
+                    <Undo2 className="size-4" aria-hidden /> Desfazer último ponto
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 text-xs font-bold"
+                  disabled={vertices.length < 3 || salvar.isPending}
+                  onClick={() => concluirRef.current()}
+                >
+                  {salvar.isPending ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Check className="size-4" aria-hidden />
+                  )}
+                  Concluir
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 text-xs font-bold"
+                  onClick={() => {
+                    setModo("nada");
+                    setVertices([]);
+                  }}
+                >
+                  <X className="size-4" aria-hidden /> Cancelar
+                </Button>
+              </div>
+            </>
+          )}
+          {(areaAtual !== null || areaCadastroHa !== null) && (
+            <p className="text-xs font-bold text-foreground">
+              {areaAtual !== null && <>Polígono: {areaHa(areaAtual)}</>}
+              {areaCadastroHa !== null && <> · Cadastro: {areaHa(areaCadastroHa)}</>}
+              {diferenca !== null && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  ({diferenca >= 0 ? "+" : ""}
+                  {diferenca.toFixed(1).replace(".", ",")}%)
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
       <div
         ref={caixa}
         style={{ height: altura }}
