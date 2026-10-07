@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -280,6 +280,8 @@ function Pagina() {
   const [buscaAplicada, setBuscaAplicada] = useState("");
   const [pagina, setPagina] = useState(0);
   const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [foco, setFoco] = useState(0);
+  const mapaRef = useRef<HTMLDivElement | null>(null);
   const [modelo, setModelo] = useState<ModeloMensagem>(() => lerModelo());
   const [configAberta, setConfigAberta] = useState(false);
 
@@ -617,13 +619,18 @@ function Pagina() {
 
         <TabsContent value="mapa" className="mt-3">
           <Painel titulo="Localização dos imóveis" icone={MapPinned}>
+            <div ref={mapaRef} className="scroll-mt-4">
             <MapaProspeccao
               pontos={pontos}
+              foco={foco}
+              nomeSelecionado={imovelAberto?.nome ?? ""}
+              areaCadastroHa={imovelAberto?.area_ha ?? null}
               selecionado={selecionado}
               onSelecionar={setSelecionado}
               municipio={municipio === "todos" ? null : municipio}
               uf={ufDoFiltro}
             />
+            </div>
             {localizacoesQuery.isPending && (resumoQuery.data?.ids.length ?? 0) > 0 && (
               <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 <Loader2 className="size-4 animate-spin text-primary" /> Carregando as localizações
@@ -741,7 +748,15 @@ function Pagina() {
                     return (
                       <tr
                         key={i.id}
-                        onClick={() => setSelecionado(i.id)}
+                        onClick={() => {
+                          setSelecionado(i.id);
+                          setFoco((f) => f + 1);
+                          if (!pontos.some((p) => p.id === i.id)) {
+                            toast.info("Este imóvel não tem localização no mapa");
+                          } else {
+                            mapaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }
+                        }}
                         data-ativo={selecionado === i.id ? "1" : "0"}
                         className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/40 data-[ativo=1]:bg-secondary"
                       >
