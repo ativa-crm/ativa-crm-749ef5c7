@@ -102,6 +102,7 @@ type LinhaImovel = {
   ccir: string | null;
   sigef: string | null;
   observacoes: string | null;
+  certificado: string | null;
   tem_candidato_pendente: boolean | null;
   prospeccao_id: string | null;
   cliente_id: string | null;
@@ -122,13 +123,15 @@ const LOTE = 1000;
 const TETO_MAPA = 20000;
 
 const COLUNAS_LINHA =
-  "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, car, ccir, sigef, observacoes, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
+  "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, car, ccir, sigef, observacoes, certificado, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
 
 type Filtros = {
   municipio: string;
   servico: string;
   soContato: boolean;
   soCandidato: boolean;
+  /** Foco em georreferenciamento: esconde imóveis com área já certificada (SIGEF/SNCI). */
+  soSemCertificacao: boolean;
   busca: string;
 };
 
@@ -151,6 +154,7 @@ function aplicarFiltros<T>(consulta: T, f: Filtros): T {
     c = c.not("prospeccao_id", "is", null).not("prospeccao.estagio", "eq", "sem_whatsapp");
   }
   if (f.soCandidato) c = c.is("prospeccao_id", null).eq("tem_candidato_pendente", true);
+  if (f.soSemCertificacao) c = c.is("certificado", null);
   const termo = escaparTermo(f.busca);
   if (termo) {
     c = c.or(
@@ -277,6 +281,7 @@ function Pagina() {
   const [servico, setServico] = useState("todos");
   const [soContato, setSoContato] = useState(true);
   const [soCandidato, setSoCandidato] = useState(false);
+  const [soSemCertificacao, setSoSemCertificacao] = useState(true);
   const [busca, setBusca] = useState("");
   const [buscaAplicada, setBuscaAplicada] = useState("");
   const [pagina, setPagina] = useState(0);
@@ -295,8 +300,8 @@ function Pagina() {
   }, [busca]);
 
   const filtros = useMemo<Filtros>(
-    () => ({ municipio, servico, soContato, soCandidato, busca: buscaAplicada }),
-    [municipio, servico, soContato, soCandidato, buscaAplicada],
+    () => ({ municipio, servico, soContato, soCandidato, soSemCertificacao, busca: buscaAplicada }),
+    [municipio, servico, soContato, soCandidato, soSemCertificacao, buscaAplicada],
   );
 
   useEffect(() => {
@@ -574,6 +579,15 @@ function Pagina() {
             Só candidato pendente
           </Label>
         </div>
+        <div
+          className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2"
+          title="Imóveis com parcela no SIGEF ou certificação no SNCI já têm área certificada e saem da prospecção de georreferenciamento"
+        >
+          <Switch id="so-sem-cert" checked={soSemCertificacao} onCheckedChange={setSoSemCertificacao} />
+          <Label htmlFor="so-sem-cert" className="text-sm font-bold">
+            Só sem certificação (georreferenciamento)
+          </Label>
+        </div>
       </BarraFerramentas>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -774,6 +788,11 @@ function Pagina() {
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold text-foreground">
                           {i.servico_sugerido || "—"}
+                          {i.certificado && (
+                            <span className="ml-1 inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-extrabold uppercase text-muted-foreground">
+                              Já certificada ({i.certificado})
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold text-muted-foreground">
                           {i.titular_ccir || "—"}
