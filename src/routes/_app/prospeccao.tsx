@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { FiltroExcel, VAZIO, type FiltroColuna, type Ordenacao } from "@/components/filtro-excel";
 import { usePerfil } from "@/lib/perfil";
 import { areaHa } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
@@ -125,42 +126,33 @@ const TETO_MAPA = 20000;
 const COLUNAS_LINHA =
   "id, nome, municipio, uf, area_ha, servico_sugerido, titular_ccir, titular_tipo, car, ccir, sigef, observacoes, certificado, tem_candidato_pendente, prospeccao_id, cliente_id, prospeccao(id, nome, telefone, email, estagio, documento, proxima_acao, proxima_data, observacoes)";
 
-/** Filtros digitados no cabeçalho de cada coluna da tabela. */
-type FiltroColunas = {
-  nome: string;
-  areaMin: string;
-  titular: string;
-  situacao: string;
-  contato: "" | "com" | "confirmar" | "sem";
-  etapa: string;
-  car: string;
-  ccir: string;
-  sigef: string;
-  telefone: string;
-  email: string;
+/** Colunas da tabela que têm filtro estilo Excel → campo no banco. */
+const CAMPOS_COLUNA: Record<string, { col: string; lead?: boolean }> = {
+  nome: { col: "nome" },
+  municipio: { col: "municipio" },
+  area_ha: { col: "area_ha" },
+  servico_sugerido: { col: "servico_sugerido" },
+  titular_ccir: { col: "titular_ccir" },
+  observacoes: { col: "observacoes" },
+  car: { col: "car" },
+  ccir: { col: "ccir" },
+  sigef: { col: "sigef" },
+  estagio: { col: "prospeccao.estagio", lead: true },
+  telefone: { col: "prospeccao.telefone", lead: true },
+  email: { col: "prospeccao.email", lead: true },
 };
 
-const COLUNAS_VAZIAS: FiltroColunas = {
-  nome: "",
-  areaMin: "",
-  titular: "",
-  situacao: "",
-  contato: "",
-  etapa: "",
-  car: "",
-  ccir: "",
-  sigef: "",
-  telefone: "",
-  email: "",
-};
-
-function temFiltroLead(c: FiltroColunas): boolean {
-  return !!(c.etapa || c.telefone.replace(/\D/g, "") || c.email.trim());
+function temFiltroLead(colunas: Record<string, FiltroColuna>): boolean {
+  return Object.keys(colunas).some((k) => CAMPOS_COLUNA[k]?.lead);
 }
 
 /** Troca o vínculo com o lead para INNER quando a coluna filtrada é do lead. */
 function selecaoCom(colunas: string, f: Filtros): string {
   return temFiltroLead(f.colunas) ? colunas.replace("prospeccao(", "prospeccao!inner(") : colunas;
+}
+
+function aspas(v: string): string {
+  return `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
 type Filtros = {
@@ -171,7 +163,8 @@ type Filtros = {
   /** Foco em georreferenciamento: esconde imóveis com área já certificada (SIGEF/SNCI). */
   soSemCertificacao: boolean;
   busca: string;
-  colunas: FiltroColunas;
+  colunas: Record<string, FiltroColuna>;
+  ordem: Ordenacao;
 };
 
 function um<T>(v: T | T[] | null | undefined): T | null {
@@ -195,31 +188,50 @@ function aplicarFiltros<T>(consulta: T, f: Filtros): T {
   if (f.soCandidato) c = c.is("prospeccao_id", null).eq("tem_candidato_pendente", true);
   if (f.soSemCertificacao) c = c.is("certificado", null);
 
-  // Filtros no cabeçalho das colunas
-  const k = f.colunas;
-  const contem = (v: string) => `%${escaparTermo(v)}%`;
-  const comSem = (campo: string, v: string) => {
-    const t = v.trim().toLocaleLowerCase("pt-BR");
-    if (!t) return;
-    if (t === "sem" || t === "vazio") c = c.is(campo, null);
-    else if (t === "com" || t === "*") c = c.not(campo, "is", null);
-    else c = c.ilike(campo, contem(v));
-  };
-  if (k.nome.trim()) c = c.ilike("nome", contem(k.nome));
-  const area = Number(k.areaMin.replace(",", "."));
-  if (k.areaMin.trim() && Number.isFinite(area)) c = c.gte("area_ha", area);
-  if (k.titular.trim()) c = c.ilike("titular_ccir", contem(k.titular));
-  if (k.situacao.trim()) c = c.ilike("observacoes", contem(k.situacao));
-  if (k.contato === "com") c = c.not("prospeccao_id", "is", null);
-  if (k.contato === "confirmar") c = c.is("prospeccao_id", null).eq("tem_candidato_pendente", true);
-  if (k.contato === "sem") c = c.is("prospeccao_id", null).or("tem_candidato_pendente.is.null,tem_candidato_pendente.eq.false");
-  comSem("car", k.car);
-  comSem("ccir", k.ccir);
-  comSem("sigef", k.sigef);
-  if (k.etapa) c = c.eq("prospeccao.estagio", k.etapa);
-  const digitos = k.telefone.replace(/\D/g, "");
-  if (digitos) c = c.ilike("prospeccao.telefone", `%${digitos}%`);
-  if (k.email.trim()) c = c.ilike("prospeccao.email", contem(k.email));
+  // Filtros estilo Excel no cabeçalho das colunas
+  for (const [id, filtro] of Object.entries(f.colunas)) {
+    if (id === "contato") {
+      if (filtro.tipo !== "incluir") continue;
+      const v = new Set(filtro.valores);
+      const partes: string[] = [];
+      if (v.has("com")) partes.push("prospeccao_id.not.is.null");
+      if (v.has("confirmar")) partes.push("and(prospeccao_id.is.null,tem_candidato_pendente.eq.true)");
+      if (v.has("sem")) partes.push("and(prospeccao_id.is.null,or(tem_candidato_pendente.is.null,tem_candidato_pendente.eq.false))");
+      c = partes.length ? c.or(partes.join(",")) : c.eq("id", "00000000-0000-0000-0000-000000000000");
+      continue;
+    }
+    const def = CAMPOS_COLUNA[id];
+    if (!def) continue;
+    const col = def.col;
+    if (filtro.tipo === "faixa") {
+      if (filtro.min !== null) c = c.gte(col, filtro.min);
+      if (filtro.max !== null) c = c.lte(col, filtro.max);
+    } else if (filtro.tipo === "contem") {
+      c = c.ilike(col, `%${escaparTermo(filtro.texto)}%`);
+    } else if (filtro.tipo === "incluir") {
+      const valores = filtro.valores.filter((v) => v !== VAZIO);
+      const vazias = filtro.valores.includes(VAZIO);
+      if (def.lead) {
+        if (valores.length) c = c.in(col, valores);
+        else if (vazias) c = c.is(col, null);
+      } else if (vazias && valores.length) {
+        c = c.or(`${col}.in.(${valores.map(aspas).join(",")}),${col}.is.null`);
+      } else if (vazias) {
+        c = c.is(col, null);
+      } else {
+        c = c.in(col, valores.length ? valores : ["__nenhum__"]);
+      }
+    } else if (filtro.tipo === "excluir") {
+      const valores = filtro.valores.filter((v) => v !== VAZIO);
+      const semVazias = filtro.valores.includes(VAZIO);
+      if (valores.length) {
+        const lista = `(${valores.map(aspas).join(",")})`;
+        if (semVazias || def.lead) c = c.not(col, "in", lista);
+        else c = c.or(`${col}.not.in.${lista},${col}.is.null`);
+      }
+      if (semVazias) c = c.not(col, "is", null);
+    }
+  }
   const termo = escaparTermo(f.busca);
   if (termo) {
     c = c.or(
@@ -308,7 +320,7 @@ function usePaginaImoveis(f: Filtros, pagina: number) {
       const base = supabase
         .from("imoveis")
         .select(selecaoCom(COLUNAS_LINHA, f), { count: "exact" })
-        .order("nome", { ascending: true })
+        .order(f.ordem?.campo ?? "nome", { ascending: f.ordem?.asc ?? true, nullsFirst: false })
         .range(inicio, inicio + POR_PAGINA - 1);
       const { data, error, count } = await aplicarFiltros(base, f);
       if (error) throw error;
@@ -338,41 +350,6 @@ function useLocalizacoes(ids: string[]) {
   });
 }
 
-function FiltroTexto({
-  valor,
-  onMudar,
-  dica,
-  estreito = false,
-}: {
-  valor: string;
-  onMudar: (v: string) => void;
-  dica: string;
-  estreito?: boolean;
-}) {
-  return (
-    <div className="relative">
-      <input
-        value={valor}
-        onChange={(e) => onMudar(e.target.value)}
-        onClick={(e) => e.stopPropagation()}
-        placeholder={dica}
-        aria-label={`Filtrar ${dica}`}
-        className={`h-9 w-full rounded-md border border-border bg-card px-2 pr-6 text-xs font-semibold normal-case text-foreground placeholder:font-medium placeholder:text-muted-foreground ${estreito ? "min-w-20" : "min-w-28"}`}
-      />
-      {valor && (
-        <button
-          type="button"
-          aria-label="Limpar"
-          onClick={() => onMudar("")}
-          className="absolute right-1 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-        >
-          <X className="size-3" />
-        </button>
-      )}
-    </div>
-  );
-}
-
 function Pagina() {
   const { perfil } = usePerfil();
   const queryClient = useQueryClient();
@@ -382,16 +359,27 @@ function Pagina() {
   const [soContato, setSoContato] = useState(true);
   const [soCandidato, setSoCandidato] = useState(false);
   const [soSemCertificacao, setSoSemCertificacao] = useState(true);
-  const [colunasDigitadas, setColunasDigitadas] = useState<FiltroColunas>(COLUNAS_VAZIAS);
-  const [colunas, setColunas] = useState<FiltroColunas>(COLUNAS_VAZIAS);
-  useEffect(() => {
-    const t = setTimeout(() => setColunas(colunasDigitadas), 400);
-    return () => clearTimeout(t);
-  }, [colunasDigitadas]);
-  const filtroColuna = (campo: keyof FiltroColunas) => (v: string) =>
-    setColunasDigitadas((atual) => ({ ...atual, [campo]: v }) as FiltroColunas);
-  const temFiltroColuna =
-    municipio !== "todos" || servico !== "todos" || Object.values(colunasDigitadas).some((v) => v !== "");
+  const [colunas, setColunas] = useState<Record<string, FiltroColuna>>({});
+  const [ordem, setOrdem] = useState<Ordenacao>(null);
+  const definirFiltro = (id: string) => (f: FiltroColuna | undefined) =>
+    setColunas((atual) => {
+      const novo = { ...atual };
+      if (f) novo[id] = f;
+      else delete novo[id];
+      return novo;
+    });
+  const temFiltroColuna = Object.keys(colunas).length > 0;
+  const cabecalho = (id: string, titulo: string, extra: Partial<Parameters<typeof FiltroExcel>[0]> = {}) => (
+    <FiltroExcel
+      titulo={titulo}
+      campo={id}
+      filtro={colunas[id]}
+      onFiltro={definirFiltro(id)}
+      ordenacao={ordem}
+      onOrdenar={setOrdem}
+      {...extra}
+    />
+  );
   const [busca, setBusca] = useState("");
   const [buscaAplicada, setBuscaAplicada] = useState("");
   const [pagina, setPagina] = useState(0);
@@ -410,8 +398,8 @@ function Pagina() {
   }, [busca]);
 
   const filtros = useMemo<Filtros>(
-    () => ({ municipio, servico, soContato, soCandidato, soSemCertificacao, busca: buscaAplicada, colunas }),
-    [municipio, servico, soContato, soCandidato, soSemCertificacao, buscaAplicada, colunas],
+    () => ({ municipio, servico, soContato, soCandidato, soSemCertificacao, busca: buscaAplicada, colunas, ordem }),
+    [municipio, servico, soContato, soCandidato, soSemCertificacao, buscaAplicada, colunas, ordem],
   );
 
   useEffect(() => {
@@ -538,7 +526,7 @@ function Pagina() {
         const base = supabase
           .from("imoveis")
           .select(selecaoCom(COLUNAS_LINHA, filtros))
-          .order("nome", { ascending: true })
+          .order(filtros.ordem?.campo ?? "nome", { ascending: filtros.ordem?.asc ?? true, nullsFirst: false })
           .range(inicio, inicio + LOTE - 1);
         const { data, error } = await aplicarFiltros(base, filtros);
         if (error) throw error;
@@ -852,111 +840,36 @@ function Pagina() {
               <table className="w-full min-w-[1040px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-border text-xs font-bold uppercase text-muted-foreground">
-                    <th className="px-3 py-2">Imóvel</th>
-                    <th className="px-3 py-2">Município/UF</th>
-                    <th className="px-3 py-2 text-right">Área</th>
-                    <th className="px-3 py-2">Serviço sugerido</th>
-                    <th className="px-3 py-2">Titular (CCIR)</th>
-                    <th className="px-3 py-2">Situação documental</th>
-                    <th className="px-3 py-2">Contato</th>
-                    <th className="px-3 py-2">Etapa do lead</th>
-                    <th className="px-3 py-2">CAR</th>
-                    <th className="px-3 py-2">CCIR</th>
-                    <th className="px-3 py-2">SIGEF</th>
+                    <th className="px-3 py-2">{cabecalho("nome", "Imóvel")}</th>
+                    <th className="px-3 py-2">{cabecalho("municipio", "Município/UF")}</th>
+                    <th className="px-3 py-2 text-right">
+                      <div className="flex justify-end">{cabecalho("area_ha", "Área", { numerico: true })}</div>
+                    </th>
+                    <th className="px-3 py-2">{cabecalho("servico_sugerido", "Serviço sugerido")}</th>
+                    <th className="px-3 py-2">{cabecalho("titular_ccir", "Titular (CCIR)")}</th>
+                    <th className="px-3 py-2">{cabecalho("observacoes", "Situação documental")}</th>
+                    <th className="px-3 py-2">
+                      {cabecalho("contato", "Contato", {
+                        ordenavel: false,
+                        opcoes: [
+                          { valor: "com", rotulo: "Com contato" },
+                          { valor: "confirmar", rotulo: "Confirmar" },
+                          { valor: "sem", rotulo: "Sem contato" },
+                        ],
+                      })}
+                    </th>
+                    <th className="px-3 py-2">
+                      {cabecalho("estagio", "Etapa do lead", { ordenavel: false, formatar: (v: string) => rotuloEstagio(v) })}
+                    </th>
+                    <th className="px-3 py-2">{cabecalho("car", "CAR")}</th>
+                    <th className="px-3 py-2">{cabecalho("ccir", "CCIR")}</th>
+                    <th className="px-3 py-2">{cabecalho("sigef", "SIGEF")}</th>
                     <th className="px-3 py-2">Coordenadas</th>
-                    <th className="px-3 py-2">Telefone</th>
+                    <th className="px-3 py-2">
+                      {cabecalho("telefone", "Telefone", { ordenavel: false, formatar: (v: string) => telefoneVisivel(v) })}
+                    </th>
                     <th className="px-3 py-2">WhatsApp</th>
-                    <th className="px-3 py-2">E-mail</th>
-                  </tr>
-                  {/* Linha de filtros por coluna */}
-                  <tr className="border-b border-border bg-muted/40 align-top">
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.nome} onMudar={filtroColuna("nome")} dica="Nome do imóvel" />
-                    </th>
-                    <th className="px-2 py-2">
-                      <select
-                        value={municipio}
-                        onChange={(e) => setMunicipio(e.target.value)}
-                        aria-label="Filtrar município"
-                        className="h-9 w-full min-w-32 rounded-md border border-border bg-card px-2 text-xs font-semibold normal-case text-foreground"
-                      >
-                        <option value="todos">Todos</option>
-                        {(municipiosQuery.data ?? []).map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.areaMin} onMudar={filtroColuna("areaMin")} dica="mín. ha" estreito />
-                    </th>
-                    <th className="px-2 py-2">
-                      <select
-                        value={servico}
-                        onChange={(e) => setServico(e.target.value)}
-                        aria-label="Filtrar serviço"
-                        className="h-9 w-full min-w-32 rounded-md border border-border bg-card px-2 text-xs font-semibold normal-case text-foreground"
-                      >
-                        <option value="todos">Todos</option>
-                        {SERVICOS_SUGERIDOS.map((sv) => (
-                          <option key={sv} value={sv}>
-                            {sv}
-                          </option>
-                        ))}
-                      </select>
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.titular} onMudar={filtroColuna("titular")} dica="Titular" />
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.situacao} onMudar={filtroColuna("situacao")} dica="Ex.: Somente CCIR" />
-                    </th>
-                    <th className="px-2 py-2">
-                      <select
-                        value={colunasDigitadas.contato}
-                        onChange={(e) => filtroColuna("contato")(e.target.value)}
-                        aria-label="Filtrar contato"
-                        className="h-9 w-full min-w-28 rounded-md border border-border bg-card px-2 text-xs font-semibold normal-case text-foreground"
-                      >
-                        <option value="">Todos</option>
-                        <option value="com">Com contato</option>
-                        <option value="confirmar">Confirmar</option>
-                        <option value="sem">Sem contato</option>
-                      </select>
-                    </th>
-                    <th className="px-2 py-2">
-                      <select
-                        value={colunasDigitadas.etapa}
-                        onChange={(e) => filtroColuna("etapa")(e.target.value)}
-                        aria-label="Filtrar etapa"
-                        className="h-9 w-full min-w-28 rounded-md border border-border bg-card px-2 text-xs font-semibold normal-case text-foreground"
-                      >
-                        <option value="">Todas</option>
-                        {ESTAGIOS.map((et) => (
-                          <option key={et} value={et}>
-                            {rotuloEstagio(et)}
-                          </option>
-                        ))}
-                      </select>
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.car} onMudar={filtroColuna("car")} dica="nº, com ou sem" />
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.ccir} onMudar={filtroColuna("ccir")} dica="nº, com ou sem" />
-                    </th>
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.sigef} onMudar={filtroColuna("sigef")} dica="nº, com ou sem" />
-                    </th>
-                    <th className="px-2 py-2" />
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.telefone} onMudar={filtroColuna("telefone")} dica="Telefone" />
-                    </th>
-                    <th className="px-2 py-2" />
-                    <th className="px-2 py-2">
-                      <FiltroTexto valor={colunasDigitadas.email} onMudar={filtroColuna("email")} dica="E-mail" />
-                    </th>
+                    <th className="px-3 py-2">{cabecalho("email", "E-mail", { ordenavel: false })}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -968,12 +881,10 @@ function Pagina() {
                           type="button"
                           className="font-bold text-primary underline"
                           onClick={() => {
-                            setColunasDigitadas(COLUNAS_VAZIAS);
-                            setMunicipio("todos");
-                            setServico("todos");
+                            setColunas({});
                           }}
                         >
-                          Limpar filtros das colunas
+                          Limpar todos os filtros das colunas
                         </button>
                       </td>
                     </tr>
