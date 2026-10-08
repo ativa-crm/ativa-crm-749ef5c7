@@ -5,6 +5,7 @@ import {
   Archive,
   ArrowLeft,
   ClipboardList,
+  FileText,
   Loader2,
   MapPinned,
   MessageCircle,
@@ -15,7 +16,15 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import { Bloco, Campo, CampoLongo, Grade } from "@/components/campos";
-import { areaHa, mascaraTelefone, numero, paraNumero, rotulo, soDigitos } from "@/lib/formato";
+import {
+  areaHa,
+  mascaraTelefone,
+  numero,
+  paraNumero,
+  reais,
+  rotulo,
+  soDigitos,
+} from "@/lib/formato";
 import { desdeAgora } from "@/lib/tempo";
 import { ESTAGIOS, MOTIVOS_PERDA, NOTAS, SERVICOS, corDaNota } from "@/lib/funil";
 import { ConversaWhatsapp } from "@/components/conversa-whatsapp";
@@ -262,6 +271,38 @@ function Pagina() {
     onError: () => toast.error("Não foi possível criar o imóvel."),
   });
 
+  const orcamentoQuery = useQuery({
+    queryKey: ["oportunidade", id, "orcamento"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orcamentos")
+        .select("id, numero, total, status")
+        .eq("oportunidade_id", id)
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; numero: string | null; total: number | null; status: string | null } | null;
+    },
+  });
+
+  const gerarOrcamento = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("gerar_orcamento_oportunidade", { p_op: id });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (orcamentoId) => {
+      void queryClient.invalidateQueries({ queryKey: ["oportunidade", id] });
+      void queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+      void queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      void queryClient.invalidateQueries({ queryKey: ["imoveis"] });
+      toast.success("Cliente, imóvel e orçamento prontos");
+      void navigate({ to: "/orcamentos/$id", params: { id: orcamentoId } });
+    },
+    onError: () => toast.error("Não foi possível gerar o orçamento."),
+  });
+
   const arquivar = useMutation({
     mutationFn: async (motivoPerda: string) => {
       const { error } = await supabase
@@ -488,6 +529,51 @@ function Pagina() {
                 placeholder="Já tentou antes? Com quem? O que travou?"
               />
             </div>
+          </Bloco>
+
+          <Bloco titulo="Orçamento" Icone={FileText}>
+            {orcamentoQuery.data ? (
+              <div className="space-y-1">
+                <p className="text-lg font-extrabold text-foreground">
+                  Nº {orcamentoQuery.data.numero ?? "—"} · {reais(orcamentoQuery.data.total ?? 0)}
+                </p>
+                <p className="text-base font-semibold text-muted-foreground">
+                  {rotulo(orcamentoQuery.data.status) || "Rascunho"}
+                  {orcamentoQuery.data.status === "rascunho"
+                    ? " · gerado pela regra de Regularização Fundiária, confira antes de enviar"
+                    : ""}
+                </p>
+                <Link
+                  to="/orcamentos/$id"
+                  params={{ id: orcamentoQuery.data.id }}
+                  className="mt-2 inline-flex items-center gap-2 text-base font-extrabold text-primary underline"
+                >
+                  <FileText className="size-5" strokeWidth={2.5} />
+                  Abrir orçamento
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-base font-semibold text-muted-foreground">
+                  Quando o lead pede orçamento, o sistema cadastra o cliente, vincula o imóvel e
+                  monta a proposta de Regularização Fundiária. Use o botão para gerar agora.
+                </p>
+                <Button
+                  disabled={gerarOrcamento.isPending || orcamentoQuery.isPending}
+                  onClick={() => gerarOrcamento.mutate()}
+                  className="h-14 w-full rounded-xl text-lg font-extrabold"
+                >
+                  {gerarOrcamento.isPending ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <>
+                      <FileText className="size-5" strokeWidth={2.5} />
+                      Gerar orçamento
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </Bloco>
 
           <Bloco titulo="Cliente e imóvel" Icone={MapPinned}>

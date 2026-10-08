@@ -59,6 +59,7 @@ type Orcamento = {
   finalidade: string | null;
   area_alqueires: number | null;
   documento_contratante: string | null;
+  nao_incluso: string[] | null;
 };
 
 type Item = {
@@ -151,6 +152,7 @@ function Pagina() {
         finalidade: orcamento.finalidade ?? "",
         alqueires: orcamento.area_alqueires == null ? "" : String(orcamento.area_alqueires).replace(".", ","),
         desconto: Number(orcamento.desconto ?? 0),
+        naoIncluso: orcamento.nao_incluso,
         itens: (itensQuery.data ?? []).map((i) => ({
           descricao: i.descricao ?? "",
           valor: Number(i.quantidade ?? 1) * Number(i.valor_unitario ?? 0),

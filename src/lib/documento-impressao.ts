@@ -65,6 +65,7 @@ export type DadosProposta = {
   alqueires: string;
   itens: { descricao: string; valor: number }[];
   desconto: number;
+  naoIncluso?: string[] | null;
 };
 
 export function htmlProposta(d: DadosProposta, previa = false): string {
@@ -85,7 +86,7 @@ export function htmlProposta(d: DadosProposta, previa = false): string {
 <table><tr><th>Serviço</th><th>Valor</th></tr>${linhas}${desc}
 <tr class="total"><td>TOTAL</td><td class="v">${reais(total)}</td></tr></table>
 <h2>Despesas não inclusas</h2>
-<p>Custas de cartório, prefeitura, Receita Federal, emolumentos e demais taxas de órgãos públicos.</p>
+${d.naoIncluso?.length ? `<ul>${d.naoIncluso.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : "<p>Taxas dos órgãos competentes, prefeitura, honorários advocatícios, custas de cartório, Receita Federal e demais emolumentos.</p>"}
 <div class="ass"><div>${esc(d.contratante)}<br>Contratante</div><div>ATIVA CONSULTORIA AGRÍCOLA LTDA<br>Renato Muzel Morimoto</div></div>`,
     previa,
   );
