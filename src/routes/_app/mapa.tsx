@@ -431,7 +431,7 @@ function PaginaMapa() {
       />
 
       {/* Avisos sobre o mapa */}
-      <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:left-[calc(50%+200px)]">
+      <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:left-[calc(50%+190px)]">
         {semFonte && (
           <p className="pointer-events-auto max-w-[90vw] rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-card">
             Camada {!fontes.car ? "CAR" : "SIGEF"} ainda não publicada. A busca funciona normalmente e a área é indicada por um retângulo.
@@ -512,21 +512,25 @@ function PaginaMapa() {
 
       {/* Painel (lateral no computador, gaveta no celular) */}
       <aside
-        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col overflow-hidden rounded-t-2xl border border-border bg-card text-card-foreground shadow-card transition-[max-height] duration-200 md:inset-x-auto md:bottom-3 md:left-3 md:top-3 md:max-h-none md:w-[400px] md:rounded-lg ${
-          painelAberto ? "max-h-[70%]" : "max-h-16"
+        className={`absolute inset-x-2 bottom-2 z-20 flex flex-col overflow-hidden rounded-2xl border border-border bg-card/95 text-card-foreground shadow-card backdrop-blur transition-[max-height] duration-200 md:inset-x-auto md:bottom-auto md:left-3 md:top-3 md:w-[380px] ${
+          painelAberto ? "max-h-[70%] md:max-h-[calc(100%-1.5rem)]" : "max-h-12"
         }`}
       >
         <button
           type="button"
           onClick={() => setPainelAberto((v) => !v)}
-          className="flex min-h-12 w-full shrink-0 items-center justify-between gap-2 px-4 text-sm font-extrabold uppercase md:hidden"
+          className="flex min-h-12 w-full shrink-0 items-center justify-between gap-2 px-4 text-sm font-extrabold uppercase hover:bg-muted/60"
           aria-label={painelAberto ? "Recolher painel" : "Abrir painel"}
+          title={painelAberto ? "Recolher" : "Abrir busca"}
         >
-          <span className="truncate">{selecao ? selecao.titulo : "Buscar no mapa"}</span>
-          {painelAberto ? <ChevronDown className="size-5" /> : <ChevronUp className="size-5" />}
+          <span className="flex min-w-0 items-center gap-2">
+            <Search className="size-4 shrink-0 text-primary" strokeWidth={2.5} />
+            <span className="truncate">{selecao ? selecao.titulo : "Buscar no mapa"}</span>
+          </span>
+          {painelAberto ? <ChevronUp className="size-5 shrink-0" /> : <ChevronDown className="size-5 shrink-0" />}
         </button>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 md:pt-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
           <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
             <TabsList className="grid h-11 w-full grid-cols-3">
               <TabsTrigger value="numero" className="text-xs font-bold">Número</TabsTrigger>
