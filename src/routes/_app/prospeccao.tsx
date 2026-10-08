@@ -626,6 +626,8 @@ function Pagina() {
                 foco={foco}
                 nomeSelecionado={imovelAberto?.nome ?? ""}
                 areaCadastroHa={imovelAberto?.area_ha ?? null}
+                car={imovelAberto?.car ?? null}
+                sigef={imovelAberto?.sigef ?? null}
                 selecionado={selecionado}
                 onSelecionar={setSelecionado}
                 municipio={municipio === "todos" ? null : municipio}
