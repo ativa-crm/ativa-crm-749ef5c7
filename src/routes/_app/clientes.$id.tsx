@@ -15,6 +15,7 @@ import {
   rotulo,
 } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
+import { ExcluirClienteDialogo } from "@/components/excluir-cliente";
 
 export const Route = createFileRoute("/_app/clientes/$id")({
   head: () => ({
@@ -134,20 +135,6 @@ function Pagina() {
       toast.success("Alteração salva");
     },
     onError: () => toast.error("Não foi possível salvar. Tente de novo."),
-  });
-
-  const excluir = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("clientes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clientes"] });
-      toast.success("Cliente excluído");
-      navigate({ to: "/clientes" });
-    },
-    onError: () =>
-      toast.error("Não foi possível excluir. Verifique se há imóveis ou serviços vinculados."),
   });
 
   if (clienteQuery.isPending) {
@@ -356,41 +343,22 @@ function Pagina() {
       </Bloco>
 
       <div className="rounded-3xl border-2 border-border bg-card p-4">
-        {excluindo ? (
-          <div className="space-y-3">
-            <p className="text-lg font-bold text-foreground">
-              Excluir este cliente? Essa ação não pode ser desfeita.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="destructive"
-                onClick={() => excluir.mutate()}
-                disabled={excluir.isPending}
-                className="h-11 rounded-full px-4 text-base font-semibold"
-              >
-                {excluir.isPending ? <Loader2 className="size-6 animate-spin" /> : null}
-                Sim, excluir
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setExcluindo(false)}
-                className="h-14 rounded-xl border-2 px-5 text-lg font-extrabold"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Button
-            variant="outline"
-            onClick={() => setExcluindo(true)}
-            className="h-14 rounded-xl border-2 px-5 text-lg font-extrabold text-destructive"
-          >
-            <Trash2 className="size-6" strokeWidth={2.5} />
-            Excluir cliente
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          onClick={() => setExcluindo(true)}
+          className="h-14 rounded-xl border-2 px-5 text-lg font-extrabold text-destructive"
+        >
+          <Trash2 className="size-6" strokeWidth={2.5} />
+          Excluir cliente
+        </Button>
       </div>
+
+      <ExcluirClienteDialogo
+        cliente={{ id, nome: String(cliente.nome ?? "Cliente") }}
+        aberto={excluindo}
+        onAbertoChange={setExcluindo}
+        onExcluido={() => navigate({ to: "/clientes" })}
+      />
     </section>
   );
 }

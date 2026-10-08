@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CircleDollarSign, Loader2, Plus, Search, Users } from "lucide-react";
+import { Building2, CircleDollarSign, Loader2, Plus, Search, Trash2, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
 import {
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BarraFerramentas, CartaoIndicador, Painel, Tabela } from "@/components/painel";
+import { ExcluirClienteDialogo } from "@/components/excluir-cliente";
 
 export const Route = createFileRoute("/_app/clientes/")({
   head: () => ({
@@ -66,6 +67,7 @@ function Pagina() {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<"todos" | "pf" | "pj">("todos");
+  const [aExcluir, setAExcluir] = useState<{ id: string; nome: string } | null>(null);
 
   const {
     data: clientes,
@@ -281,6 +283,9 @@ function Pagina() {
                   <th className="px-3 py-2 text-right">Em aberto</th>
                   <th className="px-3 py-2">Último contato</th>
                   <th className="px-3 py-2">Tipo</th>
+                  <th className="w-14 px-3 py-2 text-right">
+                    <span className="sr-only">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -332,6 +337,18 @@ function Pagina() {
                         {rotulo(c.tipo ?? "pf")}
                       </Badge>
                     </td>
+                    <td className="px-3 py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Excluir cliente"
+                        aria-label={`Excluir ${c.nome}`}
+                        onClick={() => setAExcluir({ id: c.id, nome: c.nome })}
+                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="size-5" strokeWidth={2.5} />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -339,6 +356,14 @@ function Pagina() {
           </Tabela>
         )}
       </Painel>
+
+      <ExcluirClienteDialogo
+        cliente={aExcluir}
+        aberto={!!aExcluir}
+        onAbertoChange={(aberto) => {
+          if (!aberto) setAExcluir(null);
+        }}
+      />
     </section>
   );
 }
