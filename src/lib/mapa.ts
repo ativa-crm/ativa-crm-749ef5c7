@@ -73,6 +73,10 @@ export type Selecao = {
   chave: string;
   titulo: string;
   seq: number;
+  subtitulo?: string | null;
+  codMunicipio?: number | null;
+  municipio?: string | null;
+  areaHa?: number | null;
 };
 
 /** Feição encontrada num ponto do mapa (clique ou coordenada). */
@@ -208,6 +212,37 @@ export function useDetalhesMapa(car: number[], sigef: number[], ccir: number[] =
     enabled: car.length + sigef.length + ccir.length > 0,
     staleTime: 5 * 60_000,
     queryFn: () => detalhesMapa(car, sigef, ccir),
+  });
+}
+
+export type CandidatoCar = {
+  fid: number;
+  cod_car: string;
+  area_ha: number;
+  diferenca_pct: number;
+  lon_min: number;
+  lat_min: number;
+  lon_max: number;
+  lat_max: number;
+  imovel_id: string | null;
+  imovel_nome: string | null;
+};
+
+/** CAR do mesmo município com área parecida (±10%) — ajuda a achar imóvel CCIR sem polígono. */
+export function useCandidatosCar(codMunicipio: number | null | undefined, areaHa: number | null | undefined) {
+  return useQuery({
+    queryKey: ["mapa", "candidatos-car", codMunicipio ?? 0, areaHa ?? 0],
+    enabled: !!codMunicipio && !!areaHa && areaHa > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("mapa_candidatos_car", {
+        p_cod_municipio: codMunicipio,
+        p_area_ha: areaHa,
+        p_limite: 30,
+      });
+      if (error) throw error;
+      return (data ?? []) as CandidatoCar[];
+    },
   });
 }
 

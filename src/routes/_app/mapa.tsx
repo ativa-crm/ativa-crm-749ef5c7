@@ -43,6 +43,7 @@ import {
   ROTULO_CAMADA,
   semAcento,
   useBuscaMapa,
+  useCandidatosCar,
   useDetalhesMapa,
   useFontesMapa,
   useMunicipiosMapa,
@@ -193,6 +194,78 @@ function SeletorMunicipio({
 }
 
 /* ------------------------------------------------------------------ */
+/* Imóvel sem polígono (CCIR sem parcela SIGEF)                        */
+/* ------------------------------------------------------------------ */
+function SemPoligono({
+  selecao,
+  onVerCar,
+  onRealce,
+}: {
+  selecao: Selecao;
+  onVerCar: (fid: number) => void;
+  onRealce: (r: { camada: Camada; fid: number } | null) => void;
+}) {
+  const candidatos = useCandidatosCar(selecao.codMunicipio, selecao.areaHa);
+  const lista = candidatos.data ?? [];
+  return (
+    <div className="space-y-2">
+      <div className="rounded-md border border-dashed border-border bg-muted p-2 text-xs font-semibold text-foreground">
+        <p className="font-extrabold">Sem polígono nas bases baixadas</p>
+        <p className="mt-0.5 font-medium text-muted-foreground">
+          {selecao.tipo === "ccir"
+            ? "Este imóvel do CCIR não tem parcela certificada no SIGEF nem CAR vinculado no CRM. O mapa mostra o contorno do município."
+            : "Área sem polígono disponível; o mapa mostra o município."}
+        </p>
+        {selecao.municipio && (
+          <p className="mt-1 text-muted-foreground">
+            {selecao.municipio}
+            {selecao.areaHa ? ` · ${areaHa(selecao.areaHa)} no CCIR` : ""}
+          </p>
+        )}
+      </div>
+      {selecao.areaHa && selecao.codMunicipio ? (
+        <div>
+          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+            CAR com área parecida no município (±10%)
+          </p>
+          {candidatos.isPending ? (
+            <Skeleton className="mt-1 h-16 w-full" />
+          ) : lista.length === 0 ? (
+            <p className="py-1 text-xs font-medium text-muted-foreground">Nenhum CAR com área parecida.</p>
+          ) : (
+            <ul className="mt-1 max-h-56 space-y-1 overflow-y-auto">
+              {lista.map((c) => (
+                <li key={c.fid}>
+                  <button
+                    type="button"
+                    onClick={() => onVerCar(c.fid)}
+                    onMouseEnter={() => onRealce({ camada: "car", fid: c.fid })}
+                    onMouseLeave={() => onRealce(null)}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-muted"
+                  >
+                    <BadgeTipo tipo="car" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-bold text-foreground">{c.cod_car}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {areaHa(c.area_ha)} · {numero(c.diferenca_pct, 1)}% de diferença
+                      </span>
+                    </span>
+                    {c.imovel_id && <SeloCrm nome={null} />}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-1 text-[11px] font-medium leading-snug text-muted-foreground">
+            Sugestão por área: confira no satélite antes de vincular o CAR ao imóvel na ficha do CRM.
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Página                                                              */
 /* ------------------------------------------------------------------ */
 function PaginaMapa() {
@@ -282,10 +355,24 @@ function PaginaMapa() {
       const fids = (camada === "car" ? r.car_fids : camada === "ccir" ? r.ccir_fids : r.sigef_fids) ?? [];
       if (camada) setCamadas((c) => (c[camada] ? c : { ...c, [camada]: true }));
       setNoPonto(null);
-      setSelecao({ tipo: r.tipo, camada, fids, caixa: caixaDe(r), chave: r.chave, titulo: r.titulo, seq: seq.current++ });
+      setSelecao({
+        tipo: r.tipo,
+        camada,
+        fids,
+        caixa: caixaDe(r),
+        chave: r.chave,
+        titulo: r.titulo,
+        seq: seq.current++,
+        subtitulo: r.subtitulo,
+        codMunicipio: r.cod_municipio,
+        municipio: r.municipio,
+        areaHa: r.area_ha,
+      });
+      // sem polígono: mostra o contorno do município para orientar
+      if (fids.length === 0 && r.cod_municipio) void carregarContorno(r.cod_municipio);
       recolherNoCelular();
     },
-    [municipios, escolherMunicipio, fontes.ccir],
+    [municipios, escolherMunicipio, fontes.ccir, carregarContorno],
   );
 
   const selecionarFeicao = useCallback(async (camada: Camada, fid: number) => {
@@ -769,11 +856,7 @@ function PaginaMapa() {
                     </div>
                   )}
                   {selecao.fids.length === 0 && (
-                    <p className="rounded-md bg-muted p-2 text-xs font-semibold text-muted-foreground">
-                      {selecao.tipo === "ccir"
-                        ? "Imóvel sem parcela SIGEF — sem polígono; mostrando o município."
-                        : "Área sem polígono disponível."}
-                    </p>
+                    <SemPoligono selecao={selecao} onVerCar={(fid) => void selecionarFeicao("car", fid)} onRealce={setRealce} />
                   )}
                 </div>
               )}
