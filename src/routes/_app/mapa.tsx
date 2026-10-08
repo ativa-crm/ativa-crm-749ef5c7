@@ -613,7 +613,7 @@ function PaginaMapa() {
               );
             })}
             <p className="mt-1 text-[11px] font-medium leading-snug text-muted-foreground">
-              CCIR desenhado pela união das parcelas SIGEF do mesmo imóvel INCRA; imóveis sem parcela certificada não têm polígono.
+              CCIR desenhado pelas parcelas SIGEF do mesmo imóvel INCRA ou pela certificação antiga do SNCI; os pontos amarelos são locais prováveis de imóveis sem certificação.
             </p>
             <div className="mt-2 space-y-1.5 border-t border-border pt-2 text-xs font-semibold text-muted-foreground">
               <p className="flex items-center gap-2">
