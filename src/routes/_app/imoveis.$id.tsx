@@ -311,6 +311,25 @@ function Pagina() {
           />
           <Campo rotulo="CAR" valor={imovel.car ?? ""} onSalvar={troca("car")} />
           <Campo rotulo="SIGEF" valor={imovel.sigef ?? ""} onSalvar={troca("sigef")} />
+          {(imovel.sigef || imovel.car || imovel.ccir) && (
+            <div className="sm:col-span-2">
+              <Button asChild variant="outline" className="h-12 w-full text-base font-extrabold sm:w-auto">
+                <Link
+                  to="/mapa"
+                  search={
+                    imovel.sigef
+                      ? { sigef: imovel.sigef }
+                      : imovel.car
+                        ? { car: imovel.car }
+                        : { ccir: imovel.ccir ?? undefined }
+                  }
+                >
+                  <MapPinned className="size-5" strokeWidth={2.5} />
+                  Ver no mapa
+                </Link>
+              </Button>
+            </div>
+          )}
           <Campo
             rotulo="Inscrição municipal"
             valor={imovel.inscricao_municipal ?? ""}

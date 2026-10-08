@@ -21,6 +21,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Map as MapaIcone,
 } from "lucide-react";
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
@@ -36,6 +37,7 @@ const ITENS = [
   { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/clientes", rotulo: "Clientes", Icone: Users },
   { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
+  { to: "/mapa", rotulo: "Mapa", Icone: MapaIcone },
   { to: "/orcamentos", rotulo: "Orçamentos", Icone: FileText },
   { to: "/contratos", rotulo: "Contratos", Icone: FileSignature },
   { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
@@ -48,6 +50,7 @@ const CHAVE_LATERAL = "ativa-crm-lateral";
 const TITULOS: Record<string, string> = {
   "/inicio": "Início",
   "/imoveis": "Imóveis",
+  "/mapa": "Mapa",
   "/clientes": "Clientes",
   "/funil": "Funil",
   "/prospeccao": "Prospecção",
@@ -66,7 +69,7 @@ function itensPorPapel(papel: string | null | undefined) {
   const dono = normalizado === "admin" || normalizado.includes("dono");
 
   if (engenheiro) {
-    return ITENS.filter(({ to }) => ["/inicio", "/imoveis", "/servicos", "/medicao"].includes(to));
+    return ITENS.filter(({ to }) => ["/inicio", "/imoveis", "/mapa", "/servicos", "/medicao"].includes(to));
   }
   const base = administrativo ? ITENS.filter(({ to }) => to !== "/medicao") : [...ITENS];
   return dono ? [...base, ITEM_ADMIN] : base;
