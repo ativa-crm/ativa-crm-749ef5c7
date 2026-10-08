@@ -11,14 +11,17 @@ import {
   Trash2,
   Download,
   Loader2,
+  CloudDownload,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 import type * as L from "leaflet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { areaHa } from "@/lib/formato";
+import { buscarPoligonoCar } from "@/lib/car.functions";
 import {
   areaHaVertices,
   baixarKml,
@@ -28,6 +31,7 @@ import {
   usePoligonoImovel,
   usePoligonosTodos,
   verticesDe,
+  type GeoPoligono,
 } from "@/lib/poligono";
 
 export type PontoImovel = {
@@ -96,6 +100,8 @@ export function MapaProspeccao({
   foco = 0,
   nomeSelecionado = "",
   areaCadastroHa = null,
+  car = null,
+  sigef = null,
 }: {
   pontos: PontoImovel[];
   selecionado?: string | null;
@@ -108,6 +114,8 @@ export function MapaProspeccao({
   foco?: number;
   nomeSelecionado?: string;
   areaCadastroHa?: number | null;
+  car?: string | null;
+  sigef?: string | null;
 }) {
   const queryClient = useQueryClient();
   const poligonoQuery = usePoligonoImovel(selecionado ?? null);
@@ -533,6 +541,44 @@ export function MapaProspeccao({
     salvar.mutate(v);
   };
 
+  const buscarCar = useServerFn(buscarPoligonoCar);
+  const importarCar = useMutation({
+    mutationFn: async (numero: string) => {
+      const r = await buscarCar({ data: { car: numero } });
+      if (!r.ok) throw new Error(r.erro);
+      const geo = r.geojson as GeoPoligono;
+      const partes: GeoPoligono[] =
+        geo.type === "Polygon"
+          ? [geo]
+          : geo.coordinates.map((c) => ({ type: "Polygon", coordinates: c }) as GeoPoligono);
+      const aneis = partes.map((p) => verticesDe(p)).filter((v) => v.length >= 3);
+      if (aneis.length === 0) throw new Error("nao_encontrado");
+      aneis.sort((a, b) => areaHaVertices(b) - areaHaVertices(a));
+      return { vertices: aneis[0]!, partes: aneis.length };
+    },
+    onSuccess: ({ vertices: v, partes }) => {
+      setVertices(v);
+      setModo("edicao");
+      const leaflet = leafletRef.current;
+      if (leaflet && mapa.current) mapa.current.flyToBounds(leaflet.latLngBounds(v), { padding: [30, 30] });
+      toast.info(
+        partes > 1
+          ? `Contorno do CAR carregado (${partes} partes; mostrando a maior). Confira e clique em Concluir para gravar.`
+          : "Contorno do CAR carregado. Confira e clique em Concluir para gravar.",
+      );
+    },
+    onError: (e) => {
+      const m = e instanceof Error ? e.message : "";
+      if (m === "nao_encontrado") toast.error("CAR não encontrado");
+      else if (m === "invalido") toast.error("Número do CAR em formato inválido");
+      else toast.error("Serviço indisponível, tente de novo");
+    },
+  });
+
+  {
+    void 0;
+  };
+
   const areaDesenho = areaHaVertices(vertices);
   const areaAtual = modo !== "nada" ? areaDesenho : (poligonoQuery.data?.area_ha_calculada ?? null);
   const diferenca =
@@ -583,17 +629,54 @@ export function MapaProspeccao({
           {modo === "nada" ? (
             <div className="flex flex-wrap gap-1">
               {!salvoGeo ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-9 text-xs font-bold"
-                  onClick={() => {
-                    setVertices([]);
-                    setModo("desenho");
-                  }}
-                >
-                  <PenLine className="size-4" aria-hidden /> Traçar polígono
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-9 text-xs font-bold"
+                    onClick={() => {
+                      setVertices([]);
+                      setModo("desenho");
+                    }}
+                  >
+                    <PenLine className="size-4" aria-hidden /> Traçar polígono
+                  </Button>
+                  {car?.trim() && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 text-xs font-bold"
+                      disabled={importarCar.isPending}
+                      onClick={() => importarCar.mutate(car)}
+                    >
+                      {importarCar.isPending ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <CloudDownload className="size-4" aria-hidden />
+                      )}
+                      {importarCar.isPending ? "Buscando no CAR…" : "Importar do CAR"}
+                    </Button>
+                  )}
+                  {sigef?.trim() && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 text-xs font-bold"
+                      disabled
+                      title="Serviço do SIGEF indisponível no momento"
+                    >
+                      <CloudDownload className="size-4" aria-hidden /> Importar do SIGEF
+                      <span className="sr-only"> — Serviço do SIGEF indisponível no momento</span>
+                    </Button>
+                  )}
+                  {sigef?.trim() && (
+                    <p className="w-full text-xs font-semibold text-muted-foreground">
+                      Serviço do SIGEF indisponível no momento.
+                    </p>
+                  )}
+                </>
               ) : (
                 <>
                   <Button
