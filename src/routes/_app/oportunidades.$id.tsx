@@ -346,7 +346,7 @@ function Pagina() {
           </h1>
           <p className="flex items-center gap-2 truncate text-base font-semibold text-muted-foreground">
             <span className={`size-3 shrink-0 rounded-full ${corDaNota(oportunidade.nota)}`} />
-            {rotulo(oportunidade.estagio) || "Novo"} ·{" "}
+            {rotulo(oportunidade.estagio) || "Mensagem respondida"} ·{" "}
             {desdeAgora(oportunidade.ultima_interacao ?? oportunidade.criado_em)}
           </p>
         </div>
