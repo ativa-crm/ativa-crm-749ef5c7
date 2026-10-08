@@ -6,8 +6,8 @@ import { supabase } from "@/lib/supabase";
 /* Tipos das tabelas/RPCs do Supabase (backend da página Mapa)         */
 /* ------------------------------------------------------------------ */
 
-export type Camada = "car" | "sigef";
-export type TipoResultado = Camada | "ccir" | "municipio";
+export type Camada = "car" | "sigef" | "ccir";
+export type TipoResultado = Camada | "municipio";
 export type Caixa = [number, number, number, number]; // lonMin, latMin, lonMax, latMax
 
 export type FonteMapa = { camada: Camada; url: string | null; rotulo: string };
@@ -40,6 +40,7 @@ export type ResultadoBusca = {
   lat_max: number | null;
   imovel_id: string | null;
   imovel_nome: string | null;
+  ccir_fids: number[] | null;
 };
 
 export type DetalheArea = {
@@ -97,17 +98,18 @@ export type Vizinhanca = { confrontantes: Vizinho[]; sobreposicoes: Vizinho[] };
 
 export const COR_CAR_PADRAO = "#9ab137";
 export const COR_SIGEF = "#3b82f6";
+export const COR_CCIR = "#facc15";
 export const COR_SELECIONADA = "#ef4444";
 export const COR_SOBREPOSICAO = "#ffffff";
 export const PALETA_CONFRONTANTES = [
   "#f97316",
   "#a855f7",
   "#06b6d4",
-  "#facc15",
   "#ec4899",
   "#14b8a6",
   "#b45309",
   "#e2e8f0",
+  "#111827",
 ] as const;
 
 export function corToken(nome: string, alternativa: string): string {
@@ -138,6 +140,7 @@ export function useFontesMapa() {
       return {
         car: linhas.find((l) => l.camada === "car")?.url ?? null,
         sigef: linhas.find((l) => l.camada === "sigef")?.url ?? null,
+        ccir: linhas.find((l) => l.camada === "ccir")?.url ?? null,
       };
     },
   });
@@ -171,7 +174,7 @@ export async function buscarNoMapa(
   texto: string,
   codMunicipio: number | null,
 ): Promise<ResultadoBusca[]> {
-  const { data, error } = await supabase.rpc("mapa_buscar", {
+  const { data, error } = await supabase.rpc("mapa_buscar_v2", {
     p_texto: texto,
     p_cod_municipio: codMunicipio,
     p_limite: 25,
@@ -190,20 +193,21 @@ export function useBuscaMapa(texto: string, codMunicipio: number | null) {
   });
 }
 
-export async function detalhesMapa(car: number[], sigef: number[]): Promise<DetalheArea[]> {
-  if (car.length === 0 && sigef.length === 0) return [];
-  const { data, error } = await supabase.rpc("mapa_detalhes", { p_car: car, p_sigef: sigef });
+export async function detalhesMapa(car: number[], sigef: number[], ccir: number[] = []): Promise<DetalheArea[]> {
+  if (car.length === 0 && sigef.length === 0 && ccir.length === 0) return [];
+  const { data, error } = await supabase.rpc("mapa_detalhes_v2", { p_car: car, p_sigef: sigef, p_ccir: ccir });
   if (error) throw error;
   return (data ?? []) as DetalheArea[];
 }
 
-export function useDetalhesMapa(car: number[], sigef: number[]) {
-  const chave = [...car].sort((a, b) => a - b).join(",") + "|" + [...sigef].sort((a, b) => a - b).join(",");
+export function useDetalhesMapa(car: number[], sigef: number[], ccir: number[] = []) {
+  const ordenar = (v: number[]) => [...v].sort((a, b) => a - b).join(",");
+  const chave = `${ordenar(car)}|${ordenar(sigef)}|${ordenar(ccir)}`;
   return useQuery({
     queryKey: ["mapa", "detalhes", chave],
-    enabled: car.length + sigef.length > 0,
+    enabled: car.length + sigef.length + ccir.length > 0,
     staleTime: 5 * 60_000,
-    queryFn: () => detalhesMapa(car, sigef),
+    queryFn: () => detalhesMapa(car, sigef, ccir),
   });
 }
 

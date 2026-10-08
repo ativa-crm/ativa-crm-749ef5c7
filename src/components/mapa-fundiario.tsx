@@ -14,6 +14,7 @@ import {
   calcularVizinhanca,
   corToken,
   COR_CAR_PADRAO,
+  COR_CCIR,
   COR_SELECIONADA,
   COR_SIGEF,
   COR_SOBREPOSICAO,
@@ -31,11 +32,23 @@ type Expressao = any;
 
 let protocoloRegistrado = false;
 
-const CAMADAS: Camada[] = ["car", "sigef"];
+const CAMADAS: Camada[] = ["car", "ccir", "sigef"];
+
+/** Base usada para "mesma terra na outra base" de cada camada. */
+const OUTRA_BASE: Record<Camada, Camada> = { car: "sigef", sigef: "car", ccir: "car" };
+
+function corCamada(c: Camada): string {
+  return c === "car" ? corToken("--primary", COR_CAR_PADRAO) : c === "sigef" ? COR_SIGEF : COR_CCIR;
+}
+
+function camadaDaLayer(id: string): Camada {
+  return id.split("-")[0] as Camada;
+}
 
 function rotuloFeicao(camada: Camada, f: MapGeoJSONFeature): string {
   const p = (f.properties ?? {}) as Record<string, unknown>;
   if (camada === "car") return `CAR ${String(p.cod_imovel ?? f.id ?? "")}`;
+  if (camada === "ccir") return `CCIR ${String(p.codigo ?? f.id ?? "")}`;
   const parcela = String(p.parcela_co ?? "");
   const imovel = p.codigo_imo ? ` · INCRA ${String(p.codigo_imo)}` : "";
   return `SIGEF ${parcela.slice(0, 8)}${imovel}`;
@@ -85,7 +98,7 @@ export function MapaFundiario({
   onVizinhanca,
   onZoom,
 }: {
-  fontes: { car: string | null; sigef: string | null };
+  fontes: { car: string | null; sigef: string | null; ccir: string | null };
   vista: "satelite" | "ruas";
   camadasVisiveis: Record<Camada, boolean>;
   selecao: Selecao | null;
@@ -114,7 +127,7 @@ export function MapaFundiario({
   const estados = useRef<{ camada: Camada; fid: number }[]>([]);
   const callbacks = useRef({ onEscolher, onPontoAnalisado, onVizinhanca, onZoom });
   callbacks.current = { onEscolher, onPontoAnalisado, onVizinhanca, onZoom };
-  const fontesAtivas = useRef<Record<Camada, boolean>>({ car: false, sigef: false });
+  const fontesAtivas = useRef<Record<Camada, boolean>>({ car: false, sigef: false, ccir: false });
   const ultimoVoo = useRef<number | null>(null);
   const rodada = useRef(0);
 
@@ -216,8 +229,6 @@ export function MapaFundiario({
   useEffect(() => {
     const m = mapa.current;
     if (!pronto || !m) return;
-    const corCar = corToken("--primary", COR_CAR_PADRAO);
-    const cores: Record<Camada, string> = { car: corCar, sigef: COR_SIGEF };
     for (const camada of CAMADAS) {
       const url = fontes[camada];
       if (!url || m.getSource(camada)) continue;
@@ -225,7 +236,10 @@ export function MapaFundiario({
       const sel: Expressao = ["boolean", ["feature-state", "sel"], false];
       const temCor: Expressao = ["!=", ["coalesce", ["feature-state", "cor"], ""], ""];
       const hover: Expressao = ["boolean", ["feature-state", "hover"], false];
-      const corBase = cores[camada];
+      const corBase = corCamada(camada);
+      // CCIR: a mesma feição tem a parte "area" (preenchimento) e a parte "limite" (divisa externa)
+      const soArea: Expressao = camada === "ccir" ? ["==", ["get", "parte"], "area"] : undefined;
+      const soLimite: Expressao = camada === "ccir" ? ["==", ["get", "parte"], "limite"] : undefined;
       const antes = m.getLayer("municipio-halo") ? "municipio-halo" : undefined;
       m.addLayer(
         {
@@ -234,9 +248,11 @@ export function MapaFundiario({
           source: camada,
           "source-layer": camada,
           minzoom: 7,
+          ...(soArea ? { filter: soArea } : {}),
           paint: {
             "fill-color": ["case", sel, COR_SELECIONADA, ["to-color", ["coalesce", ["feature-state", "cor"], corBase]]],
             "fill-opacity": ["case", sel, 0.35, temCor, 0.45, hover, 0.22, 0.12],
+            ...(camada === "ccir" ? { "fill-outline-color": "rgba(0,0,0,0)" } : {}),
           },
         },
         antes,
@@ -248,6 +264,7 @@ export function MapaFundiario({
           source: camada,
           "source-layer": camada,
           minzoom: 7,
+          ...(soLimite ? { filter: soLimite } : {}),
           paint: {
             "line-color": ["case", sel, COR_SELECIONADA, ["to-color", ["coalesce", ["feature-state", "cor"], corBase]]],
             "line-width": [
@@ -270,6 +287,7 @@ export function MapaFundiario({
           source: camada,
           "source-layer": camada,
           minzoom: 7,
+          ...(soLimite ? { filter: soLimite } : {}),
           paint: {
             "line-color": COR_SOBREPOSICAO,
             "line-width": 2,
@@ -285,7 +303,7 @@ export function MapaFundiario({
       m.on("mouseleave", `${camada}-fill`, () => sairHover());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pronto, fontes.car, fontes.sigef]);
+  }, [pronto, fontes.car, fontes.sigef, fontes.ccir]);
 
   /* ---------------- clique ---------------- */
   useEffect(() => {
@@ -322,7 +340,7 @@ export function MapaFundiario({
     const vistos = new Set<string>();
     const itens: FeicaoNoPonto[] = [];
     for (const f of m.queryRenderedFeatures([x, y], { layers })) {
-      const camada = f.layer.id.startsWith("car") ? "car" : "sigef";
+      const camada = camadaDaLayer(f.layer.id);
       const fid = idNumerico(f);
       if (fid === null) continue;
       const k = `${camada}:${fid}`;
@@ -353,7 +371,7 @@ export function MapaFundiario({
       b.innerHTML = escapar(it.rotulo);
       b.style.cssText =
         "text-align:left;font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.15);background:#fff;color:#111;cursor:pointer;min-height:36px";
-      b.style.borderLeft = `5px solid ${it.camada === "car" ? corToken("--primary", COR_CAR_PADRAO) : COR_SIGEF}`;
+      b.style.borderLeft = `5px solid ${corCamada(it.camada)}`;
       b.onclick = () => {
         popupEscolha.current?.remove();
         callbacks.current.onEscolher([it]);
@@ -409,7 +427,7 @@ export function MapaFundiario({
       if (!fontesAtivas.current[c]) continue;
       for (const s of ["fill", "line", "sob"]) m.setLayoutProperty(`${c}-${s}`, "visibility", camadasVisiveis[c] ? "visible" : "none");
     }
-  }, [pronto, camadasVisiveis.car, camadasVisiveis.sigef, fontes.car, fontes.sigef]);
+  }, [pronto, camadasVisiveis.car, camadasVisiveis.sigef, camadasVisiveis.ccir, fontes.car, fontes.sigef, fontes.ccir]);
 
   /* ---------------- contorno do município ---------------- */
   useEffect(() => {
@@ -480,7 +498,7 @@ export function MapaFundiario({
     const maplibregl = lib.current;
     if (!m || !maplibregl || !sel.camada) return;
     const camada = sel.camada;
-    const outra: Camada = camada === "car" ? "sigef" : "car";
+    const outra: Camada = OUTRA_BASE[camada];
     const r = calcularVizinhanca({
       selecionados: sel.fids,
       mesmaBase: pecas(camada),
@@ -534,7 +552,7 @@ export function MapaFundiario({
     const atual = selecao;
     quandoOcioso(() => calcularEDesenhar(atual, 0, minhaRodada), novoVoo ? 1300 : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pronto, selecao?.seq, mostrarConfrontantes, fontes.car, fontes.sigef]);
+  }, [pronto, selecao?.seq, mostrarConfrontantes, fontes.car, fontes.sigef, fontes.ccir]);
 
   /* ---------------- realce vindo da lista ---------------- */
   useEffect(() => {

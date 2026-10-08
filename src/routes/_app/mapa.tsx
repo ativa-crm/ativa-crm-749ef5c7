@@ -34,6 +34,7 @@ import {
   caixaDe,
   corToken,
   COR_CAR_PADRAO,
+  COR_CCIR,
   COR_SELECIONADA,
   COR_SIGEF,
   detalhesMapa,
@@ -76,6 +77,7 @@ export const Route = createFileRoute("/_app/mapa")({
 function corTipo(tipo: TipoResultado): string {
   if (tipo === "car") return corToken("--primary", COR_CAR_PADRAO);
   if (tipo === "sigef") return COR_SIGEF;
+  if (tipo === "ccir") return COR_CCIR;
   return "";
 }
 
@@ -83,12 +85,15 @@ function BadgeTipo({ tipo }: { tipo: TipoResultado }) {
   const cor = corTipo(tipo);
   if (!cor)
     return (
-      <Badge variant={tipo === "ccir" ? "secondary" : "outline"} className="shrink-0 text-[11px] font-extrabold uppercase">
+      <Badge variant="outline" className="shrink-0 text-[11px] font-extrabold uppercase">
         {ROTULO_CAMADA[tipo]}
       </Badge>
     );
   return (
-    <Badge className="shrink-0 border-transparent text-[11px] font-extrabold uppercase text-white" style={{ background: cor }}>
+    <Badge
+      className={`shrink-0 border-transparent text-[11px] font-extrabold uppercase ${tipo === "ccir" ? "text-black" : "text-white"}`}
+      style={{ background: cor }}
+    >
       {ROTULO_CAMADA[tipo]}
     </Badge>
   );
@@ -204,7 +209,7 @@ function PaginaMapa() {
   const [coordTexto, setCoordTexto] = useState("");
   const [selecao, setSelecao] = useState<Selecao | null>(null);
   const [vista, setVista] = useState<"satelite" | "ruas">("satelite");
-  const [camadas, setCamadas] = useState<Record<Camada, boolean>>({ car: true, sigef: true });
+  const [camadas, setCamadas] = useState<Record<Camada, boolean>>({ car: true, sigef: true, ccir: true });
   const [mostrarConf, setMostrarConf] = useState(true);
   const [vizinhanca, setVizinhanca] = useState<Vizinhanca | null>(null);
   const [calculando, setCalculando] = useState(false);
@@ -219,7 +224,7 @@ function PaginaMapa() {
   const [ativo, setAtivo] = useState(0);
   const seq = useRef(1);
 
-  const fontes = fontesQuery.data ?? { car: null, sigef: null };
+  const fontes = fontesQuery.data ?? { car: null, sigef: null, ccir: null };
   const busca = useBuscaMapa(texto, municipio?.cod_municipio ?? null);
   const resultados = busca.data ?? [];
   const coordenada = useMemo(() => lerCoordenada(coordTexto), [coordTexto]);
@@ -266,19 +271,30 @@ function PaginaMapa() {
         }
         return;
       }
-      const camada: Camada | null = r.car_fids?.length ? "car" : r.sigef_fids?.length ? "sigef" : null;
-      const fids = (camada === "car" ? r.car_fids : r.sigef_fids) ?? [];
+      // CCIR: usa a camada própria (parcelas unidas) quando publicada; senão destaca as parcelas SIGEF
+      const camada: Camada | null = r.car_fids?.length
+        ? "car"
+        : r.ccir_fids?.length && fontes.ccir
+          ? "ccir"
+          : r.sigef_fids?.length
+            ? "sigef"
+            : null;
+      const fids = (camada === "car" ? r.car_fids : camada === "ccir" ? r.ccir_fids : r.sigef_fids) ?? [];
       if (camada) setCamadas((c) => (c[camada] ? c : { ...c, [camada]: true }));
       setNoPonto(null);
       setSelecao({ tipo: r.tipo, camada, fids, caixa: caixaDe(r), chave: r.chave, titulo: r.titulo, seq: seq.current++ });
       recolherNoCelular();
     },
-    [municipios, escolherMunicipio],
+    [municipios, escolherMunicipio, fontes.ccir],
   );
 
   const selecionarFeicao = useCallback(async (camada: Camada, fid: number) => {
     try {
-      const det = await detalhesMapa(camada === "car" ? [fid] : [], camada === "sigef" ? [fid] : []);
+      const det = await detalhesMapa(
+        camada === "car" ? [fid] : [],
+        camada === "sigef" ? [fid] : [],
+        camada === "ccir" ? [fid] : [],
+      );
       const d = det[0];
       setCamadas((c) => (c[camada] ? c : { ...c, [camada]: true }));
       setNoPonto(null);
@@ -334,6 +350,7 @@ function PaginaMapa() {
   const detSel = useDetalhesMapa(
     selecao?.camada === "car" ? selecao.fids : [],
     selecao?.camada === "sigef" ? selecao.fids : [],
+    selecao?.camada === "ccir" ? selecao.fids : [],
   );
   const detalhe: DetalheArea | undefined = detSel.data?.[0];
 
@@ -341,6 +358,7 @@ function PaginaMapa() {
   const detViz = useDetalhesMapa(
     vizinhos.filter((v) => v.camada === "car").map((v) => v.fid),
     vizinhos.filter((v) => v.camada === "sigef").map((v) => v.fid),
+    vizinhos.filter((v) => v.camada === "ccir").map((v) => v.fid),
   );
   const detVizPorChave = useMemo(() => {
     const m = new Map<string, DetalheArea>();
@@ -408,7 +426,10 @@ function PaginaMapa() {
     [selecionarFeicao],
   );
 
-  const semFonte = !fontesQuery.isPending && (!fontes.car || !fontes.sigef);
+  const faltando = fontesQuery.isPending
+    ? []
+    : (["car", "sigef", "ccir"] as Camada[]).filter((c) => !fontes[c]).map((c) => ROTULO_CAMADA[c]);
+  const semFonte = faltando.length > 0;
   const corCar = corToken("--primary", COR_CAR_PADRAO);
 
   /* ------------------------------------------------------------------ */
@@ -434,7 +455,7 @@ function PaginaMapa() {
       <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:left-[calc(50%+190px)]">
         {semFonte && (
           <p className="pointer-events-auto max-w-[90vw] rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-card">
-            Camada {!fontes.car ? "CAR" : "SIGEF"} ainda não publicada. A busca funciona normalmente e a área é indicada por um retângulo.
+            Camada {faltando.join(", ")} ainda não publicada. A busca funciona normalmente e a área é indicada por um retângulo.
           </p>
         )}
         {zoom < 9 && (
@@ -481,15 +502,21 @@ function PaginaMapa() {
         </div>
         {painelCamadas && (
           <div className="w-60 rounded-lg border border-border bg-card p-3 text-card-foreground shadow-card">
-            {(["car", "sigef"] as Camada[]).map((c) => (
+            {(["car", "sigef", "ccir"] as Camada[]).map((c) => {
+              const cor = c === "car" ? corCar : c === "sigef" ? COR_SIGEF : COR_CCIR;
+              return (
               <label key={c} className="flex min-h-11 items-center justify-between gap-2">
                 <span className="flex items-center gap-2 text-sm font-bold">
-                  <span className="size-4 rounded-sm border-2" style={{ borderColor: c === "car" ? corCar : COR_SIGEF, background: `${c === "car" ? corCar : COR_SIGEF}33` }} />
-                  {c === "car" ? "CAR (SICAR)" : "SIGEF (INCRA)"}
+                  <span className="size-4 rounded-sm border-2" style={{ borderColor: cor, background: `${cor}33` }} />
+                  {c === "car" ? "CAR (SICAR)" : c === "sigef" ? "SIGEF (parcelas)" : "CCIR (imóvel INCRA)"}
                 </span>
                 <Switch checked={camadas[c]} onCheckedChange={(v) => setCamadas((x) => ({ ...x, [c]: v }))} />
               </label>
-            ))}
+              );
+            })}
+            <p className="mt-1 text-[11px] font-medium leading-snug text-muted-foreground">
+              CCIR desenhado pela união das parcelas SIGEF do mesmo imóvel INCRA; imóveis sem parcela certificada não têm polígono.
+            </p>
             <div className="mt-2 space-y-1.5 border-t border-border pt-2 text-xs font-semibold text-muted-foreground">
               <p className="flex items-center gap-2">
                 <span className="size-3 rounded-sm" style={{ background: COR_SELECIONADA }} /> Área selecionada
