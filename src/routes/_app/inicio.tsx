@@ -390,7 +390,9 @@ function Pagina() {
                   Leads qualificados aguardando seu contato
                 </h3>
                 {(p?.qualificados_lista ?? []).length === 0 ? (
-                  <p className="text-base font-semibold text-muted-foreground">Nenhum no momento.</p>
+                  <p className="text-base font-semibold text-muted-foreground">
+                    Nenhum no momento.
+                  </p>
                 ) : (
                   <ul className="space-y-2">
                     {(p?.qualificados_lista ?? []).map((q, i) => (
