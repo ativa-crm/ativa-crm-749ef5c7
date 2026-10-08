@@ -1,5 +1,6 @@
+import type React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ChevronRight,
@@ -8,16 +9,21 @@ import {
   FileCheck2,
   FileText,
   Flame,
+  ListOrdered,
   Loader2,
   MapPinned,
+  MessageCircle,
+  RefreshCw,
+  Send,
   Settings2,
   TrendingUp,
   TriangleAlert,
+  UserCheck,
   Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { areaHa, numero, reais, rotulo } from "@/lib/formato";
-import { desdeAgora } from "@/lib/tempo";
+import { desdeAgora, hora } from "@/lib/tempo";
 import { STATUS_OS, STATUS_ENCERRADOS, semaforoPrazo, diasAtePrazo } from "@/lib/prazo";
 import { AnelMeta, CartaoIndicador, Painel } from "@/components/painel";
 import { usePerfil } from "@/lib/perfil";
@@ -99,8 +105,54 @@ const ICONES_STATUS = {
   pendencia: TriangleAlert,
 } as const;
 
+const ATUALIZA = { refetchInterval: 60_000, refetchOnWindowFocus: true } as const;
+
+type InicioProspeccao = {
+  atualizado_em?: string | null;
+  meta_dia?: number | null;
+  enviados_hoje?: number | null;
+  responderam_hoje?: number | null;
+  qualificados?: number | null;
+  sem_resposta?: number | null;
+  fila?: number | null;
+  qualificados_lista?: {
+    nome: string | null;
+    obs: string | null;
+    quando: string | null;
+    oportunidade_id: string | null;
+  }[];
+  respostas_recentes?: {
+    nome: string | null;
+    estagio: string | null;
+    texto: string | null;
+    quando: string | null;
+    oportunidade_id: string | null;
+  }[];
+};
+
+function capitalizar(nome: string | null | undefined): string {
+  const t = (nome ?? "").trim().toLowerCase();
+  if (!t) return "Sem nome";
+  return t.replace(/(^|\s)(\S)/g, (_m, e: string, l: string) => e + l.toUpperCase());
+}
+
+function ItemLink({ id, children }: { id: string | null; children: React.ReactNode }) {
+  const cls = "block rounded-lg border border-border bg-card px-3 py-2";
+  if (!id) return <div className={cls}>{children}</div>;
+  return (
+    <Link
+      to="/oportunidades/$id"
+      params={{ id }}
+      className={`${cls} transition-colors hover:bg-accent`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function Pagina() {
   const { perfil } = usePerfil();
+  const queryClient = useQueryClient();
 
   const leadsQuery = useQuery({
     queryKey: ["inicio", "leads-quentes"],
@@ -109,7 +161,7 @@ function Pagina() {
         .from("oportunidades")
         .select("id, servico, cidade, area_ha, nota, estagio, criado_em, clientes(nome)")
         .eq("arquivada", false)
-        .or("nota.eq.quente,estagio.eq.quente")
+        .or("nota.eq.quente,estagio.eq.quente,estagio.eq.qualificando")
         .order("criado_em", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -129,6 +181,7 @@ function Pagina() {
       }
       return { leads, ultima };
     },
+    ...ATUALIZA,
   });
 
   const osQuery = useQuery({
@@ -142,6 +195,7 @@ function Pagina() {
       if (error) throw error;
       return (data ?? []) as OS[];
     },
+    ...ATUALIZA,
   });
 
   const mesQuery = useQuery({
@@ -153,6 +207,7 @@ function Pagina() {
         supabase
           .from("oportunidades")
           .select("id", { count: "exact", head: true })
+          .neq("estagio", "mensagem_enviada")
           .gte("criado_em", desde),
         supabase
           .from("orcamentos")
@@ -208,6 +263,18 @@ function Pagina() {
         },
       };
     },
+    ...ATUALIZA,
+  });
+
+  const prospQuery = useQuery({
+    queryKey: ["inicio", "prospeccao"],
+    queryFn: async (): Promise<InicioProspeccao> => {
+      const { data, error } = await supabase.rpc("inicio_prospeccao");
+      if (error) throw error;
+      const d = (Array.isArray(data) ? data[0] : data) ?? {};
+      return d as InicioProspeccao;
+    },
+    ...ATUALIZA,
   });
 
   const carregando = leadsQuery.isPending || osQuery.isPending;
@@ -232,9 +299,169 @@ function Pagina() {
   }));
   const resposta = mesQuery.data?.resposta;
 
+  const p = prospQuery.data;
+  const atualizadoEm = Math.max(
+    leadsQuery.dataUpdatedAt,
+    osQuery.dataUpdatedAt,
+    mesQuery.dataUpdatedAt,
+    prospQuery.dataUpdatedAt,
+  );
+  const atualizando =
+    leadsQuery.isFetching || osQuery.isFetching || mesQuery.isFetching || prospQuery.isFetching;
+  const erros = [leadsQuery, osQuery, mesQuery, prospQuery].filter((q) => q.isError).length;
+
   return (
     <div className="space-y-6">
       <h1 className="sr-only">Início</h1>
+
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {erros > 0 && (
+          <span className="text-sm font-bold text-destructive">
+            Falha ao carregar {erros} {erros === 1 ? "bloco" : "blocos"}
+          </span>
+        )}
+        <span className="text-sm font-semibold text-muted-foreground">
+          {atualizadoEm > 0 ? `Atualizado às ${hora(new Date(atualizadoEm).toISOString())}` : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["inicio"] })}
+          disabled={atualizando}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-bold text-foreground transition-colors hover:bg-accent disabled:opacity-60"
+        >
+          <RefreshCw className={`size-4 ${atualizando ? "animate-spin" : ""}`} aria-hidden />
+          Atualizar
+        </button>
+      </div>
+
+      <Painel titulo="Prospecção de hoje" icone={Send}>
+        {prospQuery.isPending ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="size-8 animate-spin text-primary" />
+          </div>
+        ) : prospQuery.isError ? (
+          <p className="py-4 text-base font-semibold text-destructive">
+            Não foi possível carregar a prospecção de hoje.
+          </p>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <CartaoIndicador
+                icone={Send}
+                valor={numero(p?.enviados_hoje ?? 0, 0)}
+                rotulo="Enviadas hoje"
+                apoio={`meta do dia: ${numero(p?.meta_dia ?? 0, 0)}`}
+                destino="/prospeccao"
+              />
+              <CartaoIndicador
+                icone={MessageCircle}
+                valor={numero(p?.responderam_hoje ?? 0, 0)}
+                rotulo="Responderam hoje"
+                apoio="respostas recebidas"
+                destino="/funil"
+              />
+              <CartaoIndicador
+                icone={UserCheck}
+                valor={numero(p?.qualificados ?? 0, 0)}
+                rotulo="Qualificados"
+                apoio="aguardando contato"
+                destino="/funil"
+              />
+              <CartaoIndicador
+                icone={Clock3}
+                valor={numero(p?.sem_resposta ?? 0, 0)}
+                rotulo="Sem resposta"
+                apoio="leads sem retorno"
+                tom={(p?.sem_resposta ?? 0) > 0 ? "critico" : "neutro"}
+                destino="/funil"
+              />
+              <CartaoIndicador
+                icone={ListOrdered}
+                valor={numero(p?.fila ?? 0, 0)}
+                rotulo="Na fila"
+                apoio="aguardando envio"
+                destino="/prospeccao"
+              />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div>
+                <h3 className="mb-3 text-sm font-bold uppercase text-foreground">
+                  Leads qualificados aguardando seu contato
+                </h3>
+                {(p?.qualificados_lista ?? []).length === 0 ? (
+                  <p className="text-base font-semibold text-muted-foreground">Nenhum no momento.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {(p?.qualificados_lista ?? []).map((q, i) => (
+                      <li key={`${q.oportunidade_id ?? "q"}-${i}`}>
+                        <ItemLink id={q.oportunidade_id}>
+                          <span className="block truncate text-base font-extrabold text-foreground">
+                            {capitalizar(q.nome)}
+                          </span>
+                          {q.obs && (
+                            <span className="line-clamp-2 text-sm font-medium text-muted-foreground">
+                              {q.obs}
+                            </span>
+                          )}
+                          <span className="block text-xs font-bold text-muted-foreground">
+                            {desdeAgora(q.quando)}
+                          </span>
+                        </ItemLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 className="mb-3 text-sm font-bold uppercase text-foreground">
+                  Últimas respostas
+                </h3>
+                {(p?.respostas_recentes ?? []).length === 0 ? (
+                  <p className="text-base font-semibold text-muted-foreground">
+                    Nenhuma resposta ainda.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {(p?.respostas_recentes ?? []).map((r, i) => (
+                      <li key={`${r.oportunidade_id ?? "r"}-${i}`}>
+                        <ItemLink id={r.oportunidade_id}>
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate text-base font-extrabold text-foreground">
+                              {capitalizar(r.nome)}
+                            </span>
+                            {r.estagio && (
+                              <span
+                                className={`shrink-0 rounded-sm px-2 py-0.5 text-xs font-bold uppercase ${
+                                  r.estagio === "descartado"
+                                    ? "bg-destructive/15 text-destructive"
+                                    : r.estagio === "qualificado"
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-secondary text-primary"
+                                }`}
+                              >
+                                {r.estagio}
+                              </span>
+                            )}
+                          </span>
+                          {r.texto && (
+                            <span className="line-clamp-2 text-sm font-medium text-muted-foreground">
+                              {r.texto}
+                            </span>
+                          )}
+                          <span className="block text-xs font-bold text-muted-foreground">
+                            {desdeAgora(r.quando)}
+                          </span>
+                        </ItemLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Painel>
 
       <div className="grade-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <CartaoIndicador
