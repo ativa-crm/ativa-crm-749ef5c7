@@ -552,7 +552,7 @@ export function rumoDe(angulo: number): string {
   return RUMOS[Math.round((((angulo % 360) + 360) % 360) / 45) % 8]!;
 }
 
-function agrupar(feicoes: FeicaoTile[]): Map<number, Poligono[]> {
+export function agrupar(feicoes: FeicaoTile[]): Map<number, Poligono[]> {
   const m = new Map<number, Poligono[]>();
   for (const f of feicoes) {
     const ps = poligonosDe(f.geometria);
@@ -672,4 +672,93 @@ export function baixarCsv(nome: string, linhas: (string | number | null | undefi
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ------------------------------------------------------------------ */
+/* Ficha completa (popup) e sobreposição entre camadas                 */
+/* ------------------------------------------------------------------ */
+
+export type FichaArea = {
+  camada: Camada;
+  fid: number;
+  chave: string;
+  titulo: string;
+  campos: [string, string | null][];
+  imovel_id: string | null;
+  imovel_nome: string | null;
+  cliente_nome: string | null;
+  lon_min: number | null;
+  lat_min: number | null;
+  lon_max: number | null;
+  lat_max: number | null;
+};
+
+export async function fichasMapa(car: number[], sigef: number[], ccir: number[]): Promise<FichaArea[]> {
+  if (car.length + sigef.length + ccir.length === 0) return [];
+  const { data, error } = await supabase.rpc("mapa_ficha", { p_car: car, p_sigef: sigef, p_ccir: ccir });
+  if (error) throw error;
+  return (data ?? []) as FichaArea[];
+}
+
+export type RefArea = { camada: Camada; fid: number };
+
+/** pctA = % da área A coberta por B; pctB = % da área B coberta por A. */
+export type Sobreposicao = { a: RefArea; b: RefArea; pctA: number; pctB: number };
+
+export function caixaDePoligonos(ps: Poligono[]): Caixa {
+  return caixaPoligonos(ps);
+}
+
+function fracaoAmostral(ps: Poligono[], outros: Poligono[], n = 26): number {
+  const c = caixaPoligonos(ps);
+  let dentro = 0;
+  let coberto = 0;
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const x = c[0] + ((i + 0.5) / n) * (c[2] - c[0]);
+      const y = c[1] + ((j + 0.5) / n) * (c[3] - c[1]);
+      if (!dentroPoligonos(x, y, ps)) continue;
+      dentro++;
+      if (dentroPoligonos(x, y, outros)) coberto++;
+    }
+  return dentro ? coberto / dentro : 0;
+}
+
+/** Sobreposição aproximada (amostragem em grade) entre duas áreas. */
+export function sobreposicaoEntre(a: Poligono[], b: Poligono[]): [number, number] {
+  const ca = caixaPoligonos(a);
+  const cb = caixaPoligonos(b);
+  if (ca[0] > cb[2] || cb[0] > ca[2] || ca[1] > cb[3] || cb[1] > ca[3]) return [0, 0];
+  return [fracaoAmostral(a, b), fracaoAmostral(b, a)];
+}
+
+/**
+ * Para cada área clicada, mede a sobreposição com as áreas das OUTRAS camadas
+ * carregadas na tela (só mantém >= 1%).
+ */
+export function calcularSobreposicoes(
+  alvos: RefArea[],
+  grupos: Record<Camada, Map<number, Poligono[]>>,
+  maxPorAlvo = 12,
+): Sobreposicao[] {
+  const r: Sobreposicao[] = [];
+  for (const alvo of alvos) {
+    const psA = grupos[alvo.camada].get(alvo.fid);
+    if (!psA || psA.length === 0) continue;
+    const ca = caixaPoligonos(psA);
+    const lista: Sobreposicao[] = [];
+    for (const camada of Object.keys(grupos) as Camada[]) {
+      if (camada === alvo.camada) continue;
+      for (const [fid, psB] of grupos[camada]) {
+        const cb = caixaPoligonos(psB);
+        if (ca[0] > cb[2] || cb[0] > ca[2] || ca[1] > cb[3] || cb[1] > ca[3]) continue;
+        const [pctA, pctB] = sobreposicaoEntre(psA, psB);
+        if (pctA < 0.01 && pctB < 0.01) continue;
+        lista.push({ a: alvo, b: { camada, fid }, pctA, pctB });
+      }
+    }
+    lista.sort((x, y) => y.pctA - x.pctA);
+    r.push(...lista.slice(0, maxPorAlvo));
+  }
+  return r;
 }

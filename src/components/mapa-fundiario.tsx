@@ -11,6 +11,8 @@ import type {
   StyleSpecification,
 } from "maplibre-gl";
 import {
+  agrupar,
+  calcularSobreposicoes,
   calcularVizinhanca,
   corToken,
   COR_CAR_PADRAO,
@@ -22,6 +24,7 @@ import {
   type FeicaoNoPonto,
   type FeicaoTile,
   type PontoCcir,
+  type Sobreposicao,
   type Selecao,
   type Vizinhanca,
 } from "@/lib/mapa";
@@ -100,6 +103,9 @@ export function MapaFundiario({
   onZoom,
   pontosCcir = null,
   onPontoCcir,
+  onClicarArea,
+  popup = null,
+  onFecharPopup,
 }: {
   fontes: { car: string | null; sigef: string | null; ccir: string | null };
   vista: "satelite" | "ruas";
@@ -118,6 +124,11 @@ export function MapaFundiario({
   /** Pontos de localização provável de imóveis CCIR sem polígono. */
   pontosCcir?: PontoCcir[] | null;
   onPontoCcir?: (codigo: string) => void;
+  /** Clique numa área: todas as feições no ponto + sobreposições com as outras camadas. */
+  onClicarArea?: (info: { lngLat: [number, number]; itens: FeicaoNoPonto[]; sobreposicoes: Sobreposicao[] }) => void;
+  /** Popup com conteúdo React (o pai renderiza dentro de `el` via portal). */
+  popup?: { lngLat: [number, number]; el: HTMLElement; seq: number } | null;
+  onFecharPopup?: () => void;
 }) {
   const caixa = useRef<HTMLDivElement | null>(null);
   const mapa = useRef<MlMap | null>(null);
@@ -131,8 +142,10 @@ export function MapaFundiario({
   const hoverAtual = useRef<{ camada: Camada; fid: number } | null>(null);
   const realceAtual = useRef<{ camada: Camada; fid: number } | null>(null);
   const estados = useRef<{ camada: Camada; fid: number }[]>([]);
-  const callbacks = useRef({ onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir });
-  callbacks.current = { onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir };
+  const callbacks = useRef({ onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir, onClicarArea, onFecharPopup });
+  callbacks.current = { onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir, onClicarArea, onFecharPopup };
+  const popupFicha = useRef<Popup | null>(null);
+  const fechandoPorCodigo = useRef(false);
   const fontesAtivas = useRef<Record<Camada, boolean>>({ car: false, sigef: false, ccir: false });
   const ultimoVoo = useRef<number | null>(null);
   const rodada = useRef(0);
@@ -332,6 +345,25 @@ export function MapaFundiario({
       }
       const itens = feicoesNoPonto(e.point.x, e.point.y);
       if (itens.length === 0) return;
+      if (callbacks.current.onClicarArea) {
+        const grupos = {
+          car: new Map(),
+          sigef: new Map(),
+          ccir: new Map(),
+        } as Record<Camada, ReturnType<typeof agrupar>>;
+        for (const c of CAMADAS) {
+          if (!fontesAtivas.current[c] || m.getLayoutProperty(`${c}-fill`, "visibility") === "none") continue;
+          grupos[c] = agrupar(pecas(c));
+        }
+        let sobreposicoes: Sobreposicao[] = [];
+        try {
+          sobreposicoes = calcularSobreposicoes(itens.slice(0, 4), grupos);
+        } catch (erro) {
+          console.warn("Sobreposição:", erro);
+        }
+        callbacks.current.onClicarArea({ lngLat: [e.lngLat.lng, e.lngLat.lat], itens, sobreposicoes });
+        return;
+      }
       if (itens.length === 1) {
         callbacks.current.onEscolher(itens);
         return;
@@ -448,6 +480,29 @@ export function MapaFundiario({
       for (const s of ["fill", "line", "sob"]) m.setLayoutProperty(`${c}-${s}`, "visibility", camadasVisiveis[c] ? "visible" : "none");
     }
   }, [pronto, camadasVisiveis.car, camadasVisiveis.sigef, camadasVisiveis.ccir, fontes.car, fontes.sigef, fontes.ccir]);
+
+  /* ---------------- popup da ficha ---------------- */
+  useEffect(() => {
+    const m = mapa.current;
+    const maplibregl = lib.current;
+    if (!pronto || !m || !maplibregl) return;
+    if (popupFicha.current) {
+      fechandoPorCodigo.current = true;
+      popupFicha.current.remove();
+      popupFicha.current = null;
+      fechandoPorCodigo.current = false;
+    }
+    if (!popup) return;
+    popupHover.current?.remove();
+    const p = new maplibregl.Popup({ closeButton: true, closeOnClick: false, maxWidth: "380px", className: "mapa-ficha", focusAfterOpen: false })
+      .setLngLat(popup.lngLat)
+      .setDOMContent(popup.el)
+      .addTo(m);
+    p.on("close", () => {
+      if (!fechandoPorCodigo.current) callbacks.current.onFecharPopup?.();
+    });
+    popupFicha.current = p;
+  }, [pronto, popup?.seq]);
 
   /* ---------------- pontos prováveis do CCIR ---------------- */
   useEffect(() => {
@@ -657,7 +712,13 @@ export function MapaFundiario({
 
   return (
     <>
-      <style>{`.mapa-hover .maplibregl-popup-content{padding:6px 10px;border-radius:8px}`}</style>
+      <style>{`.mapa-hover .maplibregl-popup-content{padding:6px 10px;border-radius:8px}
+.mapa-ficha .maplibregl-popup-content{padding:0;border-radius:12px;background:var(--card);color:var(--card-foreground);box-shadow:0 10px 30px rgba(0,0,0,.35);overflow:hidden}
+.mapa-ficha .maplibregl-popup-close-button{font-size:20px;width:32px;height:32px;color:var(--muted-foreground);z-index:2}
+.mapa-ficha.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--card)}
+.mapa-ficha.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--card)}
+.mapa-ficha.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--card)}
+.mapa-ficha.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--card)}`}</style>
       <div ref={caixa} className="h-full w-full" />
     </>
   );

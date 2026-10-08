@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ChevronDown,
@@ -38,6 +39,7 @@ import {
   COR_SELECIONADA,
   COR_SIGEF,
   detalhesMapa,
+  fichasMapa,
   lerCoordenada,
   PALETA_CONFRONTANTES,
   ROTULO_CAMADA,
@@ -50,6 +52,8 @@ import {
   useMunicipiosMapa,
   type Camada,
   type DetalheArea,
+  type FichaArea,
+  type Sobreposicao,
   type FeicaoNoPonto,
   type MunicipioMapa,
   type ResultadoBusca,
@@ -195,6 +199,227 @@ function SeletorMunicipio({
 }
 
 /* ------------------------------------------------------------------ */
+/* Popup com a ficha completa das áreas clicadas                       */
+/* ------------------------------------------------------------------ */
+const ORDEM_CAMADA: Record<Camada, number> = { ccir: 0, sigef: 1, car: 2 };
+
+function pct(v: number): string {
+  const n = Math.round(v * 100);
+  return n >= 99 ? "100%" : n < 1 ? "<1%" : `${n}%`;
+}
+
+function descreverSobreposicao(sb: Sobreposicao): string {
+  if (sb.pctA >= 0.9 && sb.pctB >= 0.9) return "Praticamente a mesma área";
+  if (sb.pctA >= 0.9) return `Esta área está ${pct(sb.pctA)} dentro dela`;
+  if (sb.pctB >= 0.9) return `Ela está ${pct(sb.pctB)} dentro desta área`;
+  return `Sobreposição parcial: ${pct(sb.pctA)} desta área · ${pct(sb.pctB)} dela`;
+}
+
+function FichaPopup({
+  itens,
+  sobreposicoes,
+  onSelecionar,
+  onRealce,
+  onCadastrar,
+  cadastrando,
+  copiar,
+}: {
+  itens: FeicaoNoPonto[];
+  sobreposicoes: Sobreposicao[];
+  onSelecionar: (camada: Camada, fid: number) => void;
+  onRealce: (r: { camada: Camada; fid: number } | null) => void;
+  onCadastrar: (camada: Camada, fid: number) => void;
+  cadastrando: boolean;
+  copiar: (v: string) => void;
+}) {
+  const ordenados = useMemo(
+    () => [...itens].sort((a, b) => ORDEM_CAMADA[a.camada] - ORDEM_CAMADA[b.camada]),
+    [itens],
+  );
+  const [ativo, setAtivo] = useState(0);
+  useEffect(() => setAtivo(0), [ordenados]);
+  const atual = ordenados[Math.min(ativo, ordenados.length - 1)];
+
+  const todos = useMemo(() => {
+    const m = new Map<string, { camada: Camada; fid: number }>();
+    for (const it of ordenados) m.set(`${it.camada}:${it.fid}`, it);
+    for (const sb of sobreposicoes) m.set(`${sb.b.camada}:${sb.b.fid}`, sb.b);
+    return [...m.values()];
+  }, [ordenados, sobreposicoes]);
+  const ids = (c: Camada) => todos.filter((x) => x.camada === c).map((x) => x.fid);
+  const fichas = useQuery({
+    queryKey: ["mapa", "ficha", todos.map((x) => `${x.camada}:${x.fid}`).sort().join(",")],
+    queryFn: () => fichasMapa(ids("car"), ids("sigef"), ids("ccir")),
+    staleTime: 5 * 60_000,
+  });
+  const porChave = useMemo(() => {
+    const m = new Map<string, FichaArea>();
+    for (const f of fichas.data ?? []) m.set(`${f.camada}:${f.fid}`, f);
+    return m;
+  }, [fichas.data]);
+
+  useEffect(() => {
+    if (atual) onRealce({ camada: atual.camada, fid: atual.fid });
+    return () => onRealce(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atual?.camada, atual?.fid]);
+
+  if (!atual) return null;
+  const ficha = porChave.get(`${atual.camada}:${atual.fid}`);
+  const sobs = sobreposicoes.filter((sb) => sb.a.camada === atual.camada && sb.a.fid === atual.fid);
+
+  return (
+    <div className="w-[min(360px,85vw)] text-card-foreground">
+      {/* abas: uma por camada no ponto */}
+      <div className="flex gap-1 border-b border-border bg-muted/50 px-3 pb-2 pr-10 pt-3">
+        {ordenados.map((it, i) => (
+          <button
+            key={`${it.camada}:${it.fid}`}
+            type="button"
+            onClick={() => setAtivo(i)}
+            data-ativo={i === ativo ? "1" : "0"}
+            className="rounded-full border border-transparent px-2.5 py-1 text-[11px] font-extrabold uppercase opacity-60 transition data-[ativo=1]:border-border data-[ativo=1]:bg-card data-[ativo=1]:opacity-100"
+          >
+            <span className="mr-1 inline-block size-2.5 rounded-full align-middle" style={{ background: corTipo(it.camada) }} />
+            {ROTULO_CAMADA[it.camada]}
+          </button>
+        ))}
+      </div>
+
+      <div className="max-h-[55vh] overflow-y-auto px-3 pb-3 pt-2">
+        {fichas.isPending ? (
+          <div className="space-y-2 py-1">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : !ficha ? (
+          <p className="py-2 text-sm font-semibold text-muted-foreground">Dados desta área não encontrados.</p>
+        ) : (
+          <>
+            <div className="flex items-start gap-2">
+              <h3 className="min-w-0 flex-1 text-sm font-extrabold leading-tight text-foreground">{ficha.titulo}</h3>
+              <button
+                type="button"
+                aria-label="Copiar código"
+                title="Copiar código"
+                onClick={() => copiar(ficha.chave)}
+                className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+              >
+                <Copy className="size-4" />
+              </button>
+            </div>
+
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+              {ficha.campos
+                .filter(([, v]) => v !== null && v !== "" && v !== " ha")
+                .map(([rotuloCampo, v]) => (
+                  <div key={rotuloCampo} className="contents">
+                    <dt className="font-semibold text-muted-foreground">{rotuloCampo}</dt>
+                    <dd className="break-words font-bold text-foreground">{v}</dd>
+                  </div>
+                ))}
+            </dl>
+
+            {/* CRM */}
+            <div className="mt-3 rounded-lg bg-muted/60 p-2">
+              {ficha.imovel_id ? (
+                <>
+                  <p className="text-[11px] font-bold uppercase text-muted-foreground">No CRM</p>
+                  <p className="text-xs font-bold text-foreground">
+                    {ficha.imovel_nome}
+                    {ficha.cliente_nome ? ` · ${ficha.cliente_nome}` : ""}
+                  </p>
+                  <Button asChild size="sm" className="mt-2 h-9 w-full text-xs font-bold">
+                    <Link to="/imoveis/$id" params={{ id: ficha.imovel_id }}>
+                      <ExternalLink className="size-4" aria-hidden /> Abrir no CRM
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-9 w-full text-xs font-bold"
+                  disabled={cadastrando}
+                  onClick={() => onCadastrar(ficha.camada, ficha.fid)}
+                >
+                  {cadastrando ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                  Cadastrar no CRM
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="mt-1 h-9 w-full text-xs font-bold"
+                onClick={() => onSelecionar(ficha.camada, ficha.fid)}
+              >
+                <Crosshair className="size-4" aria-hidden /> Selecionar e ver confrontantes
+              </Button>
+            </div>
+
+            {/* sobreposições */}
+            <div className="mt-3">
+              <p className="text-[11px] font-extrabold uppercase text-muted-foreground">
+                Sobreposição com outras camadas ({sobs.length})
+              </p>
+              {sobs.length === 0 ? (
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                  Nenhuma sobreposição com as camadas ligadas nesta região.
+                </p>
+              ) : (
+                <ul className="mt-1 space-y-1">
+                  {sobs.map((sb) => {
+                    const f = porChave.get(`${sb.b.camada}:${sb.b.fid}`);
+                    return (
+                      <li key={`${sb.b.camada}:${sb.b.fid}`}>
+                        <button
+                          type="button"
+                          onMouseEnter={() => onRealce(sb.b)}
+                          onMouseLeave={() => onRealce({ camada: atual.camada, fid: atual.fid })}
+                          onClick={() => onSelecionar(sb.b.camada, sb.b.fid)}
+                          className="flex w-full items-start gap-2 rounded-lg border border-border px-2 py-1.5 text-left hover:bg-muted"
+                        >
+                          <span
+                            className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold uppercase"
+                            style={{ background: corTipo(sb.b.camada), color: sb.b.camada === "ccir" ? "#000" : "#fff" }}
+                          >
+                            {ROTULO_CAMADA[sb.b.camada]}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-bold text-foreground">
+                              {f?.titulo ?? `${ROTULO_CAMADA[sb.b.camada]} ${sb.b.fid}`}
+                            </span>
+                            <span className="block text-[11px] font-medium text-muted-foreground">
+                              {descreverSobreposicao(sb)}
+                            </span>
+                            <span className="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                              <span
+                                className="h-full rounded-full"
+                                style={{ width: `${Math.max(2, Math.round(sb.pctA * 100))}%`, background: corTipo(sb.b.camada) }}
+                              />
+                            </span>
+                          </span>
+                          {f?.imovel_id && <SeloCrm nome={null} />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="mt-1 text-[10px] font-medium leading-snug text-muted-foreground">
+                Percentuais aproximados, calculados no mapa com as áreas visíveis.
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Imóvel sem polígono (CCIR sem parcela SIGEF)                        */
 /* ------------------------------------------------------------------ */
 function SemPoligono({
@@ -295,6 +520,13 @@ function PaginaMapa() {
   const [painelAberto, setPainelAberto] = useState(true);
   const [painelCamadas, setPainelCamadas] = useState(false);
   const [noPonto, setNoPonto] = useState<FeicaoNoPonto[] | null>(null);
+  const [popup, setPopup] = useState<{
+    lngLat: [number, number];
+    itens: FeicaoNoPonto[];
+    sobreposicoes: Sobreposicao[];
+    seq: number;
+  } | null>(null);
+  const elPopup = useMemo(() => (typeof document === "undefined" ? null : document.createElement("div")), []);
   const [ativo, setAtivo] = useState(0);
   const seq = useRef(1);
 
@@ -539,6 +771,12 @@ function PaginaMapa() {
         onVizinhanca={aoVizinhanca}
         onZoom={setZoom}
         pontosCcir={pontosCcir.data ?? null}
+        onClicarArea={(info) => setPopup({ ...info, seq: seq.current++ })}
+        popup={popup && elPopup ? { lngLat: popup.lngLat, el: elPopup, seq: popup.seq } : null}
+        onFecharPopup={() => {
+          setPopup(null);
+          setRealce(null);
+        }}
         onPontoCcir={(codigo) => {
           buscarNoMapa(codigo, null)
             .then((rs) => {
@@ -548,6 +786,24 @@ function PaginaMapa() {
             .catch(() => toast.error("Não foi possível carregar este imóvel."));
         }}
       />
+
+      {popup &&
+        elPopup &&
+        createPortal(
+          <FichaPopup
+            itens={popup.itens}
+            sobreposicoes={popup.sobreposicoes}
+            onSelecionar={(camada, fid) => {
+              setPopup(null);
+              void selecionarFeicao(camada, fid);
+            }}
+            onRealce={setRealce}
+            onCadastrar={(camada, fid) => cadastrar.mutate({ camada, fid })}
+            cadastrando={cadastrar.isPending}
+            copiar={copiar}
+          />,
+          elPopup,
+        )}
 
       {/* Avisos sobre o mapa */}
       <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 flex-col items-center gap-2 md:left-[calc(50%+190px)]">
@@ -840,7 +1096,7 @@ function PaginaMapa() {
               </div>
 
               <div className="mt-2 flex items-center gap-1">
-                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 text-[11px] font-semibold">
+                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 text-[11px] font-bold text-foreground">
                   {selecao.chave}
                 </code>
                 <Button type="button" size="icon" variant="ghost" className="size-9" onClick={() => copiar(selecao.chave)} aria-label="Copiar código">
