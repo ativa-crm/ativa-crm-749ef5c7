@@ -33,11 +33,11 @@ import logoPadraoAsset from "@/assets/ativa-consultoria-logo.png.asset.json";
 
 const ITENS = [
   { to: "/inicio", rotulo: "Início", Icone: Home },
+  { to: "/mapa", rotulo: "Mapa", Icone: MapaIcone },
   { to: "/prospeccao", rotulo: "Prospecção", Icone: Target },
   { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/clientes", rotulo: "Clientes", Icone: Users },
   { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
-  { to: "/mapa", rotulo: "Mapa", Icone: MapaIcone },
   { to: "/orcamentos", rotulo: "Orçamentos", Icone: FileText },
   { to: "/contratos", rotulo: "Contratos", Icone: FileSignature },
   { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
