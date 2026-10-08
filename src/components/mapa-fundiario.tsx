@@ -21,6 +21,7 @@ import {
   type Camada,
   type FeicaoNoPonto,
   type FeicaoTile,
+  type PontoCcir,
   type Selecao,
   type Vizinhanca,
 } from "@/lib/mapa";
@@ -97,6 +98,8 @@ export function MapaFundiario({
   onPontoAnalisado,
   onVizinhanca,
   onZoom,
+  pontosCcir = null,
+  onPontoCcir,
 }: {
   fontes: { car: string | null; sigef: string | null; ccir: string | null };
   vista: "satelite" | "ruas";
@@ -112,6 +115,9 @@ export function MapaFundiario({
   onPontoAnalisado: (itens: FeicaoNoPonto[]) => void;
   onVizinhanca: (r: Vizinhanca | null, calculando: boolean) => void;
   onZoom?: (zoom: number) => void;
+  /** Pontos de localização provável de imóveis CCIR sem polígono. */
+  pontosCcir?: PontoCcir[] | null;
+  onPontoCcir?: (codigo: string) => void;
 }) {
   const caixa = useRef<HTMLDivElement | null>(null);
   const mapa = useRef<MlMap | null>(null);
@@ -125,8 +131,8 @@ export function MapaFundiario({
   const hoverAtual = useRef<{ camada: Camada; fid: number } | null>(null);
   const realceAtual = useRef<{ camada: Camada; fid: number } | null>(null);
   const estados = useRef<{ camada: Camada; fid: number }[]>([]);
-  const callbacks = useRef({ onEscolher, onPontoAnalisado, onVizinhanca, onZoom });
-  callbacks.current = { onEscolher, onPontoAnalisado, onVizinhanca, onZoom };
+  const callbacks = useRef({ onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir });
+  callbacks.current = { onEscolher, onPontoAnalisado, onVizinhanca, onZoom, onPontoCcir };
   const fontesAtivas = useRef<Record<Camada, boolean>>({ car: false, sigef: false, ccir: false });
   const ultimoVoo = useRef<number | null>(null);
   const rodada = useRef(0);
@@ -310,6 +316,20 @@ export function MapaFundiario({
     const m = mapa.current;
     if (!pronto || !m) return;
     const aoClicar = (e: MapMouseEvent) => {
+      if (m.getLayer("ccir-pontos") && m.getLayoutProperty("ccir-pontos", "visibility") !== "none") {
+        const ponto = m.queryRenderedFeatures(
+          [
+            [e.point.x - 6, e.point.y - 6],
+            [e.point.x + 6, e.point.y + 6],
+          ],
+          { layers: ["ccir-pontos"] },
+        )[0];
+        const codigo = ponto?.properties?.codigo;
+        if (codigo) {
+          callbacks.current.onPontoCcir?.(String(codigo));
+          return;
+        }
+      }
       const itens = feicoesNoPonto(e.point.x, e.point.y);
       if (itens.length === 0) return;
       if (itens.length === 1) {
@@ -428,6 +448,65 @@ export function MapaFundiario({
       for (const s of ["fill", "line", "sob"]) m.setLayoutProperty(`${c}-${s}`, "visibility", camadasVisiveis[c] ? "visible" : "none");
     }
   }, [pronto, camadasVisiveis.car, camadasVisiveis.sigef, camadasVisiveis.ccir, fontes.car, fontes.sigef, fontes.ccir]);
+
+  /* ---------------- pontos prováveis do CCIR ---------------- */
+  useEffect(() => {
+    const m = mapa.current;
+    const maplibregl = lib.current;
+    if (!pronto || !m || !maplibregl || !pontosCcir) return;
+    const dados = {
+      type: "FeatureCollection" as const,
+      features: pontosCcir.map((p) => ({
+        type: "Feature" as const,
+        properties: { codigo: p.codigo_imovel, nome: p.denominacao ?? "", confianca: p.confianca, area: p.area_ha ?? 0 },
+        geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] },
+      })),
+    };
+    const fonte = m.getSource("ccir-pontos") as GeoJSONSource | undefined;
+    if (fonte) {
+      fonte.setData(dados as never);
+      return;
+    }
+    m.addSource("ccir-pontos", { type: "geojson", data: dados as never });
+    m.addLayer({
+      id: "ccir-pontos",
+      type: "circle",
+      source: "ccir-pontos",
+      minzoom: 8,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6, 15, 9],
+        "circle-color": COR_CCIR,
+        "circle-opacity": ["match", ["get", "confianca"], "alta", 0.95, "média", 0.6, 0.15],
+        "circle-stroke-color": "#000000",
+        "circle-stroke-width": ["match", ["get", "confianca"], "alta", 1.5, 1],
+        "circle-stroke-opacity": 0.8,
+      },
+    });
+    m.on("mouseenter", "ccir-pontos", (e) => {
+      m.getCanvas().style.cursor = "pointer";
+      const f = (e as MapMouseEvent & { features?: MapGeoJSONFeature[] }).features?.[0];
+      const p = (f?.properties ?? {}) as Record<string, unknown>;
+      if (!popupHover.current) {
+        popupHover.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: "mapa-hover" });
+      }
+      popupHover.current
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<span style="font-size:12px;font-weight:700">CCIR ${escapar(String(p.codigo ?? ""))} · ${escapar(String(p.nome ?? ""))}</span><br/><span style="font-size:11px">Localização provável (confiança ${escapar(String(p.confianca ?? ""))})</span>`,
+        )
+        .addTo(m);
+    });
+    m.on("mouseleave", "ccir-pontos", () => {
+      m.getCanvas().style.cursor = "";
+      popupHover.current?.remove();
+    });
+  }, [pronto, pontosCcir]);
+
+  useEffect(() => {
+    const m = mapa.current;
+    if (!pronto || !m || !m.getLayer("ccir-pontos")) return;
+    m.setLayoutProperty("ccir-pontos", "visibility", camadasVisiveis.ccir ? "visible" : "none");
+  }, [pronto, camadasVisiveis.ccir, pontosCcir]);
 
   /* ---------------- contorno do município ---------------- */
   useEffect(() => {

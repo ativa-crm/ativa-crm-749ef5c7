@@ -246,6 +246,29 @@ export function useCandidatosCar(codMunicipio: number | null | undefined, areaHa
   });
 }
 
+export type PontoCcir = {
+  codigo_imovel: string;
+  denominacao: string | null;
+  lon: number;
+  lat: number;
+  confianca: "alta" | "média" | "baixa";
+  area_ha: number | null;
+};
+
+/** CCIR sem parcela SIGEF com localização PROVÁVEL (CAR de área idêntica no município). */
+export function usePontosCcir(ativo: boolean) {
+  return useQuery({
+    queryKey: ["mapa", "pontos-ccir"],
+    enabled: ativo,
+    staleTime: 60 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("mapa_ccir_pontos");
+      if (error) throw error;
+      return (data ?? []) as PontoCcir[];
+    },
+  });
+}
+
 export function caixaDe(r: {
   lon_min: number | null;
   lat_min: number | null;

@@ -44,6 +44,7 @@ import {
   semAcento,
   useBuscaMapa,
   useCandidatosCar,
+  usePontosCcir,
   useDetalhesMapa,
   useFontesMapa,
   useMunicipiosMapa,
@@ -299,6 +300,7 @@ function PaginaMapa() {
 
   const fontes = fontesQuery.data ?? { car: null, sigef: null, ccir: null };
   const busca = useBuscaMapa(texto, municipio?.cod_municipio ?? null);
+  const pontosCcir = usePontosCcir(camadas.ccir);
   const resultados = busca.data ?? [];
   const coordenada = useMemo(() => lerCoordenada(coordTexto), [coordTexto]);
 
@@ -536,6 +538,15 @@ function PaginaMapa() {
         onPontoAnalisado={aoPontoAnalisado}
         onVizinhanca={aoVizinhanca}
         onZoom={setZoom}
+        pontosCcir={pontosCcir.data ?? null}
+        onPontoCcir={(codigo) => {
+          buscarNoMapa(codigo, null)
+            .then((rs) => {
+              const r = rs.find((x) => x.tipo === "ccir" && x.chave === codigo) ?? rs[0];
+              if (r) selecionarResultado(r);
+            })
+            .catch(() => toast.error("Não foi possível carregar este imóvel."));
+        }}
       />
 
       {/* Avisos sobre o mapa */}
@@ -618,6 +629,9 @@ function PaginaMapa() {
               </p>
               <p className="flex items-center gap-2">
                 <span className="size-3 rounded-sm border border-dashed border-foreground" /> Mesma terra na outra base
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="size-3 rounded-full border border-black" style={{ background: COR_CCIR }} /> CCIR sem SIGEF — local provável
               </p>
             </div>
           </div>
@@ -843,6 +857,20 @@ function PaginaMapa() {
                     {detalhe?.municipio ?? "—"}
                     {detalhe?.area_ha != null && <> · {areaHa(detalhe.area_ha)}</>}
                   </p>
+                  {selecao.tipo === "ccir" && selecao.camada === "car" && (
+                    <div className="rounded-md border-2 border-dashed p-2 text-xs" style={{ borderColor: COR_CCIR }}>
+                      <p className="font-extrabold text-foreground">
+                        Imóvel do CCIR sem parcela SIGEF
+                      </p>
+                      <p className="mt-0.5 font-medium text-muted-foreground">
+                        {selecao.subtitulo ?? "Mostrando o CAR relacionado."} O polígono destacado é o do CAR — confira no
+                        satélite antes de usar.
+                      </p>
+                      {selecao.areaHa ? (
+                        <p className="mt-0.5 font-semibold text-foreground">Área no CCIR: {areaHa(selecao.areaHa)}</p>
+                      ) : null}
+                    </div>
+                  )}
                   {detalhe?.subtitulo && <p className="text-xs font-medium text-muted-foreground">{detalhe.subtitulo}</p>}
                   {selecao.fids.length > 1 && (
                     <p className="text-xs font-semibold text-muted-foreground">{selecao.fids.length} parcelas SIGEF destacadas.</p>
