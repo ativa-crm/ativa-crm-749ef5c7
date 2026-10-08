@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 type Resultado =
-  | { ok: true; geojson: { type: "Polygon" | "MultiPolygon"; coordinates: unknown }; areaCar: number | null }
+  | { ok: true; geojson: { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | number[][][][] }; areaCar: number | null }
   | { ok: false; erro: "nao_encontrado" | "indisponivel" | "invalido" };
 
 /** Busca o contorno do imóvel no serviço público do CAR (WFS do SICAR), em WGS84. */
@@ -21,7 +21,7 @@ export const buscarPoligonoCar = createServerFn({ method: "POST" })
       const r = await fetch(url, { signal: AbortSignal.timeout(45_000) });
       if (!r.ok) return { ok: false, erro: "indisponivel" };
       const j = (await r.json()) as {
-        features?: { geometry?: { type: string; coordinates: unknown } | null; properties?: { area?: number } }[];
+        features?: { geometry?: { type: string; coordinates: number[][][] | number[][][][] } | null; properties?: { area?: number } }[];
       };
       const f = j.features?.find((x) => x.geometry);
       const g = f?.geometry;
