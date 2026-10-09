@@ -33,9 +33,11 @@ export const Route = createFileRoute("/entrar")({
 
 function Entrar() {
   const navigate = useNavigate();
+  const [modo, setModo] = useState<"entrar" | "recuperar">("entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   async function entrar(e: React.FormEvent) {
@@ -52,6 +54,22 @@ function Entrar() {
       return;
     }
     navigate({ to: "/inicio", replace: true });
+  }
+
+  async function recuperarSenha(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setAviso(null);
+    setEnviando(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setEnviando(false);
+    if (error) {
+      setErro("Não foi possível enviar o e-mail. Verifique o endereço e tente de novo.");
+      return;
+    }
+    setAviso(`Enviamos um link para ${email.trim()}. Abra no celular para criar uma senha nova.`);
   }
 
   return (
