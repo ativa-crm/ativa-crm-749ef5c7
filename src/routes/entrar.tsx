@@ -94,61 +94,138 @@ function Entrar() {
             <p className="mt-1 text-base text-muted-foreground">Topografia e georreferenciamento</p>
           </div>
 
-        <form onSubmit={entrar} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-base font-bold">
-              E-mail
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-14 rounded-xl border border-border text-lg"
-              placeholder="voce@empresa.com.br"
-            />
-          </div>
+        {modo === "entrar" ? (
+          <form onSubmit={entrar} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-base font-bold">
+                E-mail
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-14 rounded-xl border border-border text-lg"
+                placeholder="voce@empresa.com.br"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="senha" className="text-base font-bold">
-              Senha
-            </Label>
-            <Input
-              id="senha"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className="h-14 rounded-xl border border-border text-lg"
-              placeholder="••••••••"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="senha" className="text-base font-bold">
+                Senha
+              </Label>
+              <Input
+                id="senha"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className="h-14 rounded-xl border border-border text-lg"
+                placeholder="••••••••"
+              />
+            </div>
 
-          {erro && (
-            <p
-              role="alert"
-              className="rounded-xl border-2 border-destructive/40 bg-destructive/10 px-4 py-3 text-base font-semibold text-destructive"
+            {erro && (
+              <p
+                role="alert"
+                className="rounded-xl border-2 border-destructive/40 bg-destructive/10 px-4 py-3 text-base font-semibold text-destructive"
+              >
+                {erro}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={enviando}
+              className="h-14 w-full rounded-full text-lg font-extrabold uppercase"
             >
-              {erro}
+              {enviando ? <Loader2 className="size-6 animate-spin" /> : "Entrar"}
+            </Button>
+
+            <p className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setModo("recuperar");
+                  setErro(null);
+                  setAviso(null);
+                }}
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Esqueci minha senha
+              </button>
             </p>
-          )}
+          </form>
+        ) : (
+          <form onSubmit={recuperarSenha} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email-recuperar" className="text-base font-bold">
+                E-mail
+              </Label>
+              <Input
+                id="email-recuperar"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-14 rounded-xl border border-border text-lg"
+                placeholder="voce@empresa.com.br"
+              />
+            </div>
 
-          <Button
-            type="submit"
-            disabled={enviando}
-            className="h-14 w-full rounded-full text-lg font-extrabold uppercase"
-          >
-            {enviando ? <Loader2 className="size-6 animate-spin" /> : "Entrar"}
-          </Button>
-        </form>
+            {erro && (
+              <p
+                role="alert"
+                className="rounded-xl border-2 border-destructive/40 bg-destructive/10 px-4 py-3 text-base font-semibold text-destructive"
+              >
+                {erro}
+              </p>
+            )}
 
-        <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
-          O acesso é criado pelo administrador da sua empresa.
-        </p>
+            {aviso && (
+              <p
+                role="status"
+                className="rounded-xl border-2 border-primary/30 bg-primary/10 px-4 py-3 text-base font-semibold text-foreground"
+              >
+                {aviso}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={enviando}
+              className="h-14 w-full rounded-full text-lg font-extrabold uppercase"
+            >
+              {enviando ? <Loader2 className="size-6 animate-spin" /> : "Enviar link de senha"}
+            </Button>
+
+            <p className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setModo("entrar");
+                  setErro(null);
+                  setAviso(null);
+                }}
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Voltar para o acesso
+              </button>
+            </p>
+          </form>
+        )}
+
+        {modo === "entrar" && (
+          <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
+            O acesso é criado pelo administrador da sua empresa.
+          </p>
+        )}
         </div>
       </section>
     </main>
