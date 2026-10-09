@@ -139,26 +139,30 @@ function Pagina() {
     },
   });
 
+  function dadosProposta() {
+    if (!orcamento) return null;
+    return {
+      titulo: orcamento.titulo ?? "",
+      contratante: clienteQuery.data?.nome ?? "",
+      documento: orcamento.documento_contratante ?? "",
+      descricao: orcamento.objeto ?? "",
+      finalidade: orcamento.finalidade ?? "",
+      alqueires:
+        orcamento.area_alqueires == null ? "" : String(orcamento.area_alqueires).replace(".", ","),
+      desconto: Number(orcamento.desconto ?? 0),
+      naoIncluso: orcamento.nao_incluso,
+      itens: (itensQuery.data ?? []).map((i) => ({
+        descricao: i.descricao ?? "",
+        valor: Number(i.quantidade ?? 1) * Number(i.valor_unitario ?? 0),
+      })),
+    };
+  }
+
   function gerarProposta() {
-    if (!orcamento) return;
+    const dados = dadosProposta();
+    if (!dados) return;
     const janela = abrirJanelaDocumento();
-    escreverDocumento(
-      janela,
-      htmlProposta({
-        titulo: orcamento.titulo ?? "",
-        contratante: clienteQuery.data?.nome ?? "",
-        documento: orcamento.documento_contratante ?? "",
-        descricao: orcamento.objeto ?? "",
-        finalidade: orcamento.finalidade ?? "",
-        alqueires: orcamento.area_alqueires == null ? "" : String(orcamento.area_alqueires).replace(".", ","),
-        desconto: Number(orcamento.desconto ?? 0),
-        naoIncluso: orcamento.nao_incluso,
-        itens: (itensQuery.data ?? []).map((i) => ({
-          descricao: i.descricao ?? "",
-          valor: Number(i.quantidade ?? 1) * Number(i.valor_unitario ?? 0),
-        })),
-      }),
-    );
+    escreverDocumento(janela, htmlProposta(dados));
   }
 
   function recarregar() {
@@ -360,6 +364,55 @@ function Pagina() {
         </div>
       </Bloco>
 
+      <Bloco titulo="Dados da proposta">
+        <Grade>
+          <Campo
+            rotulo="Título"
+            valor={orcamento.titulo ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ titulo: v || null })}
+            larguraTotal
+          />
+          <Campo
+            rotulo="Serviço (objeto)"
+            valor={orcamento.objeto ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ objeto: v || null })}
+          />
+          <Campo
+            rotulo="Finalidade"
+            valor={orcamento.finalidade ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ finalidade: v || null })}
+          />
+          <Campo
+            rotulo="Área (alqueires)"
+            valor={
+              orcamento.area_alqueires == null
+                ? ""
+                : String(orcamento.area_alqueires).replace(".", ",")
+            }
+            inputMode="decimal"
+            onSalvar={(v) => salvarCampo.mutate({ area_alqueires: paraNumero(v) })}
+          />
+          <Campo
+            rotulo="CPF/CNPJ do contratante"
+            valor={orcamento.documento_contratante ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ documento_contratante: v || null })}
+          />
+        </Grade>
+        <div className="mt-4">
+          <CampoLongo
+            rotulo="Despesas não inclusas (uma por linha)"
+            valor={(orcamento.nao_incluso ?? []).join("\n")}
+            onSalvar={(v) => {
+              const linhas = v
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(Boolean);
+              salvarCampo.mutate({ nao_incluso: linhas.length ? linhas : null });
+            }}
+          />
+        </div>
+      </Bloco>
+
       <div className="flex justify-end">
         <Button
           type="button"
@@ -457,6 +510,22 @@ function Pagina() {
             Total gravado no banco: {reais(orcamento.total)}
           </p>
         </div>
+      </Bloco>
+
+      <Bloco titulo="Pré-visualização da proposta">
+        {itensQuery.isPending ? (
+          <Loader2 className="size-7 animate-spin text-primary" />
+        ) : (
+          <iframe
+            title="Pré-visualização da proposta"
+            srcDoc={htmlProposta(dadosProposta()!, true)}
+            className="h-[70vh] min-h-[520px] w-full rounded-xl border-2 border-border bg-card"
+          />
+        )}
+        <p className="mt-2 text-sm font-semibold text-muted-foreground">
+          Atualiza sozinha ao salvar qualquer campo. Use "Gerar proposta" para imprimir ou salvar em
+          PDF.
+        </p>
       </Bloco>
 
       <Bloco titulo="Condições">

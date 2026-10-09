@@ -7,6 +7,7 @@ import {
   FileCheck2,
   FileText,
   Loader2,
+  Pencil,
   Plus,
   Search,
   TrendingUp,
@@ -108,6 +109,7 @@ function Etiqueta({ status }: { status: string | null }) {
 }
 
 function Pagina() {
+  const navigate = useNavigate();
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<string>("");
   const [novoAberto, setNovoAberto] = useState(false);
@@ -247,11 +249,18 @@ function Pagina() {
                   <th className="px-3 py-2">Esperando</th>
                   <th className="px-3 py-2 text-right">Valor</th>
                   <th className="px-3 py-2">Situação</th>
+                  <th className="px-3 py-2 text-right">
+                    <span className="sr-only">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtrados.map((o) => (
-                  <tr key={o.id} className="border-b border-border last:border-0">
+                  <tr
+                    key={o.id}
+                    onClick={() => navigate({ to: "/orcamentos/$id", params: { id: o.id } })}
+                    className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
+                  >
                     <td className="px-3 py-3">
                       <Link
                         to="/orcamentos/$id"
@@ -278,6 +287,19 @@ function Pagina() {
                     </td>
                     <td className="px-3 py-3">
                       <Etiqueta status={o.status} />
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Link to="/orcamentos/$id" params={{ id: o.id }}>
+                          <Pencil className="size-4" strokeWidth={2.5} />
+                          {o.status === "rascunho" ? "Revisar" : "Abrir"}
+                        </Link>
+                      </Button>
                     </td>
                   </tr>
                 ))}
