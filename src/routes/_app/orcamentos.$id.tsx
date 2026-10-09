@@ -80,6 +80,12 @@ type Parcela = {
   ordem: number | null;
 };
 
+// URL absoluta do logo: a pré-visualização e a janela de impressão não herdam a rota do app.
+const urlLogo = (): string | null =>
+  typeof window === "undefined"
+    ? null
+    : new URL(IDENTIDADE_DOCUMENTOS.logoUrl, window.location.origin).href;
+
 const linhasParaLista = (v: string): string[] | null => {
   const linhas = v
     .split("\n")
@@ -182,9 +188,10 @@ function Pagina() {
   const htmlQuery = useQuery({
     queryKey: ["orcamento", id, "html"],
     queryFn: async (): Promise<string> => {
-      const { data: html, error } = await supabase.rpc("render_proposta_orcamento", {
+      const { data: html, error } = await supabase.rpc("render_proposta_orcamento_v2", {
         p_orcamento: id,
         p_previa: true,
+        p_logo_url: urlLogo(),
       });
       if (error) throw error;
       return (html as string | null) ?? "";
@@ -193,9 +200,10 @@ function Pagina() {
 
   async function gerarProposta() {
     const janela = abrirJanelaDocumento();
-    const { data: html, error } = await supabase.rpc("render_proposta_orcamento", {
+    const { data: html, error } = await supabase.rpc("render_proposta_orcamento_v2", {
       p_orcamento: id,
       p_previa: false,
+      p_logo_url: urlLogo(),
     });
     if (error || !html) {
       janela?.close();

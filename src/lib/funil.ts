@@ -30,6 +30,7 @@ export const MOTIVOS_PERDA: Estagio[] = [
   { valor: "preco", rotulo: "Preço" },
   { valor: "sumiu", rotulo: "Sumiu" },
   { valor: "fechou_com_outro", rotulo: "Fechou com outro" },
+  { valor: "area_certificada", rotulo: "Área já certificada" },
 ];
 
 export const SERVICOS: Estagio[] = [

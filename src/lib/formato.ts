@@ -94,6 +94,7 @@ export function dataHora(v: string | null | undefined): string {
 const ROTULOS: Record<string, string> = {
   // estágios de oportunidade
   mensagem_enviada: "Mensagem enviada",
+  area_certificada: "Área já certificada",
   novo: "Mensagem respondida",
   qualificando: "Qualificando",
   quente: "Quente",

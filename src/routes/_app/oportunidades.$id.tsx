@@ -290,9 +290,14 @@ function Pagina() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("gerar_orcamento_oportunidade", { p_op: id });
       if (error) throw error;
-      return data as string;
+      return (data as string | null) ?? null;
     },
     onSuccess: (orcamentoId) => {
+      if (!orcamentoId) {
+        void queryClient.invalidateQueries({ queryKey: ["oportunidade", id] });
+        toast.info("Área já certificada (SIGEF/SNCI): fora do foco, orçamento não gerado.");
+        return;
+      }
       void queryClient.invalidateQueries({ queryKey: ["oportunidade", id] });
       void queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
       void queryClient.invalidateQueries({ queryKey: ["clientes"] });
