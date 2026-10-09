@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
@@ -49,6 +50,11 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
   path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAdministracaoRoute = AppAdministracaoRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/inicio': typeof AppInicioRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/entrar': typeof EntrarRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_app/administracao': typeof AppAdministracaoRoute
   '/_app/funil': typeof AppFunilRoute
   '/_app/inicio': typeof AppInicioRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/'
     | '/design-system'
     | '/entrar'
+    | '/reset-password'
     | '/administracao'
     | '/funil'
     | '/inicio'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/'
     | '/design-system'
     | '/entrar'
+    | '/reset-password'
     | '/administracao'
     | '/funil'
     | '/inicio'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/design-system'
     | '/entrar'
+    | '/reset-password'
     | '/_app/administracao'
     | '/_app/funil'
     | '/_app/inicio'
@@ -291,6 +303,7 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
   EntrarRoute: typeof EntrarRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -321,6 +334,13 @@ declare module '@tanstack/react-router' {
       path: '/entrar'
       fullPath: '/entrar'
       preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/administracao': {
@@ -503,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
   EntrarRoute: EntrarRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
