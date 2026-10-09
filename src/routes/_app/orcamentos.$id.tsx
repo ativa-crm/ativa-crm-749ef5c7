@@ -109,6 +109,7 @@ function Pagina() {
   const queryClient = useQueryClient();
   const { perfil } = usePerfil();
   const [osAberta, setOsAberta] = useState(false);
+  const [excluirAberto, setExcluirAberto] = useState(false);
   const [servicoOs, setServicoOs] = useState(SERVICOS[0]?.valor ?? "georreferenciamento");
 
   const orcamentoQuery = useQuery({
@@ -301,6 +302,19 @@ function Pagina() {
     },
     onSuccess: recarregar,
     onError: () => toast.error("Não foi possível remover a parcela."),
+  });
+
+  const excluirOrcamento = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("orcamentos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+      toast.success("Orçamento excluído.");
+      void navigate({ to: "/orcamentos" });
+    },
+    onError: () => toast.error("Não foi possível excluir o orçamento."),
   });
 
   // Ao sair de rascunho, o número vem da função do banco.
@@ -844,6 +858,41 @@ function Pagina() {
           </div>
         </div>
       </Bloco>
+
+      <div className="rounded-3xl border-2 border-border bg-card p-4">
+        <Button
+          variant="outline"
+          onClick={() => setExcluirAberto(true)}
+          className="h-12 rounded-xl border-2 px-5 text-base font-extrabold text-destructive"
+        >
+          <Trash2 className="size-5" strokeWidth={2.5} />
+          Excluir orçamento
+        </Button>
+      </div>
+
+      <Dialog open={excluirAberto} onOpenChange={setExcluirAberto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold">Excluir este orçamento?</DialogTitle>
+          </DialogHeader>
+          <p className="text-base font-semibold text-muted-foreground">
+            Itens e parcelas também são apagados. Essa ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={excluirOrcamento.isPending}
+              onClick={() => excluirOrcamento.mutate()}
+            >
+              {excluirOrcamento.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              Sim, excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={osAberta} onOpenChange={setOsAberta}>
         <DialogContent className="sm:max-w-lg">
