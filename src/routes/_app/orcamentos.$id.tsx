@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { abrirJanelaDocumento, escreverDocumento, htmlProposta } from "@/lib/documento-impressao";
+import { abrirJanelaDocumento, escreverDocumento } from "@/lib/documento-impressao";
 import { IDENTIDADE_DOCUMENTOS, MODELOS_DOCUMENTO } from "@/lib/modelos-documento";
 
 export const Route = createFileRoute("/_app/orcamentos/$id")({
@@ -60,10 +60,37 @@ type Orcamento = {
   area_alqueires: number | null;
   documento_contratante: string | null;
   nao_incluso: string[] | null;
+  imovel_descricao: string | null;
+  localizacao: string | null;
+  situacao_atual: string[] | null;
+  observacao_escopo: string | null;
+  nota_devolucao: string | null;
+  reuniao_data: string | null;
+  reuniao_horario: string | null;
+  reuniao_local: string | null;
+  documentos_reuniao: string[] | null;
+  prazos: string[] | null;
+};
+
+type Parcela = {
+  id: string;
+  descricao: string | null;
+  percentual: number | null;
+  valor: number | null;
+  ordem: number | null;
+};
+
+const linhasParaLista = (v: string): string[] | null => {
+  const linhas = v
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return linhas.length ? linhas : null;
 };
 
 type Item = {
   id: string;
+  etapa: string | null;
   descricao: string | null;
   quantidade: number | null;
   valor_unitario: number | null;
@@ -96,7 +123,7 @@ function Pagina() {
     queryFn: async (): Promise<Item[]> => {
       const { data: linhas, error } = await supabase
         .from("orcamento_itens")
-        .select("id, descricao, quantidade, valor_unitario, ordem")
+        .select("id, etapa, descricao, quantidade, valor_unitario, ordem")
         .eq("orcamento_id", id)
         .order("ordem");
       if (error) throw error;
@@ -139,30 +166,43 @@ function Pagina() {
     },
   });
 
-  function dadosProposta() {
-    if (!orcamento) return null;
-    return {
-      titulo: orcamento.titulo ?? "",
-      contratante: clienteQuery.data?.nome ?? "",
-      documento: orcamento.documento_contratante ?? "",
-      descricao: orcamento.objeto ?? "",
-      finalidade: orcamento.finalidade ?? "",
-      alqueires:
-        orcamento.area_alqueires == null ? "" : String(orcamento.area_alqueires).replace(".", ","),
-      desconto: Number(orcamento.desconto ?? 0),
-      naoIncluso: orcamento.nao_incluso,
-      itens: (itensQuery.data ?? []).map((i) => ({
-        descricao: i.descricao ?? "",
-        valor: Number(i.quantidade ?? 1) * Number(i.valor_unitario ?? 0),
-      })),
-    };
-  }
+  const parcelasQuery = useQuery({
+    queryKey: ["orcamento", id, "parcelas"],
+    queryFn: async (): Promise<Parcela[]> => {
+      const { data: linhas, error } = await supabase
+        .from("orcamento_parcelas")
+        .select("id, descricao, percentual, valor, ordem")
+        .eq("orcamento_id", id)
+        .order("ordem");
+      if (error) throw error;
+      return (linhas ?? []) as Parcela[];
+    },
+  });
 
-  function gerarProposta() {
-    const dados = dadosProposta();
-    if (!dados) return;
+  const htmlQuery = useQuery({
+    queryKey: ["orcamento", id, "html"],
+    queryFn: async (): Promise<string> => {
+      const { data: html, error } = await supabase.rpc("render_proposta_orcamento", {
+        p_orcamento: id,
+        p_previa: true,
+      });
+      if (error) throw error;
+      return (html as string | null) ?? "";
+    },
+  });
+
+  async function gerarProposta() {
     const janela = abrirJanelaDocumento();
-    escreverDocumento(janela, htmlProposta(dados));
+    const { data: html, error } = await supabase.rpc("render_proposta_orcamento", {
+      p_orcamento: id,
+      p_previa: false,
+    });
+    if (error || !html) {
+      janela?.close();
+      toast.error("Não foi possível gerar a proposta.");
+      return;
+    }
+    escreverDocumento(janela, html as string);
   }
 
   function recarregar() {
@@ -220,6 +260,39 @@ function Pagina() {
     },
     onSuccess: recarregar,
     onError: () => toast.error("Não foi possível remover o item."),
+  });
+
+  const salvarParcela = useMutation({
+    mutationFn: async ({ parcelaId, mudanca }: { parcelaId: string; mudanca: Record<string, unknown> }) => {
+      const { error } = await supabase.from("orcamento_parcelas").update(mudanca).eq("id", parcelaId);
+      if (error) throw error;
+    },
+    onSuccess: recarregar,
+    onError: () => toast.error("Não foi possível salvar a parcela."),
+  });
+
+  const adicionarParcela = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("orcamento_parcelas").insert({
+        orcamento_id: id,
+        descricao: "Nova parcela",
+        percentual: null,
+        valor: 0,
+        ordem: (parcelasQuery.data ?? []).length + 1,
+      });
+      if (error) throw error;
+    },
+    onSuccess: recarregar,
+    onError: () => toast.error("Não foi possível adicionar a parcela."),
+  });
+
+  const removerParcela = useMutation({
+    mutationFn: async (parcelaId: string) => {
+      const { error } = await supabase.from("orcamento_parcelas").delete().eq("id", parcelaId);
+      if (error) throw error;
+    },
+    onSuccess: recarregar,
+    onError: () => toast.error("Não foi possível remover a parcela."),
   });
 
   // Ao sair de rascunho, o número vem da função do banco.
@@ -367,30 +440,22 @@ function Pagina() {
       <Bloco titulo="Dados da proposta">
         <Grade>
           <Campo
-            rotulo="Título"
+            rotulo="Título (aparece abaixo do número)"
             valor={orcamento.titulo ?? ""}
             onSalvar={(v) => salvarCampo.mutate({ titulo: v || null })}
             larguraTotal
           />
           <Campo
-            rotulo="Serviço (objeto)"
-            valor={orcamento.objeto ?? ""}
-            onSalvar={(v) => salvarCampo.mutate({ objeto: v || null })}
+            rotulo="Imóvel"
+            valor={orcamento.imovel_descricao ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ imovel_descricao: v || null })}
+            placeholder="Nome, matrícula, CCIR"
+            larguraTotal
           />
           <Campo
-            rotulo="Finalidade"
-            valor={orcamento.finalidade ?? ""}
-            onSalvar={(v) => salvarCampo.mutate({ finalidade: v || null })}
-          />
-          <Campo
-            rotulo="Área (alqueires)"
-            valor={
-              orcamento.area_alqueires == null
-                ? ""
-                : String(orcamento.area_alqueires).replace(".", ",")
-            }
-            inputMode="decimal"
-            onSalvar={(v) => salvarCampo.mutate({ area_alqueires: paraNumero(v) })}
+            rotulo="Localização"
+            valor={orcamento.localizacao ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ localizacao: v || null })}
           />
           <Campo
             rotulo="CPF/CNPJ do contratante"
@@ -398,17 +463,16 @@ function Pagina() {
             onSalvar={(v) => salvarCampo.mutate({ documento_contratante: v || null })}
           />
         </Grade>
-        <div className="mt-4">
+        <div className="mt-4 space-y-4">
           <CampoLongo
-            rotulo="Despesas não inclusas (uma por linha)"
-            valor={(orcamento.nao_incluso ?? []).join("\n")}
-            onSalvar={(v) => {
-              const linhas = v
-                .split("\n")
-                .map((l) => l.trim())
-                .filter(Boolean);
-              salvarCampo.mutate({ nao_incluso: linhas.length ? linhas : null });
-            }}
+            rotulo="Situação atual (um ponto por linha)"
+            valor={(orcamento.situacao_atual ?? []).join("\n")}
+            onSalvar={(v) => salvarCampo.mutate({ situacao_atual: linhasParaLista(v) })}
+          />
+          <CampoLongo
+            rotulo="Observação abaixo do escopo"
+            valor={orcamento.observacao_escopo ?? ""}
+            onSalvar={(v) => salvarCampo.mutate({ observacao_escopo: v || null })}
           />
         </div>
       </Bloco>
@@ -416,7 +480,7 @@ function Pagina() {
       <div className="flex justify-end">
         <Button
           type="button"
-          onClick={gerarProposta}
+          onClick={() => void gerarProposta()}
           disabled={!orcamento || itensQuery.isPending}
           className="h-12 text-base font-extrabold"
         >
@@ -447,6 +511,16 @@ function Pagina() {
           <ul className="space-y-3">
             {itens.map((item) => (
               <li key={item.id} className="rounded-2xl border-2 border-border p-3">
+                <Input
+                  defaultValue={item.etapa ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v !== (item.etapa ?? "").trim())
+                      salvarItem.mutate({ itemId: item.id, mudanca: { etapa: v || null } });
+                  }}
+                  placeholder="Etapa (ex.: 1. Levantamento)"
+                  className="mb-2 h-12 rounded-xl border-2 text-base font-bold"
+                />
                 <Input
                   defaultValue={item.descricao ?? ""}
                   onBlur={(e) => {
@@ -512,19 +586,155 @@ function Pagina() {
         </div>
       </Bloco>
 
+      <Bloco
+        titulo="Forma de pagamento"
+        acao={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => adicionarParcela.mutate()}
+            className="h-12 rounded-xl border-2 text-base font-extrabold"
+          >
+            <Plus className="size-5" strokeWidth={3} />
+            Parcela
+          </Button>
+        }
+      >
+        {(parcelasQuery.data ?? []).length === 0 ? (
+          <p className="text-base font-medium text-muted-foreground">
+            Sem parcelas: a proposta mostra o texto de "Condições de pagamento".
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {(parcelasQuery.data ?? []).map((p) => (
+              <li key={p.id} className="rounded-2xl border-2 border-border p-3">
+                <Input
+                  defaultValue={p.descricao ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v !== (p.descricao ?? "").trim())
+                      salvarParcela.mutate({ parcelaId: p.id, mudanca: { descricao: v } });
+                  }}
+                  placeholder="Ex.: 50% na assinatura do contrato"
+                  className="h-12 rounded-xl border-2 text-base font-semibold"
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Input
+                    key={`perc-${p.percentual ?? ""}`}
+                    defaultValue={p.percentual ?? ""}
+                    inputMode="decimal"
+                    onBlur={(e) =>
+                      salvarParcela.mutate({
+                        parcelaId: p.id,
+                        mudanca: { percentual: paraNumero(e.target.value) },
+                      })
+                    }
+                    placeholder="% do total"
+                    className="h-12 rounded-xl border-2 text-base font-semibold"
+                  />
+                  <Input
+                    key={`valor-${p.valor ?? ""}-${p.percentual ?? ""}`}
+                    defaultValue={p.percentual == null ? (p.valor ?? "") : ""}
+                    disabled={p.percentual != null}
+                    inputMode="decimal"
+                    onBlur={(e) =>
+                      salvarParcela.mutate({
+                        parcelaId: p.id,
+                        mudanca: { valor: paraNumero(e.target.value) ?? 0 },
+                      })
+                    }
+                    placeholder={
+                      p.percentual != null
+                        ? `${reais(((orcamento.total ?? 0) * p.percentual) / 100)} (pelo %)`
+                        : "Valor fixo (R$)"
+                    }
+                    className="h-12 rounded-xl border-2 text-base font-semibold"
+                  />
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removerParcela.mutate(p.id)}
+                    className="flex items-center gap-1 text-base font-extrabold text-destructive"
+                  >
+                    <Trash2 className="size-5" strokeWidth={2.5} />
+                    Remover
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Bloco>
+
+      <Bloco titulo="Prazos, documentos e não incluso">
+        <div className="space-y-4">
+          <CampoLongo
+            rotulo="Prazos (um por linha)"
+            valor={(orcamento.prazos ?? []).join("\n")}
+            onSalvar={(v) => salvarCampo.mutate({ prazos: linhasParaLista(v) })}
+          />
+          <CampoLongo
+            rotulo="Documentos necessários (um por linha)"
+            valor={(orcamento.documentos_reuniao ?? []).join("\n")}
+            onSalvar={(v) => salvarCampo.mutate({ documentos_reuniao: linhasParaLista(v) })}
+          />
+          <CampoLongo
+            rotulo="Não incluso (um por linha)"
+            valor={(orcamento.nao_incluso ?? []).join("\n")}
+            onSalvar={(v) => salvarCampo.mutate({ nao_incluso: linhasParaLista(v) })}
+          />
+        </div>
+      </Bloco>
+
+      <Bloco titulo="Nota de devolução do cartório (opcional)">
+        <CampoLongo
+          rotulo="Texto da nota de devolução"
+          valor={orcamento.nota_devolucao ?? ""}
+          onSalvar={(v) => salvarCampo.mutate({ nota_devolucao: v || null })}
+          placeholder="Deixe vazio se não houver nota de devolução"
+        />
+        {orcamento.nota_devolucao ? (
+          <div className="mt-4">
+            <Grade>
+              <Campo
+                rotulo="Data da reunião (AAAA-MM-DD)"
+                valor={orcamento.reuniao_data ?? ""}
+                onSalvar={(v) => salvarCampo.mutate({ reuniao_data: v || null })}
+              />
+              <Campo
+                rotulo="Horário (HH:MM)"
+                valor={(orcamento.reuniao_horario ?? "").slice(0, 5)}
+                onSalvar={(v) => salvarCampo.mutate({ reuniao_horario: v || null })}
+              />
+              <Campo
+                rotulo="Local"
+                valor={orcamento.reuniao_local ?? ""}
+                onSalvar={(v) => salvarCampo.mutate({ reuniao_local: v || null })}
+                larguraTotal
+              />
+            </Grade>
+          </div>
+        ) : null}
+      </Bloco>
+
       <Bloco titulo="Pré-visualização da proposta">
-        {itensQuery.isPending ? (
+        {htmlQuery.isPending ? (
           <Loader2 className="size-7 animate-spin text-primary" />
+        ) : htmlQuery.error ? (
+          <p className="text-base font-bold text-destructive">
+            Não foi possível montar a pré-visualização.
+          </p>
         ) : (
           <iframe
             title="Pré-visualização da proposta"
-            srcDoc={htmlProposta(dadosProposta()!, true)}
-            className="h-[70vh] min-h-[520px] w-full rounded-xl border-2 border-border bg-card"
+            srcDoc={htmlQuery.data}
+            className="h-[80vh] min-h-[560px] w-full rounded-xl border-2 border-border bg-card"
           />
         )}
         <p className="mt-2 text-sm font-semibold text-muted-foreground">
-          Atualiza sozinha ao salvar qualquer campo. Use "Gerar proposta" para imprimir ou salvar em
-          PDF.
+          Atualiza ao salvar qualquer campo. "Gerar proposta" abre a versão para imprimir ou salvar
+          em PDF.
         </p>
       </Bloco>
 
