@@ -62,7 +62,7 @@ import {
   type Vizinhanca,
 } from "@/lib/mapa";
 
-type BuscaUrl = { busca?: string; car?: string; sigef?: string; ccir?: string };
+type BuscaUrl = { busca?: string | undefined; car?: string | undefined; sigef?: string | undefined; ccir?: string | undefined };
 
 export const Route = createFileRoute("/_app/mapa")({
   head: () => ({
@@ -72,10 +72,10 @@ export const Route = createFileRoute("/_app/mapa")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): BuscaUrl => ({
-    busca: typeof s.busca === "string" && s.busca ? s.busca : undefined,
-    car: typeof s.car === "string" && s.car ? s.car : undefined,
-    sigef: typeof s.sigef === "string" && s.sigef ? s.sigef : undefined,
-    ccir: typeof s.ccir === "string" && s.ccir ? s.ccir : undefined,
+    busca: typeof s["busca"] === "string" && s["busca"] ? s["busca"] : undefined,
+    car: typeof s["car"] === "string" && s["car"] ? s["car"] : undefined,
+    sigef: typeof s["sigef"] === "string" && s["sigef"] ? s["sigef"] : undefined,
+    ccir: typeof s["ccir"] === "string" && s["ccir"] ? s["ccir"] : undefined,
   }),
   component: PaginaMapa,
 });

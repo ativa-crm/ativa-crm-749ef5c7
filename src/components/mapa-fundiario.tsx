@@ -50,11 +50,11 @@ function camadaDaLayer(id: string): Camada {
 }
 
 function rotuloFeicao(camada: Camada, f: MapGeoJSONFeature): string {
-  const p = (f.properties ?? {}) as Record<string, unknown>;
-  if (camada === "car") return `CAR ${String(p.cod_imovel ?? f.id ?? "")}`;
-  if (camada === "ccir") return `CCIR ${String(p.codigo ?? f.id ?? "")}`;
-  const parcela = String(p.parcela_co ?? "");
-  const imovel = p.codigo_imo ? ` · INCRA ${String(p.codigo_imo)}` : "";
+  const p = (f.properties ?? {}) as Record<string, any>;
+  if (camada === "car") return `CAR ${String(p["cod_imovel"] ?? f.id ?? "")}`;
+  if (camada === "ccir") return `CCIR ${String(p["codigo"] ?? f.id ?? "")}`;
+  const parcela = String(p["parcela_co"] ?? "");
+  const imovel = p["codigo_imo"] ? ` · INCRA ${String(p["codigo_imo"])}` : "";
   return `SIGEF ${parcela.slice(0, 8)}${imovel}`;
 }
 
@@ -337,7 +337,7 @@ export function MapaFundiario({
           ],
           { layers: ["ccir-pontos"] },
         )[0];
-        const codigo = ponto?.properties?.codigo;
+        const codigo = ponto?.properties?.["codigo"];
         if (codigo) {
           callbacks.current.onPontoCcir?.(String(codigo));
           return;
@@ -547,7 +547,7 @@ export function MapaFundiario({
       popupHover.current
         .setLngLat(e.lngLat)
         .setHTML(
-          `<span style="font-size:12px;font-weight:700">CCIR ${escapar(String(p.codigo ?? ""))} · ${escapar(String(p.nome ?? ""))}</span><br/><span style="font-size:11px">Localização provável (confiança ${escapar(String(p.confianca ?? ""))})</span>`,
+          `<span style="font-size:12px;font-weight:700">CCIR ${escapar(String(p["codigo"] ?? ""))} · ${escapar(String(p["nome"] ?? ""))}</span><br/><span style="font-size:11px">Localização provável (confiança ${escapar(String(p["confianca"] ?? ""))})</span>`,
         )
         .addTo(m);
     });

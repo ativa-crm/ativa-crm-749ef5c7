@@ -292,7 +292,7 @@ function useResumoFiltro(f: Filtros) {
           .range(inicio, inicio + LOTE - 1);
         const { data, error } = await aplicarFiltros(base, f);
         if (error) throw error;
-        const linhas = (data ?? []) as {
+        const linhas = (data ?? []) as unknown as {
           id: string;
           area_ha: number | null;
           prospeccao_id: string | null;
