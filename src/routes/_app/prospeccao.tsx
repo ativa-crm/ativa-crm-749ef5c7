@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   ChevronLeft,
   ChevronRight,
+  Clock,
   Download,
   Loader2,
   Mail,
@@ -242,6 +243,52 @@ function aplicarFiltros<T>(consulta: T, f: Filtros): T {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
+type PrevisaoEnvio = { posicao: number; envio_previsto: string };
+
+/** Fila do robô de WhatsApp (mesma ordem do n8n) com a data/hora prevista de cada envio. */
+function useFilaCampanha() {
+  return useQuery({
+    queryKey: ["prospeccao", "fila-campanha"],
+    queryFn: async (): Promise<{ porLead: Map<string, PrevisaoEnvio>; total: number; termino: string | null }> => {
+      const { data, error } = await supabase.rpc("previsao_fila_campanha");
+      if (error) throw error;
+      const linhas = (data ?? []) as {
+        prospeccao_id: string | null;
+        posicao: number;
+        envio_previsto: string;
+      }[];
+      const porLead = new Map<string, PrevisaoEnvio>();
+      let total = 0;
+      let termino: string | null = null;
+      for (const l of linhas) {
+        if (l.posicao > total) {
+          total = l.posicao;
+          termino = l.envio_previsto;
+        }
+        if (l.prospeccao_id && !porLead.has(l.prospeccao_id)) {
+          porLead.set(l.prospeccao_id, { posicao: l.posicao, envio_previsto: l.envio_previsto });
+        }
+      }
+      return { porLead, total, termino };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+const FORMATO_ENVIO = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "America/Sao_Paulo",
+});
+
+function envioPrevisto(p: PrevisaoEnvio | undefined): string {
+  if (!p) return "";
+  return `#${p.posicao} · ${FORMATO_ENVIO.format(new Date(p.envio_previsto)).replace(",", "")}`;
+}
+
 /** Municípios distintos: busca em lotes para não parar no limite padrão do PostgREST. */
 function useMunicipios() {
   return useQuery({
@@ -408,6 +455,9 @@ function Pagina() {
   }, [filtros]);
 
   const municipiosQuery = useMunicipios();
+  const filaQuery = useFilaCampanha();
+  const previsaoDe = (leadId: string | null | undefined) =>
+    leadId ? filaQuery.data?.porLead.get(leadId) : undefined;
   const resumoQuery = useResumoFiltro(filtros);
   const paginaQuery = usePaginaImoveis(filtros, pagina);
 
@@ -546,6 +596,7 @@ function Pagina() {
             lead?.telefone ?? "",
             lead?.email ?? "",
             lead ? rotuloEstagio(lead.estagio) : "",
+            envioPrevisto(previsaoDe(lead?.id)),
             lead?.proxima_acao ?? "",
             lead?.proxima_data ?? "",
           ]);
@@ -567,6 +618,7 @@ function Pagina() {
           "Telefone",
           "E-mail",
           "Etapa do lead",
+          "Envio previsto (robô)",
           "Próxima ação",
           "Próxima data",
         ],
@@ -688,7 +740,7 @@ function Pagina() {
         </div>
       </BarraFerramentas>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <CartaoIndicador
           icone={MapPinned}
           valor={resumoQuery.isPending ? "…" : total}
@@ -716,6 +768,17 @@ function Pagina() {
           valor={resumoQuery.isPending ? "…" : areaHa(resumoQuery.data?.areaTotal ?? 0)}
           rotulo="Área somada"
           apoio="hectares no filtro"
+          destino="/prospeccao"
+        />
+        <CartaoIndicador
+          icone={Clock}
+          valor={filaQuery.isPending ? "…" : (filaQuery.data?.total ?? 0)}
+          rotulo="Fila do WhatsApp"
+          apoio={
+            filaQuery.data?.termino
+              ? `40 por dia, a cada 15 min · termina ${new Date(filaQuery.data.termino).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
+              : "40 por dia, a cada 15 min"
+          }
           destino="/prospeccao"
         />
       </div>
@@ -861,6 +924,7 @@ function Pagina() {
                     <th className="px-3 py-2">
                       {cabecalho("estagio", "Etapa do lead", { ordenavel: false, formatar: (v: string) => rotuloEstagio(v) })}
                     </th>
+                    <th className="px-3 py-2 whitespace-nowrap">Envio previsto</th>
                     <th className="px-3 py-2">{cabecalho("car", "CAR")}</th>
                     <th className="px-3 py-2">{cabecalho("ccir", "CCIR")}</th>
                     <th className="px-3 py-2">{cabecalho("sigef", "SIGEF")}</th>
@@ -875,7 +939,7 @@ function Pagina() {
                 <tbody>
                   {linhas.length === 0 && (
                     <tr>
-                      <td colSpan={15} className="px-3 py-6 text-sm font-semibold text-muted-foreground">
+                      <td colSpan={16} className="px-3 py-6 text-sm font-semibold text-muted-foreground">
                         Nenhum imóvel com esses filtros.{" "}
                         <button
                           type="button"
@@ -951,6 +1015,9 @@ function Pagina() {
                           {lead ? rotuloEstagio(lead.estagio) : "—"}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
+                          {envioPrevisto(previsaoDe(lead?.id)) || "—"}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
                           {i.car || "—"}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm font-semibold text-muted-foreground">
@@ -1023,6 +1090,7 @@ function Pagina() {
         <DetalheImovel
           imovel={imovelAberto}
           coordenadas={coordPorId.get(imovelAberto.id) ?? null}
+          envio={envioPrevisto(previsaoDe(um(imovelAberto.prospeccao)?.id)) || null}
           responsavel={perfil?.nome ?? ""}
           onFechar={() => setSelecionado(null)}
           onWhats={() => abrirWhats(imovelAberto)}
@@ -1084,6 +1152,7 @@ function Pagina() {
 function DetalheImovel({
   imovel,
   coordenadas,
+  envio,
   responsavel,
   onFechar,
   onWhats,
@@ -1092,6 +1161,7 @@ function DetalheImovel({
 }: {
   imovel: LinhaImovel;
   coordenadas: string | null;
+  envio: string | null;
   responsavel: string;
   onFechar: () => void;
   onWhats: () => void;
@@ -1162,6 +1232,7 @@ function DetalheImovel({
         <Campo rotulo="CCIR" valor={imovel.ccir} />
         <Campo rotulo="SIGEF" valor={imovel.sigef} />
         <Campo rotulo="Coordenadas" valor={coordenadas} />
+        <Campo rotulo="Envio previsto pelo robô" valor={envio} />
         <Campo
           rotulo="Telefone / WhatsApp"
           valor={lead?.telefone ? telefoneVisivel(lead.telefone) : null}

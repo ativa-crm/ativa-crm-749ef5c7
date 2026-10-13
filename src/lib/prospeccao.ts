@@ -27,6 +27,8 @@ export const ROTULO_ESTAGIO: Record<Estagio, string> = {
 export const SERVICOS_SUGERIDOS = [
   "Georreferenciamento + CAR",
   "Georreferenciamento",
+  "Georreferenciamento – CAR a verificar",
+  "Regularização Fundiária",
   "Cadastro do CAR",
   "Outorga de agua",
   "Regularizacao no INCRA",
