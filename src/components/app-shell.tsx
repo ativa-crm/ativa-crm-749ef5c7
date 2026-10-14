@@ -22,6 +22,7 @@ import {
   PanelLeftOpen,
   Search,
   Map as MapaIcone,
+  Mail,
 } from "lucide-react";
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
@@ -35,6 +36,7 @@ const ITENS = [
   { to: "/inicio", rotulo: "Início", Icone: Home },
   { to: "/mapa", rotulo: "Mapa", Icone: MapaIcone },
   { to: "/prospeccao", rotulo: "Prospecção", Icone: Target },
+  { to: "/email", rotulo: "E-mail", Icone: Mail },
   { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/clientes", rotulo: "Clientes", Icone: Users },
   { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
@@ -54,6 +56,7 @@ const TITULOS: Record<string, string> = {
   "/clientes": "Clientes",
   "/funil": "Funil",
   "/prospeccao": "Prospecção",
+  "/email": "E-mail",
   "/oportunidades": "Oportunidade",
   "/servicos": "Serviços",
   "/orcamentos": "Orçamentos",

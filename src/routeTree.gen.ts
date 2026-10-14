@@ -16,6 +16,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
+import { Route as AppEmailRouteImport } from './routes/_app/email'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
 import { Route as AppMapaRouteImport } from './routes/_app/mapa'
 import { Route as AppProspeccaoRouteImport } from './routes/_app/prospeccao'
@@ -65,6 +66,11 @@ const AppAdministracaoRoute = AppAdministracaoRouteImport.update({
 const AppFunilRoute = AppFunilRouteImport.update({
   id: '/funil',
   path: '/funil',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppEmailRoute = AppEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppInicioRoute = AppInicioRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
+  '/email': typeof AppEmailRoute
   '/inicio': typeof AppInicioRoute
   '/mapa': typeof AppMapaRoute
   '/prospeccao': typeof AppProspeccaoRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
+  '/email': typeof AppEmailRoute
   '/inicio': typeof AppInicioRoute
   '/mapa': typeof AppMapaRoute
   '/prospeccao': typeof AppProspeccaoRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_app/administracao': typeof AppAdministracaoRoute
   '/_app/funil': typeof AppFunilRoute
+  '/_app/email': typeof AppEmailRoute
   '/_app/inicio': typeof AppInicioRoute
   '/_app/mapa': typeof AppMapaRoute
   '/_app/prospeccao': typeof AppProspeccaoRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/administracao'
     | '/funil'
+    | '/email'
     | '/inicio'
     | '/mapa'
     | '/prospeccao'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/administracao'
     | '/funil'
+    | '/email'
     | '/inicio'
     | '/mapa'
     | '/prospeccao'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_app/administracao'
     | '/_app/funil'
+    | '/_app/email'
     | '/_app/inicio'
     | '/_app/mapa'
     | '/_app/prospeccao'
@@ -355,6 +367,13 @@ declare module '@tanstack/react-router' {
       path: '/funil'
       fullPath: '/funil'
       preLoaderRoute: typeof AppFunilRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/email': {
+      id: '/_app/email'
+      path: '/email'
+      fullPath: '/email'
+      preLoaderRoute: typeof AppEmailRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/inicio': {
@@ -475,6 +494,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppAdministracaoRoute: typeof AppAdministracaoRoute
   AppFunilRoute: typeof AppFunilRoute
+  AppEmailRoute: typeof AppEmailRoute
   AppInicioRoute: typeof AppInicioRoute
   AppMapaRoute: typeof AppMapaRoute
   AppProspeccaoRoute: typeof AppProspeccaoRoute
@@ -496,6 +516,7 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdministracaoRoute: AppAdministracaoRoute,
   AppFunilRoute: AppFunilRoute,
+  AppEmailRoute: AppEmailRoute,
   AppInicioRoute: AppInicioRoute,
   AppMapaRoute: AppMapaRoute,
   AppProspeccaoRoute: AppProspeccaoRoute,
