@@ -8,14 +8,16 @@ import {
   ClipboardList,
   Landmark,
   Loader2,
+  MessageCircle,
   Plus,
   Trash2,
+  UserPlus,
   Workflow,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
-import { data as dataBR, dataHora } from "@/lib/formato";
+import { data as dataBR, dataHora, soDigitos } from "@/lib/formato";
 import { semaforoPrazo } from "@/lib/prazo";
 import {
   MODELOS_ESTEIRA,
@@ -40,7 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type Busca = { p?: string | undefined; ver?: "ativos" | "encerrados" | undefined };
+type Busca = { p?: string | undefined; ver?: "ativos" | "encerrados" | "confrontantes" | undefined };
 
 export const Route = createFileRoute("/_app/esteira")({
   head: () => ({
@@ -55,7 +57,7 @@ export const Route = createFileRoute("/_app/esteira")({
   }),
   validateSearch: (s: Record<string, unknown>): Busca => ({
     p: typeof s["p"] === "string" && s["p"] ? s["p"] : undefined,
-    ver: s["ver"] === "encerrados" ? "encerrados" : undefined,
+    ver: s["ver"] === "encerrados" ? "encerrados" : s["ver"] === "confrontantes" ? "confrontantes" : undefined,
   }),
   component: Pagina,
 });
@@ -130,9 +132,32 @@ function Pagina() {
   return p ? <DetalheProcesso id={p} /> : <ListaProcessos />;
 }
 
+function Abas({ ver }: { ver: Busca["ver"] }) {
+  const navigate = useNavigate({ from: "/esteira" });
+  const abas: { chave: Busca["ver"]; rotulo: string }[] = [
+    { chave: undefined, rotulo: "Em andamento" },
+    { chave: "encerrados", rotulo: "Encerrados" },
+    { chave: "confrontantes", rotulo: "Confrontantes para abordar" },
+  ];
+  return (
+    <div className="flex flex-wrap gap-2">
+      {abas.map((a) => (
+        <Button
+          key={a.rotulo}
+          type="button"
+          variant={ver === a.chave ? "default" : "outline"}
+          className="font-bold"
+          onClick={() => void navigate({ search: a.chave ? { ver: a.chave } : {} })}
+        >
+          {a.rotulo}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
 function ListaProcessos() {
   const { ver } = Route.useSearch();
-  const navigate = useNavigate({ from: "/esteira" });
   const [novo, setNovo] = useState(false);
   const encerrados = ver === "encerrados";
 
@@ -214,26 +239,11 @@ function ListaProcessos() {
         <Resumo rotulo="Exigências em aberto" valor={resumo.exig} destaque={resumo.exig > 0} />
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={encerrados ? "outline" : "default"}
-          className="font-bold"
-          onClick={() => void navigate({ search: {} })}
-        >
-          Em andamento
-        </Button>
-        <Button
-          type="button"
-          variant={encerrados ? "default" : "outline"}
-          className="font-bold"
-          onClick={() => void navigate({ search: { ver: "encerrados" } })}
-        >
-          Encerrados
-        </Button>
-      </div>
+      <Abas ver={ver} />
 
-      {processos.isPending ? (
+      {ver === "confrontantes" ? <ConfrontantesAbordar /> : null}
+
+      {ver === "confrontantes" ? null : processos.isPending ? (
         <div className="flex justify-center py-12">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
@@ -1101,5 +1111,252 @@ function Exigencias({ processoId }: { processoId: string }) {
         </DialogContent>
       </Dialog>
     </Bloco>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Confrontantes para abordar (presencial, só depois da carta assinada) */
+
+type Confrontante = {
+  anuencia_id: string;
+  imovel_id: string;
+  imovel_nome: string | null;
+  municipio: string | null;
+  nome: string | null;
+  documento: string | null;
+  telefone: string | null;
+  telefone_fonte: string | null;
+  imovel_confrontante: string | null;
+  chave: string | null;
+  assinada_em: string | null;
+  certificado: boolean;
+  ja_cliente_id: string | null;
+  ja_cliente_nome: string | null;
+  em_prospeccao: boolean;
+  status: string;
+  abordado_em: string | null;
+  cliente_id: string | null;
+  observacoes: string | null;
+};
+
+const STATUS_ABORDAGEM = [
+  { valor: "a_abordar", rotulo: "A abordar", cor: "bg-amber-500 text-white" },
+  { valor: "interessado", rotulo: "Interessado", cor: "bg-primary text-primary-foreground" },
+  { valor: "sem_interesse", rotulo: "Sem interesse", cor: "bg-muted text-muted-foreground" },
+  { valor: "virou_cliente", rotulo: "Virou cliente", cor: "bg-emerald-600 text-white" },
+] as const;
+
+function ConfrontantesAbordar() {
+  const queryClient = useQueryClient();
+  const [verCertificados, setVerCertificados] = useState(false);
+  const [filtro, setFiltro] = useState<string>("abertos");
+
+  const lista = useQuery({
+    queryKey: ["esteira", "confrontantes"],
+    queryFn: async (): Promise<Confrontante[]> => {
+      const { data, error } = await supabase.rpc("confrontantes_para_abordar");
+      if (error) throw error;
+      return (data ?? []) as Confrontante[];
+    },
+  });
+
+  const invalidar = () => void queryClient.invalidateQueries({ queryKey: ["esteira", "confrontantes"] });
+
+  const salvar = useMutation({
+    mutationFn: async ({ c, campos }: { c: Confrontante; campos: Record<string, unknown> }) => {
+      const linha: Record<string, unknown> = {
+        anuencia_id: c.anuencia_id,
+        status: c.status,
+        observacoes: c.observacoes,
+        cliente_id: c.cliente_id,
+        abordado_em: c.abordado_em,
+        ...campos,
+      };
+      if (campos.status && campos.status !== "a_abordar" && !c.abordado_em) linha.abordado_em = new Date().toISOString();
+      if (campos.status === "a_abordar") linha.abordado_em = null;
+      const { error } = await supabase.from("confrontantes_abordagem").upsert(linha, { onConflict: "anuencia_id" });
+      if (error) throw error;
+    },
+    onSuccess: () => invalidar(),
+    onError: () => toast.error("Não foi possível salvar."),
+  });
+
+  const cadastrarCliente = useMutation({
+    mutationFn: async (c: Confrontante) => {
+      const doc = soDigitos(c.documento ?? "");
+      const { data, error } = await supabase
+        .from("clientes")
+        .insert({
+          nome: c.nome || "Confrontante sem nome",
+          documento: doc || null,
+          tipo: doc.length === 14 ? "pj" : "pf",
+          telefone: c.telefone,
+          origem: "confrontante",
+          observacoes: `Confrontante de ${c.imovel_nome ?? "imóvel"}${c.municipio ? ` (${c.municipio})` : ""}; carta de anuência assinada.`,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      await salvar.mutateAsync({ c, campos: { cliente_id: data.id, status: c.status === "a_abordar" ? "interessado" : c.status } });
+      return data.id as string;
+    },
+    onSuccess: () => toast.success("Cliente cadastrado (origem: confrontante)."),
+    onError: () => toast.error("Não foi possível cadastrar o cliente."),
+  });
+
+  const todos = lista.data ?? [];
+  const certificados = todos.filter((c) => c.certificado).length;
+  const visiveis = todos
+    .filter((c) => verCertificados || !c.certificado)
+    .filter((c) =>
+      filtro === "todos" ? true : filtro === "abertos" ? c.status === "a_abordar" || c.status === "interessado" : c.status === filtro,
+    );
+
+  return (
+    <div className="space-y-4">
+      <p className="rounded-2xl border-2 border-border bg-card p-3 text-base font-semibold text-muted-foreground">
+        Vizinhos que já assinaram a carta de anuência. A ideia é oferecer o serviço pessoalmente, na visita da
+        assinatura ou logo depois — sem mensagem automática e sem citar o cliente vizinho.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          className="h-11 rounded-xl border-2 border-border bg-card px-3 text-base font-bold text-foreground"
+          aria-label="Filtrar situação"
+        >
+          <option value="abertos">A abordar e interessados</option>
+          {STATUS_ABORDAGEM.map((s) => (
+            <option key={s.valor} value={s.valor}>
+              {s.rotulo}
+            </option>
+          ))}
+          <option value="todos">Todos</option>
+        </select>
+        {certificados > 0 ? (
+          <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+            <Checkbox checked={verCertificados} onCheckedChange={(v) => setVerCertificados(v === true)} />
+            Mostrar áreas já certificadas ({certificados})
+          </label>
+        ) : null}
+      </div>
+
+      {lista.isPending ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="size-8 animate-spin text-primary" />
+        </div>
+      ) : visiveis.length === 0 ? (
+        <p className="rounded-3xl border-2 border-dashed border-border p-6 text-lg font-medium text-muted-foreground">
+          {todos.length === 0
+            ? "Nenhum confrontante com carta assinada ainda. Eles aparecem aqui assim que a anuência é marcada como assinada."
+            : "Nenhum confrontante nesta situação."}
+        </p>
+      ) : (
+        <ul className="grid gap-3 lg:grid-cols-2">
+          {visiveis.map((c) => {
+            const tel = soDigitos(c.telefone ?? "");
+            const cor = STATUS_ABORDAGEM.find((s) => s.valor === c.status)?.cor ?? "";
+            const clienteVinculado = c.cliente_id ?? c.ja_cliente_id;
+            return (
+              <li key={c.anuencia_id} className="rounded-3xl border-2 border-border bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-lg font-extrabold text-foreground">{c.nome || "Confrontante sem nome"}</p>
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {[c.imovel_confrontante, c.documento].filter(Boolean).join(" · ") || "sem dados do imóvel"}
+                    </p>
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Vizinho de{" "}
+                      <Link to="/imoveis/$id" params={{ id: c.imovel_id }} className="text-primary">
+                        {c.imovel_nome ?? "imóvel"}
+                      </Link>
+                      {c.municipio ? ` · ${c.municipio}` : ""}
+                      {c.assinada_em ? ` · assinou em ${dataBR(c.assinada_em)}` : ""}
+                    </p>
+                  </div>
+                  <select
+                    value={c.status}
+                    onChange={(e) => salvar.mutate({ c, campos: { status: e.target.value } })}
+                    className={`h-10 shrink-0 rounded-xl border-2 border-border px-2 text-sm font-bold ${cor}`}
+                    aria-label="Situação da abordagem"
+                  >
+                    {STATUS_ABORDAGEM.map((s) => (
+                      <option key={s.valor} value={s.valor}>
+                        {s.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-2 text-xs font-extrabold">
+                  {c.certificado ? (
+                    <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Área já certificada</span>
+                  ) : null}
+                  {c.em_prospeccao ? (
+                    <span className="rounded-md bg-amber-500 px-2 py-1 text-white">Já está na campanha de prospecção</span>
+                  ) : null}
+                  {c.ja_cliente_id && !c.cliente_id ? (
+                    <span className="rounded-md bg-primary px-2 py-1 text-primary-foreground">
+                      Já é cliente: {c.ja_cliente_nome ?? ""}
+                    </span>
+                  ) : null}
+                </div>
+
+                <p className="mt-2 text-base font-semibold text-foreground">
+                  {c.telefone ? (
+                    <>
+                      {c.telefone}
+                      <span className="text-sm text-muted-foreground">
+                        {c.telefone_fonte === "receita" ? " (da Receita)" : c.telefone_fonte === "cliente" ? " (do cadastro)" : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">sem telefone</span>
+                  )}
+                </p>
+
+                <Textarea
+                  defaultValue={c.observacoes ?? ""}
+                  placeholder="Anotações da conversa (ex.: tem interesse, ligar depois da colheita)"
+                  onBlur={(e) => {
+                    const v = e.target.value.trim() || null;
+                    if (v !== (c.observacoes ?? null)) salvar.mutate({ c, campos: { observacoes: v } });
+                  }}
+                  className="mt-2 min-h-16 rounded-xl border-2 text-base"
+                />
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tel ? (
+                    <Button asChild variant="outline" size="sm">
+                      <a href={`https://wa.me/${tel.length <= 11 ? `55${tel}` : tel}`} target="_blank" rel="noreferrer">
+                        <MessageCircle className="size-4" /> WhatsApp
+                      </a>
+                    </Button>
+                  ) : null}
+                  {clienteVinculado ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link to="/clientes/$id" params={{ id: clienteVinculado }}>
+                        Abrir cliente
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={cadastrarCliente.isPending}
+                      onClick={() => cadastrarCliente.mutate(c)}
+                    >
+                      <UserPlus className="size-4" /> Cadastrar como cliente
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
