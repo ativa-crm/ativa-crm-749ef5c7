@@ -269,7 +269,14 @@ export function PainelAnuencias({ imovelId, osId }: { imovelId: string; osId?: s
   const assinadas = validos.filter((a) => a.status === "assinada").length;
   const progresso = validos.length === 0 ? 0 : Math.round((assinadas / validos.length) * 100);
   const im = imovel.data;
-  const buscaMapa = im?.sigef ? { sigef: im.sigef } : im?.car ? { car: im.car } : im?.ccir ? { ccir: im.ccir } : null;
+  const carNorm = im?.car ? im.car.toUpperCase().replace(/[.\s]/g, "") : null;
+  const buscaMapa = im?.sigef
+    ? { sigef: im.sigef, anuencias: imovelId }
+    : carNorm
+      ? { car: carNorm, anuencias: imovelId }
+      : im?.ccir
+        ? { ccir: im.ccir, anuencias: imovelId }
+        : null;
 
   return (
     <Bloco
@@ -304,13 +311,13 @@ export function PainelAnuencias({ imovelId, osId }: { imovelId: string; osId?: s
       ) : itens.length === 0 ? (
         <div className="space-y-3">
           <p className="text-lg font-medium text-muted-foreground">
-            Nenhum confrontante cadastrado. No mapa, selecione a área deste imóvel, mostre os
-            confrontantes e use “Enviar para anuências”, ou adicione manualmente.
+            Nenhum confrontante cadastrado. Use o botão abaixo: o mapa encontra os vizinhos da área
+            deste imóvel e preenche esta lista sozinho. Também dá para adicionar manualmente.
           </p>
           {buscaMapa ? (
             <Button asChild variant="outline" className="h-12 font-extrabold">
               <Link to="/mapa" search={buscaMapa}>
-                <MapPinned className="size-5" strokeWidth={2.5} /> Buscar confrontantes no mapa
+                <MapPinned className="size-5" strokeWidth={2.5} /> Buscar confrontantes no mapa e preencher
               </Link>
             </Button>
           ) : null}
@@ -340,7 +347,7 @@ export function PainelAnuencias({ imovelId, osId }: { imovelId: string; osId?: s
             {buscaMapa ? (
               <Button asChild variant="outline" className="font-bold">
                 <Link to="/mapa" search={buscaMapa}>
-                  <MapPinned className="size-5" strokeWidth={2.5} /> Ver no mapa
+                  <MapPinned className="size-5" strokeWidth={2.5} /> Atualizar pelo mapa
                 </Link>
               </Button>
             ) : null}

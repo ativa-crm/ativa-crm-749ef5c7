@@ -70,6 +70,8 @@ type BuscaUrl = {
   ccir?: string | undefined;
   /** id do imóvel do CRM cujo campo "Confrontantes" deve ser preenchido com o cálculo do mapa. */
   preencher?: string | undefined;
+  /** id do imóvel do CRM que recebe os confrontantes na lista de anuências (e no campo, se vazio). */
+  anuencias?: string | undefined;
 };
 
 export const Route = createFileRoute("/_app/mapa")({
@@ -85,6 +87,7 @@ export const Route = createFileRoute("/_app/mapa")({
     sigef: typeof s["sigef"] === "string" && s["sigef"] ? s["sigef"] : undefined,
     ccir: typeof s["ccir"] === "string" && s["ccir"] ? s["ccir"] : undefined,
     preencher: typeof s["preencher"] === "string" && s["preencher"] ? s["preencher"] : undefined,
+    anuencias: typeof s["anuencias"] === "string" && s["anuencias"] ? s["anuencias"] : undefined,
   }),
   component: PaginaMapa,
 });
@@ -873,6 +876,35 @@ function PaginaMapa() {
     );
   }, [params.preencher, selecao, calculando, vizinhanca, detViz.isPending, textoConfrontantes, salvarConfrontantes, navigate]);
 
+  // Vindo do painel de anuências com ?anuencias=<id>: envia os confrontantes para a lista
+  // do imóvel, preenche o campo "Confrontantes" se estiver vazio e volta para a ficha.
+  const jaEnviouAnuencias = useRef(false);
+  useEffect(() => {
+    const alvo = params.anuencias;
+    if (!alvo || jaEnviouAnuencias.current || !selecao?.camada || selecao.fids.length === 0) return;
+    if (calculando || !vizinhanca || (vizinhanca.confrontantes.length > 0 && detViz.isPending)) return;
+    jaEnviouAnuencias.current = true;
+    if (vizinhanca.confrontantes.length === 0) {
+      toast.info("Nenhum confrontante encontrado nesta base. Adicione manualmente na ficha do imóvel.");
+      return;
+    }
+    void (async () => {
+      try {
+        await enviarAnuencias.mutateAsync(alvo);
+        const { data: im } = await supabase.from("imoveis").select("confrontantes").eq("id", alvo).maybeSingle();
+        if (!((im as { confrontantes: string | null } | null)?.confrontantes ?? "").trim()) {
+          await salvarConfrontantes.mutateAsync({ imovelId: alvo, texto: textoConfrontantes() });
+        }
+        void navigate({ to: "/imoveis/$id", params: { id: alvo } });
+      } catch {
+        /* os toasts de erro já são exibidos pelas mutações */
+      }
+    })();
+  }, [params.anuencias, selecao, calculando, vizinhanca, detViz.isPending, enviarAnuencias, salvarConfrontantes, textoConfrontantes, navigate]);
+
+  // Imóvel do CRM que recebe as ações do painel: o que veio da ficha, ou o reconhecido no mapa.
+  const imovelAlvo = params.anuencias ?? params.preencher ?? detalhe?.imovel_id ?? null;
+
   const aoVizinhanca = useCallback((r: Vizinhanca | null, calc: boolean) => {
     setVizinhanca(r);
     setCalculando(calc);
@@ -1419,12 +1451,12 @@ function PaginaMapa() {
                           <Download className="size-4" aria-hidden /> Exportar confrontantes (CSV)
                         </Button>
                       )}
-                      {vizinhanca.confrontantes.length > 0 && detalhe?.imovel_id && (
+                      {vizinhanca.confrontantes.length > 0 && imovelAlvo && (
                         <Button
                           type="button"
                           className="mt-2 h-11 w-full font-bold"
                           disabled={enviarAnuencias.isPending || detViz.isPending}
-                          onClick={() => { const alvo = detalhe?.imovel_id; if (alvo) enviarAnuencias.mutate(alvo); }}
+                          onClick={() => { if (imovelAlvo) enviarAnuencias.mutate(imovelAlvo); }}
                         >
                           {enviarAnuencias.isPending ? (
                             <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -1434,14 +1466,14 @@ function PaginaMapa() {
                           Enviar para anuências
                         </Button>
                       )}
-                      {vizinhanca.confrontantes.length > 0 && detalhe?.imovel_id && (
+                      {vizinhanca.confrontantes.length > 0 && imovelAlvo && (
                         <Button
                           type="button"
                           variant="outline"
                           className="mt-2 h-11 w-full font-bold"
                           disabled={salvarConfrontantes.isPending || detViz.isPending}
                           onClick={() => {
-                            const alvo = detalhe?.imovel_id;
+                            const alvo = imovelAlvo;
                             if (!alvo) return;
                             salvarConfrontantes.mutate(
                               { imovelId: alvo, texto: textoConfrontantes() },
@@ -1453,7 +1485,7 @@ function PaginaMapa() {
                           Gravar confrontantes na ficha do imóvel
                         </Button>
                       )}
-                      {vizinhanca.confrontantes.length > 0 && !detalhe?.imovel_id && (
+                      {vizinhanca.confrontantes.length > 0 && !imovelAlvo && (
                         <p className="mt-2 text-xs font-semibold text-muted-foreground">
                           Cadastre esta área no CRM para controlar as anuências dos confrontantes.
                         </p>
