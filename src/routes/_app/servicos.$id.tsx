@@ -19,7 +19,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { PainelAnuencias } from "@/components/painel-anuencias";
 
 export const Route = createFileRoute("/_app/servicos/$id")({
   head: () => ({
@@ -368,8 +367,6 @@ function Pagina() {
           </>
         )}
       </Bloco>
-
-      {ordem.imovel_id ? <PainelAnuencias imovelId={ordem.imovel_id} osId={ordem.id} /> : null}
 
       <Bloco titulo="Documentos" Icone={FileText}>
         {(documentosQuery.data ?? []).length === 0 ? (
