@@ -10,6 +10,7 @@ import {
   Filter,
   Target,
   Wrench,
+  Workflow,
   FileText,
   Route as RotaIcone,
   LogOut,
@@ -44,6 +45,7 @@ const ITENS = [
   { to: "/contratos", rotulo: "Contratos", Icone: FileSignature },
   { to: "/medicao", rotulo: "Medição", Icone: RotaIcone },
   { to: "/servicos", rotulo: "Serviços", Icone: Wrench },
+  { to: "/esteira", rotulo: "Esteira técnica", Icone: Workflow },
 ] as const;
 
 const ITEM_ADMIN = { to: "/administracao", rotulo: "Administração", Icone: ShieldCheck } as const;
