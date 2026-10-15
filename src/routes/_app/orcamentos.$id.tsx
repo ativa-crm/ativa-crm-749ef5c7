@@ -637,7 +637,7 @@ function Pagina() {
                     if (v !== (p.descricao ?? "").trim())
                       salvarParcela.mutate({ parcelaId: p.id, mudanca: { descricao: v } });
                   }}
-                  placeholder="Ex.: 50% na assinatura do contrato"
+                  placeholder="Ex.: Entrada de 40% na assinatura do contrato"
                   className="h-12 rounded-xl border-2 text-base font-semibold"
                 />
                 <div className="mt-2 grid grid-cols-2 gap-2">

@@ -325,7 +325,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
   const [desconto, setDesconto] = useState("");
   const [validade, setValidade] = useState("15");
   const [prazo, setPrazo] = useState("");
-  const [condicoes, setCondicoes] = useState("50% na assinatura e 50% na entrega");
+  const [condicoes, setCondicoes] = useState("40% de entrada na assinatura do contrato, 30% no protocolo no cartório e 30% na retificação no cartório");
   const [titulo, setTitulo] = useState("GEORREFERENCIAMENTO DE IMÓVEL RURAL");
   const [descricao, setDescricao] = useState("Georreferenciamento");
   const [finalidade, setFinalidade] = useState("certificação no SIGEF/INCRA");
@@ -392,7 +392,7 @@ function NovoOrcamento({ aberto, onFechar }: { aberto: boolean; onFechar: () => 
     setDesconto("");
     setValidade("15");
     setPrazo("");
-    setCondicoes("50% na assinatura e 50% na entrega");
+    setCondicoes("40% de entrada na assinatura do contrato, 30% no protocolo no cartório e 30% na retificação no cartório");
     setAlqueires("");
     setDocumentoCli("");
   }

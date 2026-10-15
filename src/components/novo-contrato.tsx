@@ -197,7 +197,7 @@ export function NovoContrato({ aberto, onFechar }: { aberto: boolean; onFechar: 
           </label>
         </div>
         <p className="text-sm font-semibold text-muted-foreground">
-          Pagamento: 50% na assinatura e 50% na entrega · Foro: Comarca de Itapeva/SP.
+          Pagamento: 40% de entrada na assinatura, 30% no protocolo no cartório e 30% na retificação no cartório · Foro: Comarca de Itapeva/SP.
         </p>
         </div>
         </div>

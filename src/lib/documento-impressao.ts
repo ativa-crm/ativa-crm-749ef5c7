@@ -109,7 +109,7 @@ export function htmlContrato(d: DadosContrato, previa = false): string {
 <p><b>CONTRATANTE:</b> ${esc(d.contratante)}, CPF/CNPJ ${esc(d.documento)}, residente em ${esc(d.endereco)}.</p>
 <h2>Cláusula 1ª — Do objeto</h2><p>${esc(d.objeto)}</p>
 <h2>Cláusula 2ª — Dos honorários</h2><p>Pelos serviços, o CONTRATANTE pagará à CONTRATADA o valor de ${reais(d.valor)} (${esc(d.valorExtenso)}).</p>
-<h2>Cláusula 3ª — Da forma de pagamento</h2><p>50% (cinquenta por cento) na assinatura deste contrato e 50% (cinquenta por cento) na entrega dos serviços.</p>
+<h2>Cláusula 3ª — Da forma de pagamento</h2><p>O pagamento será feito em três parcelas: 40% (quarenta por cento) de entrada, na assinatura deste contrato; 30% (trinta por cento) no protocolo do processo no Cartório de Registro de Imóveis; e 30% (trinta por cento) na retificação da matrícula no Cartório de Registro de Imóveis.</p>
 <h2>Cláusula 4ª — Das obrigações da contratada</h2><p>Executar os serviços com qualidade técnica, emitir a ART correspondente e entregar os documentos nos prazos combinados.</p>
 <h2>Cláusula 5ª — Das obrigações do contratante</h2><p>Fornecer os documentos e informações necessários, permitir o acesso ao imóvel e efetuar os pagamentos nas datas acordadas.</p>
 <h2>Cláusula 6ª — Dos serviços não inclusos</h2><p>Não estão inclusos honorários advocatícios, custas judiciais, emolumentos cartorários e taxas de órgãos públicos.</p>
