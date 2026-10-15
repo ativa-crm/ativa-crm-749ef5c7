@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Archive,
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   MapPinned,
   MessageCircle,
   Plus,
+  Search,
   User,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -78,10 +79,22 @@ type Oportunidade = {
   motivo_perda: string | null;
   criado_em: string | null;
   ultima_interacao: string | null;
+  prospeccao_id?: string | null;
 };
 
 type Cliente = { id: string; nome: string; telefone: string | null; cidade: string | null };
-type Imovel = { id: string; nome: string; municipio: string | null; area_ha: number | null };
+type Imovel = {
+  id: string;
+  nome: string;
+  municipio: string | null;
+  area_ha: number | null;
+  ccir?: string | null;
+  car?: string | null;
+  prospeccao_id?: string | null;
+  cliente_id?: string | null;
+};
+
+const COLS_IMOVEL = "id, nome, municipio, area_ha, ccir, car, prospeccao_id, cliente_id";
 type Mensagem = {
   id: string;
   direcao: string | null;
@@ -127,13 +140,56 @@ function Pagina() {
     },
   });
 
-  const imoveisQuery = useQuery({
-    queryKey: ["imoveis", "resumo"],
-    queryFn: async (): Promise<Imovel[]> => {
+  // Imóvel vinculado: busca direto pelo id (a base tem mais de 16 mil imóveis,
+  // então não dá para depender de uma lista completa no seletor).
+  const imovelAtualQuery = useQuery({
+    queryKey: ["imovel", "vinculado", oportunidade?.imovel_id ?? null],
+    enabled: !!oportunidade?.imovel_id,
+    queryFn: async (): Promise<Imovel | null> => {
       const { data, error } = await supabase
         .from("imoveis")
-        .select("id, nome, municipio, area_ha")
-        .order("nome");
+        .select(COLS_IMOVEL)
+        .eq("id", oportunidade!.imovel_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Imovel | null) ?? null;
+    },
+  });
+
+  // Opções do seletor: imóveis do próprio lead e do cliente vinculado.
+  const leadIdDireto = oportunidade?.prospeccao_id ?? imovelAtualQuery.data?.prospeccao_id ?? null;
+  const imoveisLeadQuery = useQuery({
+    queryKey: ["imoveis", "do-lead", leadIdDireto, oportunidade?.cliente_id ?? null],
+    enabled: !!oportunidade && (!!leadIdDireto || !!oportunidade.cliente_id),
+    queryFn: async (): Promise<Imovel[]> => {
+      const filtros: string[] = [];
+      if (leadIdDireto) filtros.push(`prospeccao_id.eq.${leadIdDireto}`);
+      if (oportunidade?.cliente_id) filtros.push(`cliente_id.eq.${oportunidade.cliente_id}`);
+      const { data, error } = await supabase
+        .from("imoveis")
+        .select(COLS_IMOVEL)
+        .or(filtros.join(","))
+        .order("area_ha", { ascending: false, nullsFirst: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as Imovel[];
+    },
+  });
+
+  // Busca de outros imóveis (nome, CCIR ou CAR), só quando a pessoa digita.
+  const [buscaImovel, setBuscaImovel] = useState("");
+  const termoImovel = buscaImovel.trim();
+  const buscaImovelQuery = useQuery({
+    queryKey: ["imoveis", "busca", termoImovel],
+    enabled: termoImovel.length >= 3,
+    queryFn: async (): Promise<Imovel[]> => {
+      const t = termoImovel.replace(/[%,()]/g, " ");
+      const { data, error } = await supabase
+        .from("imoveis")
+        .select(COLS_IMOVEL)
+        .or(`nome.ilike.%${t}%,ccir.ilike.%${t}%,car.ilike.%${t}%`)
+        .order("nome")
+        .limit(30);
       if (error) throw error;
       return (data ?? []) as Imovel[];
     },
@@ -271,6 +327,29 @@ function Pagina() {
     onError: () => toast.error("Não foi possível criar o imóvel."),
   });
 
+  // Preenche sozinho o imóvel vinculado com o imóvel do lead (o de maior área),
+  // quando a oportunidade ainda não tem imóvel. Roda uma vez por oportunidade.
+  const autoVinculou = useRef<string | null>(null);
+  useEffect(() => {
+    if (!oportunidade || oportunidade.imovel_id || autoVinculou.current === oportunidade.id) return;
+    const doLeadLista = (imoveisLeadQuery.data ?? []).filter(
+      (i) => (leadIdDireto && i.prospeccao_id === leadIdDireto) || (oportunidade.cliente_id && i.cliente_id === oportunidade.cliente_id),
+    );
+    if (!imoveisLeadQuery.isSuccess || doLeadLista.length === 0) return;
+    autoVinculou.current = oportunidade.id;
+    const alvo = doLeadLista[0]!;
+    void supabase
+      .from("oportunidades")
+      .update({ imovel_id: alvo.id })
+      .eq("id", oportunidade.id)
+      .is("imovel_id", null)
+      .then(({ error }) => {
+        if (error) return;
+        void queryClient.invalidateQueries({ queryKey: ["oportunidade", id] });
+        toast.success(`Imóvel do lead vinculado: ${alvo.nome}`);
+      });
+  }, [oportunidade, imoveisLeadQuery.isSuccess, imoveisLeadQuery.data, leadIdDireto, queryClient, id]);
+
   const orcamentoQuery = useQuery({
     queryKey: ["oportunidade", id, "orcamento"],
     queryFn: async () => {
@@ -362,7 +441,14 @@ function Pagina() {
   const whatsapp = telefone
     ? `https://wa.me/${telefone.length <= 11 ? `55${telefone}` : telefone}`
     : null;
-  const imovel = (imoveisQuery.data ?? []).find((i) => i.id === oportunidade.imovel_id) ?? null;
+  const imovel = imovelAtualQuery.data ?? null;
+  const opcoesImovel = (() => {
+    const mapa = new Map<string, Imovel>();
+    for (const i of [...(imovel ? [imovel] : []), ...(imoveisLeadQuery.data ?? []), ...(buscaImovelQuery.data ?? [])])
+      mapa.set(i.id, i);
+    return [...mapa.values()];
+  })();
+  const doLead = (i: Imovel) => !!leadIdDireto && i.prospeccao_id === leadIdDireto;
   const mensagens = mensagensQuery.data ?? [];
 
   // Sem cliente vinculado: nome do lead guardado no histórico
@@ -612,14 +698,40 @@ function Pagina() {
                   onChange={(e) => salvar.mutate({ imovel_id: e.target.value || null })}
                   className="mt-1.5 h-14 w-full rounded-xl border-2 border-border bg-card px-3 text-lg font-bold text-foreground"
                 >
-                  <option value="">Sem imóvel vinculado</option>
-                  {(imoveisQuery.data ?? []).map((i) => (
+                  <option value="">
+                    {oportunidade.imovel_id && imovelAtualQuery.isPending ? "Carregando…" : "Sem imóvel vinculado"}
+                  </option>
+                  {opcoesImovel.map((i) => (
                     <option key={i.id} value={i.id}>
+                      {doLead(i) ? "★ " : ""}
                       {i.nome}
                       {i.municipio ? ` — ${i.municipio}` : ""}
+                      {i.area_ha != null ? ` · ${areaHa(i.area_ha)}` : ""}
                     </option>
                   ))}
                 </select>
+                {(imoveisLeadQuery.data ?? []).some(doLead) ? (
+                  <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                    ★ = imóvel do lead ({(imoveisLeadQuery.data ?? []).filter(doLead).length})
+                  </p>
+                ) : null}
+                <label className="mt-2 flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3">
+                  <Search className="size-5 text-muted-foreground" strokeWidth={2.5} />
+                  <input
+                    value={buscaImovel}
+                    onChange={(e) => setBuscaImovel(e.target.value)}
+                    placeholder="Buscar outro imóvel por nome, CCIR ou CAR"
+                    className="h-12 w-full bg-transparent text-base font-semibold text-foreground outline-none"
+                  />
+                  {buscaImovelQuery.isFetching ? <Loader2 className="size-4 animate-spin text-primary" /> : null}
+                </label>
+                {termoImovel.length >= 3 && !buscaImovelQuery.isFetching ? (
+                  <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                    {(buscaImovelQuery.data ?? []).length === 0
+                      ? "Nenhum imóvel encontrado."
+                      : `${(buscaImovelQuery.data ?? []).length} encontrados — escolha no seletor acima.`}
+                  </p>
+                ) : null}
 
                 {imovel ? (
                   <Link
@@ -631,6 +743,10 @@ function Pagina() {
                     Abrir ficha do imóvel
                     {imovel.area_ha !== null ? ` · ${areaHa(imovel.area_ha)}` : ""}
                   </Link>
+                ) : oportunidade.imovel_id ? (
+                  <p className="mt-2 flex items-center gap-2 text-base font-semibold text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" /> Carregando imóvel vinculado…
+                  </p>
                 ) : (
                   <Button
                     variant="outline"
