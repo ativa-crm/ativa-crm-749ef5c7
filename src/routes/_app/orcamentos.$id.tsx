@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Plus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
@@ -38,6 +38,25 @@ export const Route = createFileRoute("/_app/orcamentos/$id")({
   }),
   component: Pagina,
 });
+
+/** Chama uma função do servidor e devolve o JSON, inclusive a mensagem de erro (respostas 4xx/5xx). */
+async function chamarFuncao<T extends { ok?: boolean; error?: string }>(nome: string, corpo: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(nome, { body: corpo });
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    let msg = error.message;
+    try {
+      const j = ctx ? ((await ctx.json()) as { error?: string }) : null;
+      if (j?.error) msg = j.error;
+    } catch {
+      /* mantém a mensagem padrão */
+    }
+    throw new Error(msg);
+  }
+  const r = (data ?? {}) as T;
+  if (!r.ok) throw new Error(r.error || "Falha na operação.");
+  return r;
+}
 
 type Orcamento = {
   id: string;
@@ -110,6 +129,7 @@ function Pagina() {
   const queryClient = useQueryClient();
   const { perfil } = usePerfil();
   const [osAberta, setOsAberta] = useState(false);
+  const [envioAberto, setEnvioAberto] = useState(false);
   const [excluirAberto, setExcluirAberto] = useState(false);
   const [servicoOs, setServicoOs] = useState(SERVICOS[0]?.valor ?? "georreferenciamento");
 
@@ -218,12 +238,16 @@ function Pagina() {
   // Gera o PDF oficial no servidor (função gerar-proposta), salva no orçamento e abre.
   const gerarDocumento = useMutation({
     mutationFn: async (janela: Window | null) => {
-      const { data: r, error } = await supabase.functions.invoke("gerar-proposta", { body: { orcamento_id: id } });
-      if (error) throw error;
-      const resp = r as { ok?: boolean; pdf_url?: string; error?: string } | null;
-      if (!resp?.ok || !resp.pdf_url) {
+      let resp: { ok?: boolean; error?: string; pdf_url?: string };
+      try {
+        resp = await chamarFuncao<{ ok?: boolean; error?: string; pdf_url?: string }>("gerar-proposta", { orcamento_id: id });
+      } catch (e) {
         janela?.close();
-        throw new Error(resp?.error || "Falha ao gerar o PDF.");
+        throw e;
+      }
+      if (!resp.pdf_url) {
+        janela?.close();
+        throw new Error("Falha ao gerar o PDF.");
       }
       if (janela) janela.location.href = resp.pdf_url;
       return resp.pdf_url;
@@ -233,6 +257,34 @@ function Pagina() {
       toast.success("PDF da proposta gerado.");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível gerar o PDF."),
+  });
+
+  // Envio ao cliente: prévia (telefone + mensagem) e envio pelo WhatsApp profissional.
+  const previaEnvio = useQuery({
+    queryKey: ["orcamento", id, "previa-envio"],
+    enabled: envioAberto,
+    staleTime: 0,
+    queryFn: async () => {
+      const resp = await chamarFuncao<{ ok?: boolean; error?: string; telefone?: string; mensagem?: string }>(
+        "enviar-proposta",
+        { orcamento_id: id, previa: true },
+      );
+      return { telefone: resp.telefone ?? "", mensagem: resp.mensagem ?? "" };
+    },
+  });
+
+  const enviarCliente = useMutation({
+    mutationFn: async () => {
+      await chamarFuncao("enviar-proposta", { orcamento_id: id });
+    },
+    onSuccess: () => {
+      setEnvioAberto(false);
+      recarregar();
+      void queryClient.invalidateQueries({ queryKey: ["oportunidade"] });
+      void queryClient.invalidateQueries({ queryKey: ["oportunidades"] });
+      toast.success("Proposta enviada ao cliente pelo WhatsApp. Funil atualizado para Orçamento.");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível enviar."),
   });
 
   function recarregar() {
@@ -853,6 +905,14 @@ function Pagina() {
             )}
             Gerar documento (PDF)
           </Button>
+          <Button
+            type="button"
+            onClick={() => setEnvioAberto(true)}
+            className="h-14 rounded-xl bg-emerald-600 text-lg font-extrabold text-white hover:bg-emerald-700"
+          >
+            <Send className="size-6" strokeWidth={2.5} />
+            Enviar ao cliente
+          </Button>
           {orcamento.pdf_url ? (
             <Button asChild variant="outline" className="h-14 rounded-xl text-lg font-extrabold">
               <a href={orcamento.pdf_url} target="_blank" rel="noreferrer">
@@ -863,9 +923,54 @@ function Pagina() {
           ) : null}
         </div>
         <p className="mt-1 text-base font-semibold text-muted-foreground">
-          Gera o PDF oficial com a data de hoje e guarda no orçamento. Gere de novo sempre que alterar algo.
+          Gera o PDF oficial com a data de hoje e guarda no orçamento. "Enviar ao cliente" gera o PDF
+          atualizado, envia pelo WhatsApp profissional e move a oportunidade para Orçamento no funil.
+          {orcamento.enviado_em ? ` Último envio: ${new Date(orcamento.enviado_em).toLocaleString("pt-BR")}.` : ""}
         </p>
       </Bloco>
+
+      <Dialog open={envioAberto} onOpenChange={(v) => !enviarCliente.isPending && setEnvioAberto(v)}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold">Enviar proposta ao cliente</DialogTitle>
+          </DialogHeader>
+          {previaEnvio.isPending ? (
+            <div className="flex items-center gap-2 py-6 text-base font-semibold text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" /> Preparando a mensagem…
+            </div>
+          ) : previaEnvio.error ? (
+            <p className="py-4 text-base font-semibold text-destructive">
+              {previaEnvio.error instanceof Error ? previaEnvio.error.message : "Não foi possível preparar o envio."}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-base font-semibold text-foreground">
+                WhatsApp do cliente: <span className="font-extrabold">+{previaEnvio.data?.telefone}</span>
+              </p>
+              <div className="whitespace-pre-line rounded-xl border-2 border-border bg-muted/40 p-3 text-base text-foreground">
+                {previaEnvio.data?.mensagem}
+              </div>
+              <p className="text-sm font-semibold text-muted-foreground">
+                O PDF da proposta (com a data de hoje) vai anexado, pelo WhatsApp profissional da Ativa.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={enviarCliente.isPending} onClick={() => setEnvioAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={!previaEnvio.data || enviarCliente.isPending}
+              onClick={() => enviarCliente.mutate()}
+              className="bg-emerald-600 font-extrabold text-white hover:bg-emerald-700"
+            >
+              {enviarCliente.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {enviarCliente.isPending ? "Enviando…" : "Enviar agora"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Bloco titulo="Modelo da proposta comercial">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-center">
