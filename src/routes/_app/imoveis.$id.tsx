@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ClipboardList,
@@ -13,6 +13,7 @@ import {
   User,
   ExternalLink,
   Satellite,
+  Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +22,9 @@ import { areaHa, data, mascaraUF, numero, paraNumero, reais, rotulo } from "@/li
 import { Button } from "@/components/ui/button";
 import { ImportarKml } from "@/components/importar-kml";
 import { PainelAnuencias } from "@/components/painel-anuencias";
+import { usePerfil } from "@/lib/perfil";
+import { BASE_ESCRITORIO } from "@/lib/rota";
+import { centroide, paraGms, paraUtm } from "@/lib/geo";
 
 export const Route = createFileRoute("/_app/imoveis/$id")({
   head: () => ({
@@ -169,6 +173,46 @@ function Pagina() {
       }[];
     },
   });
+
+  // Ponto de referência do imóvel (SIGEF > CAR > CCIR > localização do CRM).
+  const { perfil } = usePerfil();
+  const referenciaQuery = useQuery({
+    queryKey: ["imovel", id, "ponto-referencia"],
+    queryFn: async () => {
+      const { data: linhas, error } = await supabase.rpc("imovel_ponto_referencia", { p_imovel: id });
+      if (error) throw error;
+      const r = (linhas ?? [])[0] as { lat: number; lon: number; fonte: string } | undefined;
+      return r ?? null;
+    },
+  });
+
+  // Sem pontos ainda: grava o ponto de referência como primeiro ponto (uma vez).
+  const jaGravouRef = useRef(false);
+  useEffect(() => {
+    const ref = referenciaQuery.data;
+    if (jaGravouRef.current || !ref || !perfil?.empresa_id) return;
+    if (!pontosQuery.isSuccess || (pontosQuery.data ?? []).length > 0) return;
+    jaGravouRef.current = true;
+    const utm = paraUtm(ref.lat, ref.lon);
+    void supabase
+      .from("imovel_pontos")
+      .insert({
+        empresa_id: perfil.empresa_id,
+        imovel_id: id,
+        codigo: `REF (${ref.fonte})`,
+        lat: ref.lat,
+        lon: ref.lon,
+        lat_gms: paraGms(ref.lat, "lat"),
+        lon_gms: paraGms(ref.lon, "lon"),
+        utm_e: utm.e,
+        utm_n: utm.n,
+        utm_zona: utm.zona,
+        origem: "mapa",
+      })
+      .then(({ error }) => {
+        if (!error) void queryClient.invalidateQueries({ queryKey: ["imovel_pontos", id] });
+      });
+  }, [referenciaQuery.data, pontosQuery.isSuccess, pontosQuery.data, perfil?.empresa_id, id, queryClient]);
 
   const salvar = useMutation({
     mutationFn: async (campos: Record<string, unknown>) => {
@@ -428,9 +472,36 @@ function Pagina() {
       </Bloco>
 
       <Bloco titulo="Pontos GPS" Icone={Satellite} acao={<ImportarKml imovelId={id} />}>
+        {(() => {
+          const pts = pontosQuery.data ?? [];
+          const doLevantamento = pts.filter((p) => p.origem !== "mapa");
+          const destino =
+            centroide((doLevantamento.length > 0 ? doLevantamento : pts).map((p) => ({ lat: Number(p.lat), lon: Number(p.lon) }))) ??
+            (referenciaQuery.data ? { lat: referenciaQuery.data.lat, lon: referenciaQuery.data.lon } : null);
+          if (!destino) return null;
+          const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(BASE_ESCRITORIO.endereco)}&destination=${destino.lat.toFixed(6)},${destino.lon.toFixed(6)}&travelmode=driving`;
+          return (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-border bg-muted/40 p-3">
+              <Button asChild className="h-12 text-base font-extrabold">
+                <a href={url} target="_blank" rel="noreferrer">
+                  <Navigation className="size-5" strokeWidth={2.5} />
+                  Traçar rota no Google Maps
+                </a>
+              </Button>
+              <p className="text-sm font-semibold text-muted-foreground">
+                Saída: {BASE_ESCRITORIO.endereco}
+                <br />
+                Destino: {destino.lat.toFixed(6)}, {destino.lon.toFixed(6)}
+                {doLevantamento.length > 0 ? " (centro dos pontos)" : referenciaQuery.data ? ` (ponto de referência · ${referenciaQuery.data.fonte})` : ""}
+              </p>
+            </div>
+          );
+        })()}
         {(pontosQuery.data ?? []).length === 0 ? (
           <p className="text-lg font-medium text-muted-foreground">
-            Nenhum ponto importado. Use o botão acima para carregar o KML ou KMZ do imóvel.
+            {referenciaQuery.isPending
+              ? "Procurando o ponto de referência do imóvel…"
+              : "Nenhum ponto encontrado: o imóvel não tem SIGEF, CAR ou CCIR com localização nas bases. Importe o KML/KMZ pelo botão acima."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -448,14 +519,20 @@ function Pagina() {
                 {(pontosQuery.data ?? []).map((p) => (
                   <tr key={p.id} className="border-t-2 border-border text-base font-semibold">
                     <td className="p-2 font-extrabold text-primary">{p.codigo ?? "—"}</td>
-                    <td className="p-2">{p.lat_gms || numero(p.lat, 6)}</td>
-                    <td className="p-2">{p.lon_gms || numero(p.lon, 6)}</td>
+                    <td className="p-2">
+                      {Number(p.lat).toFixed(6)}
+                      {p.lat_gms ? <span className="block text-xs text-muted-foreground">{p.lat_gms}</span> : null}
+                    </td>
+                    <td className="p-2">
+                      {Number(p.lon).toFixed(6)}
+                      {p.lon_gms ? <span className="block text-xs text-muted-foreground">{p.lon_gms}</span> : null}
+                    </td>
                     <td className="p-2">
                       {p.utm_e !== null && p.utm_n !== null
                         ? `${numero(p.utm_e, 2)} E · ${numero(p.utm_n, 2)} N · ${p.utm_zona ?? ""}`
                         : "—"}
                     </td>
-                    <td className="p-2">{p.origem === "manual" ? "Manual" : "KML"}</td>
+                    <td className="p-2">{p.origem === "manual" ? "Manual" : p.origem === "mapa" ? "Mapa (referência)" : "KML"}</td>
                   </tr>
                 ))}
               </tbody>
