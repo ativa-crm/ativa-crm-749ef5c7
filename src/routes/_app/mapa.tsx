@@ -216,7 +216,40 @@ function descreverSobreposicao(sb: Sobreposicao): string {
   return `Sobreposição parcial: ${pct(sb.pctA)} desta área · ${pct(sb.pctB)} dela`;
 }
 
+/** Linha de coordenada em graus decimais (lat, lon), com botão de copiar. */
+function LinhaCoordenada({ rotulo, lat, lon, copiar, casas = 6 }: { rotulo: string; lat: number; lon: number; copiar: (v: string) => void; casas?: number }) {
+  const texto = `${lat.toFixed(casas)}, ${lon.toFixed(casas)}`;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-muted-foreground">{rotulo}</p>
+        <p className="font-mono text-xs font-bold text-foreground">{texto}</p>
+      </div>
+      <button
+        type="button"
+        aria-label={`Copiar coordenadas (${rotulo})`}
+        title="Copiar coordenadas"
+        onClick={() => copiar(texto)}
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+      >
+        <Copy className="size-4" />
+      </button>
+      <a
+        href={`https://www.google.com/maps?q=${lat.toFixed(casas)},${lon.toFixed(casas)}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Abrir no Google Maps"
+        title="Abrir no Google Maps"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+      >
+        <ExternalLink className="size-4" />
+      </a>
+    </div>
+  );
+}
+
 function FichaPopup({
+  ponto,
   itens,
   sobreposicoes,
   onSelecionar,
@@ -225,6 +258,7 @@ function FichaPopup({
   cadastrando,
   copiar,
 }: {
+  ponto: [number, number];
   itens: FeicaoNoPonto[];
   sobreposicoes: Sobreposicao[];
   onSelecionar: (camada: Camada, fid: number) => void;
@@ -320,6 +354,21 @@ function FichaPopup({
                   </div>
                 ))}
             </dl>
+
+            {/* Coordenadas em graus decimais (lat, lon) */}
+            <div className="mt-3 space-y-1 rounded-lg border border-border p-2">
+              <p className="text-[11px] font-extrabold uppercase text-muted-foreground">Coordenadas (graus decimais)</p>
+              {ficha.lat_min != null && ficha.lat_max != null && ficha.lon_min != null && ficha.lon_max != null ? (
+                <LinhaCoordenada
+                  rotulo="Centro aproximado da área"
+                  lat={(Number(ficha.lat_min) + Number(ficha.lat_max)) / 2}
+                  lon={(Number(ficha.lon_min) + Number(ficha.lon_max)) / 2}
+                  copiar={copiar}
+                  casas={5}
+                />
+              ) : null}
+              <LinhaCoordenada rotulo="Ponto clicado" lat={ponto[1]} lon={ponto[0]} copiar={copiar} />
+            </div>
 
             {/* CRM */}
             <div className="mt-3 rounded-lg bg-muted/60 p-2">
@@ -822,6 +871,7 @@ function PaginaMapa() {
         elPopup &&
         createPortal(
           <FichaPopup
+            ponto={popup.lngLat}
             itens={popup.itens}
             sobreposicoes={popup.sobreposicoes}
             onSelecionar={(camada, fid) => {
