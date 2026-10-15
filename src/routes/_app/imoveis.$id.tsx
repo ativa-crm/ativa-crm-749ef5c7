@@ -20,6 +20,7 @@ import { Bloco, Campo, CampoLongo, CampoOpcoes, Grade } from "@/components/campo
 import { areaHa, data, mascaraUF, numero, paraNumero, reais, rotulo } from "@/lib/formato";
 import { Button } from "@/components/ui/button";
 import { ImportarKml } from "@/components/importar-kml";
+import { PainelAnuencias } from "@/components/painel-anuencias";
 
 export const Route = createFileRoute("/_app/imoveis/$id")({
   head: () => ({
@@ -354,6 +355,8 @@ function Pagina() {
           />
         </div>
       </Bloco>
+
+      <PainelAnuencias imovelId={id} />
 
       <Bloco titulo="Histórico" Icone={ScrollText}>
         <div className="space-y-5">

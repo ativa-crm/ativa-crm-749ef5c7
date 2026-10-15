@@ -133,3 +133,75 @@ export function dadosCliente(c: Record<string, unknown> | null | undefined) {
       .join(", "),
   };
 }
+
+export type DadosImovelAnuencia = {
+  nome: string;
+  municipio: string;
+  uf: string;
+  matricula: string;
+  cartorio: string;
+  ccir: string;
+  car: string;
+  areaHa: string;
+  proprietario: string;
+  documentoProprietario: string;
+};
+
+export type DadosConfrontanteAnuencia = {
+  nome: string;
+  documento: string;
+  estadoCivil: string;
+  conjugeNome: string;
+  conjugeDocumento: string;
+  endereco: string;
+  imovelConfrontante: string;
+  matricula: string;
+  rumo: string;
+};
+
+const LACUNA = "______________________________";
+
+function ou(v: string | null | undefined, lacuna = LACUNA): string {
+  const t = (v ?? "").trim();
+  return t ? esc(t) : lacuna;
+}
+
+function cartaAnuencia(im: DadosImovelAnuencia, c: DadosConfrontanteAnuencia, comCabecalho: boolean): string {
+  const { logoUrl } = IDENTIDADE_DOCUMENTOS;
+  const conjuge = c.conjugeNome.trim()
+    ? `, e seu cônjuge ${esc(c.conjugeNome)}, CPF ${ou(c.conjugeDocumento)}`
+    : "";
+  const lado = c.rumo.trim() ? ` (divisa ao ${esc(c.rumo)})` : "";
+  const ccirCar = [im.ccir ? `CCIR nº ${esc(im.ccir)}` : "", im.car ? `CAR nº ${esc(im.car)}` : ""]
+    .filter(Boolean)
+    .join(", ");
+  return `<section class="carta">
+${comCabecalho ? "" : `<header><img src="${logoUrl}" alt="Ativa Consultoria"></header>`}
+<h1>Declaração de reconhecimento de limites<br>(Carta de anuência)</h1>
+<p>Eu, <b>${ou(c.nome)}</b>, ${ou(c.estadoCivil, "estado civil __________")}, inscrito(a) no CPF/CNPJ sob o nº ${ou(c.documento)}${conjuge}, residente e domiciliado(a) em ${ou(c.endereco)}, na qualidade de proprietário(a)/possuidor(a) do imóvel confrontante denominado <b>${ou(c.imovelConfrontante)}</b>, matrícula nº ${ou(c.matricula, "__________")}${lado},</p>
+<p><b>DECLARO</b>, para os fins do art. 213 da Lei nº 6.015/1973 e da Lei nº 10.267/2001, que <b>reconheço e concordo</b> com os limites e confrontações entre o meu imóvel e o imóvel rural denominado <b>${ou(im.nome)}</b>, situado no município de ${ou(im.municipio)}/${ou(im.uf, "SP")}, objeto da matrícula nº ${ou(im.matricula, "__________")} do ${ou(im.cartorio, "Cartório de Registro de Imóveis competente")}${ccirCar ? `, ${ccirCar}` : ""}, com área de ${ou(im.areaHa, "_______")} ha, de propriedade de <b>${ou(im.proprietario)}</b>, CPF/CNPJ ${ou(im.documentoProprietario)}.</p>
+<p>Declaro ainda que me foram apresentados a planta e o memorial descritivo do levantamento georreferenciado executado pela ATIVA CONSULTORIA AGRÍCOLA LTDA, sob responsabilidade técnica do Eng. Renato Muzel Lopes Morimoto, CREA-SP nº 5070249606, para fins de certificação no SIGEF/INCRA, e que não existe litígio, disputa ou oposição quanto às divisas descritas.</p>
+<p>Por ser expressão da verdade, firmo a presente declaração.</p>
+<p>${ou(im.municipio, "Itapeva")}/${ou(im.uf, "SP")}, ${dataExtenso()}.</p>
+<div class="ass"><div>${ou(c.nome)}<br>CPF/CNPJ ${ou(c.documento, "__________")}<br>Confrontante</div>${
+    c.conjugeNome.trim()
+      ? `<div>${esc(c.conjugeNome)}<br>CPF ${ou(c.conjugeDocumento, "__________")}<br>Cônjuge</div>`
+      : ""
+  }</div>
+<p style="margin-top:28px;font-size:9.5pt;color:#4b5563">Assinatura(s) com firma reconhecida em cartório.</p>
+</section>`;
+}
+
+/** Uma ou várias cartas de anuência (uma por página) para o mesmo imóvel. */
+export function htmlCartasAnuencia(
+  im: DadosImovelAnuencia,
+  confrontantes: DadosConfrontanteAnuencia[],
+  previa = false,
+): string {
+  const corpo = confrontantes.map((c, i) => cartaAnuencia(im, c, i === 0)).join("");
+  return pagina(
+    confrontantes.length === 1 ? "Carta de anuência" : "Cartas de anuência",
+    `<style>.carta+.carta{page-break-before:always;break-before:page}${previa ? ".carta+.carta{margin-top:40px;border-top:2px dashed #cbd5e1;padding-top:24px}" : ""}</style>${corpo}`,
+    previa,
+  );
+}

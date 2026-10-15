@@ -9,6 +9,7 @@ import {
   Copy,
   Crosshair,
   Download,
+  FileSignature,
   ExternalLink,
   Layers,
   Loader2,
@@ -726,6 +727,36 @@ function PaginaMapa() {
     baixarCsv(`confrontantes-${(selecao?.chave ?? "area").slice(0, 24)}.csv`, linhas);
   };
 
+  const enviarAnuencias = useMutation({
+    mutationFn: async (imovelId: string) => {
+      const itens = (vizinhanca?.confrontantes ?? []).map((v) => {
+        const d = detVizPorChave.get(`${v.camada}:${v.fid}`);
+        return {
+          numero: v.numero,
+          camada: v.camada,
+          fid: v.fid,
+          chave: d?.chave ?? String(v.fid),
+          rumo: v.rumo,
+          imovel_confrontante: d?.imovel_nome ?? d?.ccir_denominacao ?? d?.titulo ?? null,
+          imovel_confrontante_id: d?.imovel_id ?? null,
+        };
+      });
+      const { data, error } = await supabase.rpc("anuencias_adicionar", { p_imovel_id: imovelId, p_itens: itens });
+      if (error) throw error;
+      return { novos: Number(data ?? 0), total: itens.length, imovelId };
+    },
+    onSuccess: ({ novos, total, imovelId }) => {
+      void queryClient.invalidateQueries({ queryKey: ["anuencias", imovelId] });
+      toast.success(
+        novos === 0
+          ? "Todos os confrontantes já estavam na lista de anuências."
+          : `${novos} de ${total} confrontantes enviados para anuências.`,
+        { action: { label: "Abrir imóvel", onClick: () => navigate({ to: "/imoveis/$id", params: { id: imovelId } }) } },
+      );
+    },
+    onError: () => toast.error("Não foi possível enviar para anuências."),
+  });
+
   const aoVizinhanca = useCallback((r: Vizinhanca | null, calc: boolean) => {
     setVizinhanca(r);
     setCalculando(calc);
@@ -1270,6 +1301,26 @@ function PaginaMapa() {
                         <Button type="button" variant="outline" className="mt-3 h-11 w-full font-bold" onClick={exportarConfrontantes}>
                           <Download className="size-4" aria-hidden /> Exportar confrontantes (CSV)
                         </Button>
+                      )}
+                      {vizinhanca.confrontantes.length > 0 && detalhe?.imovel_id && (
+                        <Button
+                          type="button"
+                          className="mt-2 h-11 w-full font-bold"
+                          disabled={enviarAnuencias.isPending || detViz.isPending}
+                          onClick={() => { const alvo = detalhe?.imovel_id; if (alvo) enviarAnuencias.mutate(alvo); }}
+                        >
+                          {enviarAnuencias.isPending ? (
+                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                          ) : (
+                            <FileSignature className="size-4" aria-hidden />
+                          )}{" "}
+                          Enviar para anuências
+                        </Button>
+                      )}
+                      {vizinhanca.confrontantes.length > 0 && !detalhe?.imovel_id && (
+                        <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                          Cadastre esta área no CRM para controlar as anuências dos confrontantes.
+                        </p>
                       )}
                     </>
                   )}
