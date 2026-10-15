@@ -354,7 +354,13 @@ function Pagina() {
             valor={imovel.codigo_incra ?? ""}
             onSalvar={troca("codigo_incra")}
           />
-          <Campo rotulo="CAR" valor={imovel.car ?? ""} onSalvar={troca("car")} />
+          <Campo
+            rotulo="CAR"
+            valor={imovel.car ?? ""}
+            onSalvar={troca("car")}
+            mascara={(v) => v.toUpperCase().replace(/[.\s]/g, "")}
+            placeholder="SP-0000000-XXXXXXXX…"
+          />
           <Campo rotulo="SIGEF" valor={imovel.sigef ?? ""} onSalvar={troca("sigef")} />
           {(imovel.sigef || imovel.car || imovel.ccir) && (
             <div className="sm:col-span-2">
