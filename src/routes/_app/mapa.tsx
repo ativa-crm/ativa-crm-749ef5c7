@@ -63,7 +63,14 @@ import {
   type Vizinhanca,
 } from "@/lib/mapa";
 
-type BuscaUrl = { busca?: string | undefined; car?: string | undefined; sigef?: string | undefined; ccir?: string | undefined };
+type BuscaUrl = {
+  busca?: string | undefined;
+  car?: string | undefined;
+  sigef?: string | undefined;
+  ccir?: string | undefined;
+  /** id do imóvel do CRM cujo campo "Confrontantes" deve ser preenchido com o cálculo do mapa. */
+  preencher?: string | undefined;
+};
 
 export const Route = createFileRoute("/_app/mapa")({
   head: () => ({
@@ -77,6 +84,7 @@ export const Route = createFileRoute("/_app/mapa")({
     car: typeof s["car"] === "string" && s["car"] ? s["car"] : undefined,
     sigef: typeof s["sigef"] === "string" && s["sigef"] ? s["sigef"] : undefined,
     ccir: typeof s["ccir"] === "string" && s["ccir"] ? s["ccir"] : undefined,
+    preencher: typeof s["preencher"] === "string" && s["preencher"] ? s["preencher"] : undefined,
   }),
   component: PaginaMapa,
 });
@@ -806,6 +814,65 @@ function PaginaMapa() {
     onError: () => toast.error("Não foi possível enviar para anuências."),
   });
 
+  /* ---------- confrontantes → campo "Confrontantes" do imóvel ---------- */
+  const textoConfrontantes = useCallback((): string => {
+    const RUMO: Record<string, string> = {
+      N: "Norte", NE: "Nordeste", L: "Leste", SE: "Sudeste", S: "Sul", SO: "Sudoeste", O: "Oeste", NO: "Noroeste",
+    };
+    const conf = vizinhanca?.confrontantes ?? [];
+    const base = selecao?.camada ? ROTULO_CAMADA[selecao.camada] : "mapa";
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const linhas = conf.map((v) => {
+      const d = detVizPorChave.get(`${v.camada}:${v.fid}`);
+      const nome = d?.imovel_nome ?? d?.ccir_denominacao ?? (d?.titulo && d.titulo !== d.chave ? d.titulo : null);
+      const partes = [
+        `${v.numero}. ${RUMO[v.rumo] ?? v.rumo}`,
+        `${ROTULO_CAMADA[v.camada]} ${d?.chave ?? v.fid}`,
+        nome,
+        d?.area_ha != null ? `${numero(d.area_ha, 2)} ha` : null,
+        d?.ccir ? `CCIR ${d.ccir}` : null,
+        d?.cliente_nome ? `cliente no CRM: ${d.cliente_nome}` : null,
+      ].filter(Boolean);
+      return partes.join(" — ");
+    });
+    return [`Confrontantes levantados pelo mapa (base ${base}) em ${hoje} — conferir em campo:`, ...linhas].join("\n");
+  }, [vizinhanca, selecao, detVizPorChave]);
+
+  const salvarConfrontantes = useMutation({
+    mutationFn: async ({ imovelId, texto }: { imovelId: string; texto: string }) => {
+      const { error } = await supabase.from("imoveis").update({ confrontantes: texto }).eq("id", imovelId);
+      if (error) throw error;
+      return imovelId;
+    },
+    onSuccess: (imovelId) => {
+      void queryClient.invalidateQueries({ queryKey: ["imovel", imovelId] });
+      void queryClient.invalidateQueries({ queryKey: ["imoveis"] });
+    },
+    onError: () => toast.error("Não foi possível gravar os confrontantes no imóvel."),
+  });
+
+  // Vindo da ficha do imóvel com ?preencher=<id>: grava assim que o cálculo terminar e volta para a ficha.
+  const jaPreencheu = useRef(false);
+  useEffect(() => {
+    const alvo = params.preencher;
+    if (!alvo || jaPreencheu.current || !selecao?.camada || selecao.fids.length === 0) return;
+    if (calculando || !vizinhanca || (vizinhanca.confrontantes.length > 0 && detViz.isPending)) return;
+    jaPreencheu.current = true;
+    if (vizinhanca.confrontantes.length === 0) {
+      toast.info("Nenhum confrontante encontrado nesta base. O campo do imóvel não foi alterado.");
+      return;
+    }
+    salvarConfrontantes.mutate(
+      { imovelId: alvo, texto: textoConfrontantes() },
+      {
+        onSuccess: () => {
+          toast.success(`${vizinhanca.confrontantes.length} confrontantes gravados no imóvel.`);
+          void navigate({ to: "/imoveis/$id", params: { id: alvo } });
+        },
+      },
+    );
+  }, [params.preencher, selecao, calculando, vizinhanca, detViz.isPending, textoConfrontantes, salvarConfrontantes, navigate]);
+
   const aoVizinhanca = useCallback((r: Vizinhanca | null, calc: boolean) => {
     setVizinhanca(r);
     setCalculando(calc);
@@ -1365,6 +1432,25 @@ function PaginaMapa() {
                             <FileSignature className="size-4" aria-hidden />
                           )}{" "}
                           Enviar para anuências
+                        </Button>
+                      )}
+                      {vizinhanca.confrontantes.length > 0 && detalhe?.imovel_id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="mt-2 h-11 w-full font-bold"
+                          disabled={salvarConfrontantes.isPending || detViz.isPending}
+                          onClick={() => {
+                            const alvo = detalhe?.imovel_id;
+                            if (!alvo) return;
+                            salvarConfrontantes.mutate(
+                              { imovelId: alvo, texto: textoConfrontantes() },
+                              { onSuccess: () => toast.success("Confrontantes gravados na ficha do imóvel.") },
+                            );
+                          }}
+                        >
+                          {salvarConfrontantes.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                          Gravar confrontantes na ficha do imóvel
                         </Button>
                       )}
                       {vizinhanca.confrontantes.length > 0 && !detalhe?.imovel_id && (

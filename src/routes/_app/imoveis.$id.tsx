@@ -340,7 +340,36 @@ function Pagina() {
         </Grade>
       </Bloco>
 
-      <Bloco titulo="Confrontantes" Icone={Fence}>
+      <Bloco
+        titulo="Confrontantes"
+        Icone={Fence}
+        acao={
+          imovel.sigef || imovel.car || imovel.ccir ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 font-extrabold"
+              onClick={() => {
+                if (
+                  (imovel.confrontantes ?? "").trim() &&
+                  !window.confirm("O campo Confrontantes já tem texto. Substituir pelo levantamento do mapa?")
+                )
+                  return;
+                void navigate({
+                  to: "/mapa",
+                  search: {
+                    ...(imovel.sigef ? { sigef: imovel.sigef } : imovel.car ? { car: imovel.car } : { ccir: imovel.ccir ?? undefined }),
+                    preencher: id,
+                  },
+                });
+              }}
+            >
+              <MapPinned className="size-5" strokeWidth={2.5} />
+              Preencher pelo mapa
+            </Button>
+          ) : null
+        }
+      >
         <CampoLongo
           rotulo="Confrontantes"
           valor={imovel.confrontantes ?? ""}
