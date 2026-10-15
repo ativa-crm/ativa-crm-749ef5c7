@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download, FileDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/perfil";
@@ -70,6 +70,7 @@ type Orcamento = {
   reuniao_local: string | null;
   documentos_reuniao: string[] | null;
   prazos: string[] | null;
+  pdf_url?: string | null;
 };
 
 type Parcela = {
@@ -213,6 +214,26 @@ function Pagina() {
     }
     escreverDocumento(janela, html as string);
   }
+
+  // Gera o PDF oficial no servidor (função gerar-proposta), salva no orçamento e abre.
+  const gerarDocumento = useMutation({
+    mutationFn: async (janela: Window | null) => {
+      const { data: r, error } = await supabase.functions.invoke("gerar-proposta", { body: { orcamento_id: id } });
+      if (error) throw error;
+      const resp = r as { ok?: boolean; pdf_url?: string; error?: string } | null;
+      if (!resp?.ok || !resp.pdf_url) {
+        janela?.close();
+        throw new Error(resp?.error || "Falha ao gerar o PDF.");
+      }
+      if (janela) janela.location.href = resp.pdf_url;
+      return resp.pdf_url;
+    },
+    onSuccess: () => {
+      recarregar();
+      toast.success("PDF da proposta gerado.");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível gerar o PDF."),
+  });
 
   function recarregar() {
     void queryClient.invalidateQueries({ queryKey: ["orcamento", id] });
@@ -813,18 +834,37 @@ function Pagina() {
             );
           })}
         </div>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button
             type="button"
-            disabled
+            disabled={gerarDocumento.isPending}
+            onClick={() => {
+              // abre a aba já no clique (senão o navegador bloqueia o pop-up)
+              const janela = window.open("", "_blank");
+              janela?.document.write("<p style='font-family:Arial;padding:24px'>Gerando o PDF da proposta…</p>");
+              gerarDocumento.mutate(janela);
+            }}
             className="h-14 rounded-xl text-lg font-extrabold"
-            title="Em breve"
           >
-            <FileDown className="size-6" strokeWidth={2.5} />
-            Gerar documento
+            {gerarDocumento.isPending ? (
+              <Loader2 className="size-6 animate-spin" />
+            ) : (
+              <FileDown className="size-6" strokeWidth={2.5} />
+            )}
+            Gerar documento (PDF)
           </Button>
-          <p className="mt-1 text-base font-semibold text-muted-foreground">em breve</p>
+          {orcamento.pdf_url ? (
+            <Button asChild variant="outline" className="h-14 rounded-xl text-lg font-extrabold">
+              <a href={orcamento.pdf_url} target="_blank" rel="noreferrer">
+                <ExternalLink className="size-5" />
+                Abrir último PDF
+              </a>
+            </Button>
+          ) : null}
         </div>
+        <p className="mt-1 text-base font-semibold text-muted-foreground">
+          Gera o PDF oficial com a data de hoje e guarda no orçamento. Gere de novo sempre que alterar algo.
+        </p>
       </Bloco>
 
       <Bloco titulo="Modelo da proposta comercial">
