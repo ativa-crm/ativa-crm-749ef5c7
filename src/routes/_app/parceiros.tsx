@@ -89,7 +89,6 @@ type Identificacao = {
 
 type Destino = "parceiro" | "indicacao" | "avulso";
 
-const DESCONTO_PADRAO = 10;
 
 const ETAPAS: Record<string, { rotulo: string; variante: "default" | "secondary" | "outline" | "destructive" }> = {
   a_contatar: { rotulo: "A contatar", variante: "outline" },
@@ -145,9 +144,10 @@ function primeiroNome(v: string | null | undefined): string {
   return String(v ?? "").trim().split(/\s+/)[0] ?? "";
 }
 
-function preencher(texto: string, v: { nome: string; parceiro: string; desconto: number | null }): string {
+/** Desconto nunca leva valor na mensagem: é negociado pessoalmente pelo Eng. Renato. */
+function preencher(texto: string, v: { nome: string; parceiro: string }): string {
   const nome = v.nome.trim();
-  const desc = v.desconto && v.desconto > 0 ? `${String(v.desconto).replace(".", ",")}% de desconto` : "desconto";
+  const desc = "desconto";
   return texto
     .replaceAll("{nome_virgula}", nome ? `, ${nome}` : "")
     .replaceAll("{nome}", nome)
@@ -221,7 +221,6 @@ function Pagina() {
   const [nome, setNome] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [imovel, setImovel] = useState("");
-  const [desconto, setDesconto] = useState(String(DESCONTO_PADRAO));
   const [modelo, setModelo] = useState("P1");
   const [texto, setTexto] = useState("");
   const [editado, setEditado] = useState(false);
@@ -242,7 +241,7 @@ function Pagina() {
     }
   }, [modelosDoDestino, modelo, destino, parceiro?.tipo]);
 
-  // ao escolher parceiro: número, nome e desconto dele (só quando muda a escolha, não a cada recarga)
+  // ao escolher parceiro: número e nome dele (só quando muda a escolha, não a cada recarga)
   useEffect(() => {
     const parceiro = parceiroId ? porId[parceiroId] : undefined;
     if (!parceiro) return;
@@ -254,7 +253,6 @@ function Pagina() {
       else if (parceiro.etapa === "contatado" || parceiro.etapa === "reuniao") setModelo("P3");
       else setModelo("P1");
     }
-    if (parceiro.desconto_cliente_pct != null) setDesconto(String(parceiro.desconto_cliente_pct));
     setEditado(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parceiroId, destino, parceirosQuery.isSuccess]);
@@ -266,9 +264,8 @@ function Pagina() {
     return preencher(m.texto, {
       nome,
       parceiro: nomeNaMensagem(parceiro?.nome),
-      desconto: Number(String(desconto).replace(",", ".")) || null,
     });
-  }, [modelos, modelo, nome, parceiro?.nome, desconto]);
+  }, [modelos, modelo, nome, parceiro?.nome]);
 
   useEffect(() => {
     if (!editado) setTexto(textoModelo);
@@ -327,7 +324,6 @@ function Pagina() {
           nome: nome.trim(),
           municipio: municipio.trim() || null,
           imovel: imovel.trim() || null,
-          desconto_pct: Number(String(desconto).replace(",", ".")) || null,
         };
       }
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp-avulso", { body: corpo });
@@ -617,7 +613,7 @@ function Pagina() {
             </div>
 
             {destino === "indicacao" && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_140px]">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="municipio">Município do imóvel</Label>
                   <Input id="municipio" value={municipio} onChange={(e) => setMunicipio(e.target.value)} className="h-11 rounded-full" />
@@ -626,16 +622,10 @@ function Pagina() {
                   <Label htmlFor="imovel">Imóvel (opcional)</Label>
                   <Input id="imovel" value={imovel} onChange={(e) => setImovel(e.target.value)} placeholder="Ex.: Sítio São José" className="h-11 rounded-full" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="desconto">Desconto (%)</Label>
-                  <Input
-                    id="desconto"
-                    inputMode="decimal"
-                    value={desconto}
-                    onChange={(e) => setDesconto(e.target.value.replace(/[^\d,.]/g, ""))}
-                    className="h-11 rounded-full text-right"
-                  />
-                </div>
+                <p className="text-xs font-medium text-muted-foreground sm:col-span-2">
+                  A mensagem fala que o indicado tem desconto, sem citar valor. As condições são combinadas pessoalmente
+                  pelo Eng. Renato com o parceiro e o cliente.
+                </p>
               </div>
             )}
 
@@ -922,7 +912,7 @@ function Pagina() {
         ) : indicacoes.length === 0 ? (
           <p className="text-base font-medium text-muted-foreground">
             Nenhuma indicação ainda. Quando um parceiro mandar um cliente, use “Cliente indicado” acima: o cliente recebe a
-            mensagem com o desconto e entra na Prospecção, onde a IA continua a conversa.
+            mensagem (com desconto, sem citar valor) e entra na Prospecção, onde a IA continua a conversa.
           </p>
         ) : (
           <Tabela>
@@ -964,7 +954,7 @@ function Pagina() {
                       {[i.municipio, i.imovel].filter(Boolean).join(" · ") || "—"}
                     </td>
                     <td className="px-3 py-2 text-right text-sm font-bold tabular-nums text-foreground">
-                      {i.desconto_pct != null ? `${String(i.desconto_pct).replace(".", ",")}%` : "—"}
+                      {i.desconto_pct != null ? `${String(i.desconto_pct).replace(".", ",")}%` : "a combinar"}
                     </td>
                     <td className="px-3 py-2">
                       <select
