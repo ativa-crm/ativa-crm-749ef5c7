@@ -24,6 +24,7 @@ import {
   Search,
   Map as MapaIcone,
   Mail,
+  Handshake,
 } from "lucide-react";
 import { usePerfil } from "@/lib/perfil";
 import { supabase } from "@/lib/supabase";
@@ -38,6 +39,7 @@ const ITENS = [
   { to: "/mapa", rotulo: "Mapa", Icone: MapaIcone },
   { to: "/prospeccao", rotulo: "Prospecção", Icone: Target },
   { to: "/email", rotulo: "E-mail", Icone: Mail },
+  { to: "/parceiros", rotulo: "Parceiros", Icone: Handshake },
   { to: "/funil", rotulo: "Funil", Icone: Filter },
   { to: "/clientes", rotulo: "Clientes", Icone: Users },
   { to: "/imoveis", rotulo: "Imóveis", Icone: MapPinned },
@@ -59,6 +61,7 @@ const TITULOS: Record<string, string> = {
   "/funil": "Funil",
   "/prospeccao": "Prospecção",
   "/email": "E-mail",
+  "/parceiros": "Parceiros e Indicações",
   "/oportunidades": "Oportunidade",
   "/servicos": "Serviços",
   "/orcamentos": "Orçamentos",

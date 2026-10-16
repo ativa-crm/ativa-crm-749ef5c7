@@ -1,3 +1,4 @@
+import { useEffect, useRef, type ReactNode } from "react";
 import { BatteryFull, Phone, Signal, User, Video, Wifi } from "lucide-react";
 import { hora } from "@/lib/tempo";
 
@@ -11,8 +12,8 @@ export type MensagemConversa = {
   criado_em: string | null;
 };
 
-function rotuloAutor(direcao: string | null): string {
-  if (direcao === "recebida") return "Lead";
+function rotuloAutor(direcao: string | null, rotuloRecebida = "Lead"): string {
+  if (direcao === "recebida") return rotuloRecebida;
   if (direcao === "enviada_humano") return "você";
   return "Ativa";
 }
@@ -22,6 +23,9 @@ export function ConversaWhatsapp({
   mensagens,
   className,
   compacto = false,
+  subtitulo,
+  rotuloRecebida,
+  rodape,
 }: {
   titulo: string;
   mensagens: MensagemConversa[];
@@ -29,7 +33,18 @@ export function ConversaWhatsapp({
   className?: string;
   /** Versão com altura menor, para painéis laterais estreitos. */
   compacto?: boolean;
+  /** Texto abaixo do nome (padrão: quantidade de mensagens). */
+  subtitulo?: string;
+  /** Como chamar quem escreveu as mensagens recebidas (padrão: "Lead"). */
+  rotuloRecebida?: string;
+  /** Área fixa no pé da tela, como a caixa de digitar do WhatsApp. Com ela, a conversa rola até a última mensagem. */
+  rodape?: ReactNode;
 }) {
+  const rolagem = useRef<HTMLDivElement>(null);
+  const temRodape = Boolean(rodape);
+  useEffect(() => {
+    if (temRodape && rolagem.current) rolagem.current.scrollTop = rolagem.current.scrollHeight;
+  }, [temRodape, mensagens.length]);
   const agora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -73,7 +88,7 @@ export function ConversaWhatsapp({
                   {titulo.trim() || "Conversa"}
                 </p>
                 <p className="text-[11px] font-semibold text-chat-cabecalho-foreground/75">
-                  {mensagens.length} mensagens
+                  {subtitulo ?? `${mensagens.length} mensagens`}
                 </p>
               </div>
               <Phone className="size-4 shrink-0 text-chat-cabecalho-foreground/75" />
@@ -81,6 +96,7 @@ export function ConversaWhatsapp({
             </header>
 
             <div
+              ref={rolagem}
               className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 py-3 ${
                 compacto ? "max-h-80" : ""
               }`}
@@ -100,12 +116,14 @@ export function ConversaWhatsapp({
                       {m.conteudo?.trim() || "—"}
                     </p>
                     <p className="mt-1 text-right text-[10px] font-bold text-chat-texto/60">
-                      {rotuloAutor(m.direcao)} · {hora(m.criado_em)}
+                      {rotuloAutor(m.direcao, rotuloRecebida)} · {hora(m.criado_em)}
                     </p>
                   </div>
                 );
               })}
             </div>
+
+            {rodape && <div className="shrink-0 bg-chat-fundo px-2 pt-1">{rodape}</div>}
 
             {/* Barra de gesto */}
             <div className="flex h-6 shrink-0 items-center justify-center bg-chat-fundo">

@@ -14,6 +14,7 @@ type DestinoIndicador =
   | "/medicao"
   | "/prospeccao"
   | "/email"
+  | "/parceiros"
   | "/administracao";
 
 const tons: Record<Tom, { icone: string; numero: string }> = {
