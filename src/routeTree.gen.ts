@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAdministracaoRouteImport } from './routes/_app/administracao'
 import { Route as AppFunilRouteImport } from './routes/_app/funil'
 import { Route as AppEmailRouteImport } from './routes/_app/email'
+import { Route as AppParceirosRouteImport } from './routes/_app/parceiros'
 import { Route as AppEsteiraRouteImport } from './routes/_app/esteira'
 import { Route as AppInicioRouteImport } from './routes/_app/inicio'
 import { Route as AppMapaRouteImport } from './routes/_app/mapa'
@@ -72,6 +73,11 @@ const AppFunilRoute = AppFunilRouteImport.update({
 const AppEmailRoute = AppEmailRouteImport.update({
   id: '/email',
   path: '/email',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppParceirosRoute = AppParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppEsteiraRoute = AppEsteiraRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/email': typeof AppEmailRoute
+  '/parceiros': typeof AppParceirosRoute
   '/esteira': typeof AppEsteiraRoute
   '/inicio': typeof AppInicioRoute
   '/mapa': typeof AppMapaRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/administracao': typeof AppAdministracaoRoute
   '/funil': typeof AppFunilRoute
   '/email': typeof AppEmailRoute
+  '/parceiros': typeof AppParceirosRoute
   '/esteira': typeof AppEsteiraRoute
   '/inicio': typeof AppInicioRoute
   '/mapa': typeof AppMapaRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/_app/administracao': typeof AppAdministracaoRoute
   '/_app/funil': typeof AppFunilRoute
   '/_app/email': typeof AppEmailRoute
+  '/_app/parceiros': typeof AppParceirosRoute
   '/_app/esteira': typeof AppEsteiraRoute
   '/_app/inicio': typeof AppInicioRoute
   '/_app/mapa': typeof AppMapaRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/administracao'
     | '/funil'
     | '/email'
+    | '/parceiros'
     | '/esteira'
     | '/inicio'
     | '/mapa'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/administracao'
     | '/funil'
     | '/email'
+    | '/parceiros'
     | '/esteira'
     | '/inicio'
     | '/mapa'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/_app/administracao'
     | '/_app/funil'
     | '/_app/email'
+    | '/_app/parceiros'
     | '/_app/esteira'
     | '/_app/inicio'
     | '/_app/mapa'
@@ -386,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: '/email'
       fullPath: '/email'
       preLoaderRoute: typeof AppEmailRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/parceiros': {
+      id: '/_app/parceiros'
+      path: '/parceiros'
+      fullPath: '/parceiros'
+      preLoaderRoute: typeof AppParceirosRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/esteira': {
@@ -514,6 +533,7 @@ interface AppRouteRouteChildren {
   AppAdministracaoRoute: typeof AppAdministracaoRoute
   AppFunilRoute: typeof AppFunilRoute
   AppEmailRoute: typeof AppEmailRoute
+  AppParceirosRoute: typeof AppParceirosRoute
   AppEsteiraRoute: typeof AppEsteiraRoute
   AppInicioRoute: typeof AppInicioRoute
   AppMapaRoute: typeof AppMapaRoute
@@ -537,6 +557,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdministracaoRoute: AppAdministracaoRoute,
   AppFunilRoute: AppFunilRoute,
   AppEmailRoute: AppEmailRoute,
+  AppParceirosRoute: AppParceirosRoute,
   AppEsteiraRoute: AppEsteiraRoute,
   AppInicioRoute: AppInicioRoute,
   AppMapaRoute: AppMapaRoute,
