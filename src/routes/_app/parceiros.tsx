@@ -344,7 +344,9 @@ function Pagina() {
             ? "Mensagem enviada ao parceiro. Quando ele responder, o Renato é avisado no WhatsApp."
             : "Mensagem enviada.",
       );
-      setEditado(false);
+      // limpa a caixa de digitar; o modelo só volta se trocar o modelo/contato ou clicar em "Voltar ao texto do modelo"
+      setTexto("");
+      setEditado(true);
       qc.invalidateQueries({ queryKey: ["conversa-telefone"] });
       qc.invalidateQueries({ queryKey: ["identificar-telefone"] });
       qc.invalidateQueries({ queryKey: ["parceiros"] });
